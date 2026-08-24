@@ -1,0 +1,8 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ghostnet-detection-schema",
+  "title": "Detection",
+  "description": "JSON Schema for GhostNet Detection object — see docs/api-schema.md for full field definitions",
+  "type": "object",
+  "_comment": "TODO: fill in properties mirroring docs/api-schema.md"
+}

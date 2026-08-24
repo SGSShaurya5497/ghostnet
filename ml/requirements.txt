@@ -1,0 +1,10 @@
+# Full training deps — separate from backend/requirements.txt
+# torch==2.3.0
+# torchvision==0.18.0
+# onnx==1.16.0
+# albumentations==1.4.10
+# opencv-python==4.10.0.82
+# matplotlib==3.9.0
+# pandas==2.2.2
+# tqdm==4.66.4
+# wandb==0.17.3

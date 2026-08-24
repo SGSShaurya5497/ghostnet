@@ -1,0 +1,13 @@
+# Render service config — build command, start command, env var names (no values)
+# services:
+#   - type: web
+#     name: ghostnet-backend
+#     env: docker
+#     dockerfilePath: ./Dockerfile
+#     buildCommand: ""
+#     startCommand: ""
+#     envVars:
+#       - key: ALLOWED_ORIGINS
+#       - key: MODEL_DOWNLOAD_URL
+#       - key: ENVIRONMENT
+#     healthCheckPath: /health

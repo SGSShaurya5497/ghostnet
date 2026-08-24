@@ -1,0 +1,7 @@
+{
+  "//": "Explicit Vercel build config — set rootDirectory to 'frontend' in Vercel dashboard",
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "framework": "nextjs"
+}
