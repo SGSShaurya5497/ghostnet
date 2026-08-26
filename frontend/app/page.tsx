@@ -9,6 +9,7 @@ import SolutionSection from '@/components/landing/SolutionSection';
 import ImpactSection from '@/components/landing/ImpactSection';
 import CTASection from '@/components/landing/CTASection';
 import SonarMarquee from '@/components/landing/SonarMarquee';
+import CustomCursor from '@/components/ui/CustomCursor';
 
 // Lazy-load the WebGL canvas (client-side only for Three.js)
 const OceanCanvas = dynamic(() => import('@/components/landing/OceanCanvas'), {
@@ -19,6 +20,9 @@ const OceanCanvas = dynamic(() => import('@/components/landing/OceanCanvas'), {
 export default function LandingPage() {
   return (
     <SmoothScrollProvider>
+      {/* High-Tech Custom Sonar Reticle Cursor */}
+      <CustomCursor />
+
       {/* Interactive WebGL LiDAR Ocean — fixed z-index 0 */}
       <OceanCanvas />
 

@@ -216,18 +216,21 @@ export default function HeroSection() {
       {/* ── Telemetry HUD: Top Left ── */}
       <div
         ref={hudTopLeftRef}
+        className="solid-panel"
         style={{
           position: 'absolute',
-          top: '84px',
+          top: '104px',
           left: 'clamp(1.5rem, 4vw, 3.5rem)',
           textAlign: 'left',
           fontFamily: 'var(--font-mono)',
           fontSize: '0.68rem',
-          color: 'rgba(45, 212, 191, 0.65)',
-          letterSpacing: '0.12em',
-          pointerEvents: 'none',
+          color: 'rgba(45, 212, 191, 0.75)',
+          letterSpacing: '0.1em',
+          pointerEvents: 'auto',
           zIndex: 2,
           opacity: 0,
+          padding: '0.6rem 1rem',
+          background: 'rgba(4, 10, 22, 0.65)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
@@ -243,31 +246,34 @@ export default function HeroSection() {
           />
           <span style={{ fontWeight: 600, color: '#2dd4bf' }}>SYS.ONNX // ACTIVE</span>
         </div>
-        <div style={{ color: 'rgba(226, 234, 244, 0.4)' }}>LAT 48°14&apos;22.4&quot;N · LON 124°42&apos;18.1&quot;W</div>
+        <div style={{ color: 'rgba(226, 234, 244, 0.5)' }}>LAT 48°14&apos;22.4&quot;N · LON 124°42&apos;18.1&quot;W</div>
       </div>
 
       {/* ── Telemetry HUD: Top Right ── */}
       <div
         ref={hudTopRightRef}
+        className="solid-panel"
         style={{
           position: 'absolute',
-          top: '84px',
+          top: '104px',
           right: 'clamp(1.5rem, 4vw, 3.5rem)',
           textAlign: 'right',
           fontFamily: 'var(--font-mono)',
           fontSize: '0.68rem',
-          color: 'rgba(45, 212, 191, 0.65)',
-          letterSpacing: '0.12em',
-          pointerEvents: 'none',
+          color: 'rgba(45, 212, 191, 0.75)',
+          letterSpacing: '0.1em',
+          pointerEvents: 'auto',
           zIndex: 2,
           opacity: 0,
+          padding: '0.6rem 1rem',
+          background: 'rgba(4, 10, 22, 0.65)',
         }}
       >
         <div>
           BATHYMETRY DEPTH:{' '}
           <span style={{ color: '#fff', fontWeight: 600 }}>-{telemetryDepth}M</span>
         </div>
-        <div style={{ color: 'rgba(226, 234, 244, 0.4)' }}>
+        <div style={{ color: 'rgba(226, 234, 244, 0.5)' }}>
           SONAR PINGS: <span style={{ color: '#2dd4bf' }}>{pingCount.toLocaleString()}</span>
         </div>
       </div>
@@ -277,18 +283,16 @@ export default function HeroSection() {
         {/* Top Floating Badge */}
         <div
           ref={badgeRef}
+          className="ultra-glass mouse-spotlight"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '0.65rem',
             marginBottom: '2.5rem',
-            padding: '0.55rem 1.4rem',
-            background: 'rgba(45, 212, 191, 0.06)',
-            border: '1px solid rgba(45, 212, 191, 0.28)',
+            padding: '0.6rem 1.6rem',
             borderRadius: '100px',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
             opacity: 0,
+            cursor: 'default',
           }}
         >
           <span

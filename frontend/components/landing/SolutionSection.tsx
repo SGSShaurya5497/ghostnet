@@ -222,7 +222,12 @@ export default function SolutionSection() {
                   <div
                     id={stage.id}
                     ref={(el) => { stageRefs.current[i] = el; }}
-                    className="solid-panel"
+                    onMouseMove={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                      e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+                    }}
+                    className="solid-panel mouse-spotlight"
                     style={{
                       flex: 1,
                       opacity: 0,
@@ -351,7 +356,12 @@ export default function SolutionSection() {
               <div
                 key={card.id}
                 id={card.id}
-                className="detail-card solid-panel"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                  e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+                }}
+                className="detail-card solid-panel mouse-spotlight"
                 style={{
                   opacity: 0,
                   padding: '2.25rem 2rem',
@@ -361,6 +371,7 @@ export default function SolutionSection() {
                   willChange: 'transform, opacity',
                   position: 'relative',
                   overflow: 'hidden',
+                  cursor: 'default',
                 }}
               >
                 <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.5), transparent)' }} />

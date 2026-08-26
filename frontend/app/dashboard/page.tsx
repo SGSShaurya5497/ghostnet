@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import CustomCursor from '@/components/ui/CustomCursor';
+import MagneticButton from '@/components/ui/MagneticButton';
 
 interface DetectionTarget {
   id: string;
@@ -79,7 +81,7 @@ const MOCK_TARGETS: DetectionTarget[] = [
   },
 ];
 
-// Subtle ambient particle background so glass panel has moving depth underneath
+// Ambient particle canvas for moving glass refraction
 function AmbientParticles() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -97,13 +99,13 @@ function AmbientParticles() {
     resize();
     window.addEventListener('resize', resize);
 
-    const particles = Array.from({ length: 65 }, () => ({
+    const particles = Array.from({ length: 80 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       r: Math.random() * 2 + 0.8,
-      vx: (Math.random() - 0.5) * 0.3,
-      vy: Math.random() * 0.35 + 0.1,
-      alpha: Math.random() * 0.5 + 0.2,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: Math.random() * 0.4 + 0.1,
+      alpha: Math.random() * 0.55 + 0.25,
     }));
 
     const render = () => {
@@ -141,7 +143,7 @@ function AmbientParticles() {
         inset: 0,
         pointerEvents: 'none',
         zIndex: 0,
-        opacity: 0.45,
+        opacity: 0.5,
       }}
     />
   );
@@ -154,6 +156,8 @@ export default function DashboardPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStep, setUploadStep] = useState('Standby');
   const [isFilterCritical, setIsFilterCritical] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const inspectorRef = useRef<HTMLDivElement>(null);
 
   // Live clock
   const [timeUtc, setTimeUtc] = useState('');
@@ -167,14 +171,26 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const triggerToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3200);
+  };
+
+  const handleInspectorMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!inspectorRef.current) return;
+    const rect = inspectorRef.current.getBoundingClientRect();
+    inspectorRef.current.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    inspectorRef.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  };
+
   const handleSimulatedUpload = () => {
     setIsUploading(true);
     setUploadProgress(0);
-    setUploadStep('01 Ingesting Sonar Log (XTF / JSF)...');
+    setUploadStep('01 Ingesting Sonar Stream (XTF)...');
 
     const steps = [
       { p: 25, s: '02 De-speckling & Resolution Normalization...' },
-      { p: 55, s: '03 YOLO-seg ONNX Inference (Seafloor Segmentation)...' },
+      { p: 55, s: '03 YOLO-seg ONNX Inference...' },
       { p: 85, s: '04 Geotagging & Coordinate Projection...' },
       { p: 100, s: '05 Complete: 3 New Targets Identified' },
     ];
@@ -187,9 +203,12 @@ export default function DashboardPage() {
         stepIdx++;
       } else {
         clearInterval(interval);
-        setTimeout(() => setIsUploading(false), 800);
+        setTimeout(() => {
+          setIsUploading(false);
+          triggerToast('Sonar log processed: 3 confirmed ghost nets identified');
+        }, 800);
       }
-    }, 900);
+    }, 850);
   };
 
   const filteredTargets = isFilterCritical
@@ -201,27 +220,62 @@ export default function DashboardPage() {
       style={{
         minHeight: '100vh',
         background:
-          'radial-gradient(ellipse at 50% 0%, #061424 0%, #030a14 50%, #010408 100%)',
-        color: '#e2eaf4',
+          'radial-gradient(ellipse at 50% 0%, #06162a 0%, #030b16 50%, #010408 100%)',
+        color: '#e8f1fa',
         fontFamily: 'var(--font-body)',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
       }}
     >
-      {/* Background particle movement for authentic glass refraction */}
+      <CustomCursor />
       <AmbientParticles />
 
-      {/* ── Top Header (Solid Clean Dark) ── */}
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          className="ultra-glass"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            padding: '1rem 1.6rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.8rem',
+            color: '#2dd4bf',
+            fontFamily: 'var(--font-mono)',
+            fontSize: '0.82rem',
+            animation: 'card-rise 0.4s ease-out',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.8), 0 0 30px rgba(45,212,191,0.3)',
+          }}
+        >
+          <span
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#2dd4bf',
+              boxShadow: '0 0 10px #2dd4bf',
+            }}
+          />
+          {toastMessage}
+        </div>
+      )}
+
+      {/* ── Top Header Bar (Solid Clean Dark) ── */}
       <header
         style={{
-          height: '64px',
+          height: '66px',
           padding: '0 clamp(1.5rem, 3vw, 2.5rem)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid rgba(45, 212, 191, 0.12)',
-          background: '#040914',
+          borderBottom: '1px solid rgba(45, 212, 191, 0.14)',
+          background: 'rgba(4, 9, 20, 0.9)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
           position: 'relative',
           zIndex: 10,
         }}
@@ -251,7 +305,7 @@ export default function DashboardPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 0 10px rgba(45, 212, 191, 0.4)',
+                boxShadow: '0 0 12px rgba(45, 212, 191, 0.5)',
               }}
             >
               <div
@@ -278,7 +332,7 @@ export default function DashboardPage() {
             style={{
               fontFamily: 'var(--font-mono)',
               fontSize: '0.72rem',
-              color: 'rgba(45, 212, 191, 0.8)',
+              color: 'rgba(45, 212, 191, 0.85)',
               letterSpacing: '0.08em',
               display: 'flex',
               alignItems: 'center',
@@ -302,25 +356,23 @@ export default function DashboardPage() {
         {/* Telemetry Status Bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.8rem' }}>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', textAlign: 'right' }}>
-            <span style={{ color: 'rgba(226, 234, 244, 0.4)' }}>UTC CLOCK: </span>
+            <span style={{ color: 'rgba(226, 234, 244, 0.45)' }}>UTC CLOCK: </span>
             <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{timeUtc}</span>
           </div>
 
           <Link
             href="/"
+            className="solid-panel"
             style={{
               fontFamily: 'var(--font-display)',
               fontSize: '0.75rem',
               fontWeight: 600,
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
-              color: 'rgba(226, 234, 244, 0.75)',
-              padding: '0.45rem 1rem',
-              border: '1px solid rgba(226, 234, 244, 0.15)',
+              color: 'rgba(226, 234, 244, 0.8)',
+              padding: '0.45rem 1.1rem',
               borderRadius: '6px',
-              background: '#060b16',
               textDecoration: 'none',
-              transition: 'all 0.2s',
             }}
           >
             ← Back to Pitch
@@ -328,7 +380,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* ── Key Metrics Bar (Solid Opaque Tiles) ── */}
+      {/* ── Key Metrics Bar (Solid Opaque Tiles with Hover Lift) ── */}
       <div
         style={{
           padding: '1.25rem clamp(1.5rem, 3vw, 2.5rem)',
@@ -336,7 +388,7 @@ export default function DashboardPage() {
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: '1rem',
           borderBottom: '1px solid rgba(45, 212, 191, 0.1)',
-          background: '#050a14',
+          background: 'rgba(3, 8, 18, 0.8)',
           position: 'relative',
           zIndex: 5,
         }}
@@ -349,18 +401,17 @@ export default function DashboardPage() {
         ].map((m, i) => (
           <div
             key={i}
-            className="solid-panel"
+            className="solid-panel mouse-spotlight"
             style={{
               padding: '1rem 1.25rem',
-              background: '#070d1a',
-              border: '1px solid rgba(45, 212, 191, 0.12)',
+              background: '#060c18',
             }}
           >
             <div
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.68rem',
-                color: 'rgba(45, 212, 191, 0.7)',
+                color: 'rgba(45, 212, 191, 0.75)',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 marginBottom: '0.25rem',
@@ -378,7 +429,7 @@ export default function DashboardPage() {
             >
               {m.val}
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'rgba(226, 234, 244, 0.4)', marginTop: '0.15rem' }}>
+            <div style={{ fontSize: '0.72rem', color: 'rgba(226, 234, 244, 0.45)', marginTop: '0.15rem' }}>
               {m.sub}
             </div>
           </div>
@@ -390,7 +441,7 @@ export default function DashboardPage() {
         style={{
           flex: 1,
           display: 'grid',
-          gridTemplateColumns: 'minmax(300px, 360px) 1fr minmax(320px, 380px)',
+          gridTemplateColumns: 'minmax(300px, 360px) 1fr minmax(320px, 390px)',
           gap: '1.25rem',
           padding: '1.25rem clamp(1.5rem, 3vw, 2.5rem)',
           overflow: 'hidden',
@@ -405,8 +456,7 @@ export default function DashboardPage() {
             display: 'flex',
             flexDirection: 'column',
             gap: '1rem',
-            background: '#060b16',
-            border: '1px solid rgba(45, 212, 191, 0.12)',
+            background: '#060c18',
             padding: '1.25rem',
           }}
         >
@@ -424,14 +474,15 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setIsFilterCritical(!isFilterCritical)}
+              className="solid-panel"
               style={{
                 fontFamily: 'var(--font-mono)',
                 fontSize: '0.68rem',
-                padding: '0.3rem 0.6rem',
+                padding: '0.35rem 0.7rem',
                 borderRadius: '4px',
-                background: isFilterCritical ? 'rgba(244, 63, 94, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                border: isFilterCritical ? '1px solid #f43f5e' : '1px solid rgba(255, 255, 255, 0.15)',
-                color: isFilterCritical ? '#f43f5e' : 'rgba(226, 234, 244, 0.7)',
+                background: isFilterCritical ? 'rgba(244, 63, 94, 0.25)' : '#071020',
+                border: isFilterCritical ? '1px solid #f43f5e' : '1px solid rgba(45, 212, 191, 0.2)',
+                color: isFilterCritical ? '#f43f5e' : 'rgba(226, 234, 244, 0.8)',
                 cursor: 'pointer',
               }}
             >
@@ -439,21 +490,26 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Targets List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', overflowY: 'auto', flex: 1 }}>
+          {/* Targets List with Click Ripples */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', overflowY: 'auto', flex: 1 }}>
             {filteredTargets.map((t) => {
               const isSelected = selectedTarget.id === t.id;
               return (
                 <div
                   key={t.id}
-                  onClick={() => setSelectedTarget(t)}
+                  onClick={() => {
+                    setSelectedTarget(t);
+                    triggerToast(`Selected Target ${t.code} (${t.type})`);
+                  }}
+                  className="solid-panel ripple-container"
                   style={{
-                    padding: '0.85rem 1rem',
-                    borderRadius: '8px',
-                    background: isSelected ? '#0d1d2c' : '#081120',
-                    border: isSelected ? '1px solid #2dd4bf' : '1px solid rgba(45, 212, 191, 0.08)',
+                    padding: '0.9rem 1.1rem',
+                    borderRadius: '10px',
+                    background: isSelected ? '#0d2235' : '#071122',
+                    border: isSelected ? '1.5px solid #2dd4bf' : '1px solid rgba(45, 212, 191, 0.1)',
+                    boxShadow: isSelected ? '0 0 20px rgba(45, 212, 191, 0.25)' : 'none',
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transform: isSelected ? 'scale(1.01)' : 'scale(1)',
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -462,7 +518,7 @@ export default function DashboardPage() {
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 600,
                         color: isSelected ? '#2dd4bf' : '#ffffff',
-                        fontSize: '0.85rem',
+                        fontSize: '0.88rem',
                       }}
                     >
                       {t.code}
@@ -471,17 +527,17 @@ export default function DashboardPage() {
                       style={{
                         fontFamily: 'var(--font-mono)',
                         fontSize: '0.65rem',
-                        padding: '0.2rem 0.5rem',
+                        padding: '0.2rem 0.55rem',
                         borderRadius: '4px',
                         background:
                           t.status === 'Critical'
-                            ? 'rgba(244, 63, 94, 0.15)'
-                            : 'rgba(45, 212, 191, 0.15)',
+                            ? 'rgba(244, 63, 94, 0.2)'
+                            : 'rgba(45, 212, 191, 0.2)',
                         color: t.status === 'Critical' ? '#f43f5e' : '#2dd4bf',
                         border:
                           t.status === 'Critical'
-                            ? '1px solid rgba(244, 63, 94, 0.4)'
-                            : '1px solid rgba(45, 212, 191, 0.4)',
+                            ? '1px solid rgba(244, 63, 94, 0.5)'
+                            : '1px solid rgba(45, 212, 191, 0.5)',
                       }}
                     >
                       {t.status}
@@ -490,8 +546,8 @@ export default function DashboardPage() {
 
                   <div
                     style={{
-                      fontSize: '0.75rem',
-                      color: 'rgba(226, 234, 244, 0.7)',
+                      fontSize: '0.78rem',
+                      color: 'rgba(226, 234, 244, 0.75)',
                       margin: '0.35rem 0',
                     }}
                   >
@@ -505,7 +561,7 @@ export default function DashboardPage() {
                       justifyContent: 'space-between',
                       fontFamily: 'var(--font-mono)',
                       fontSize: '0.68rem',
-                      color: 'rgba(226, 234, 244, 0.4)',
+                      color: 'rgba(226, 234, 244, 0.45)',
                     }}
                   >
                     <span>{t.depth}</span>
@@ -517,26 +573,17 @@ export default function DashboardPage() {
           </div>
 
           {/* Ingest Sonar Log Trigger Button */}
-          <button
+          <MagneticButton
             onClick={handleSimulatedUpload}
             disabled={isUploading}
             style={{
-              padding: '0.8rem',
-              borderRadius: '6px',
-              background: 'linear-gradient(90deg, #0d9488, #2dd4bf)',
-              color: '#02050e',
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.82rem',
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-              border: 'none',
-              cursor: isUploading ? 'not-allowed' : 'pointer',
-              opacity: isUploading ? 0.7 : 1,
-              boxShadow: '0 0 16px rgba(45, 212, 191, 0.25)',
+              padding: '0.85rem',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
             }}
           >
             {isUploading ? 'Ingesting Sonar Stream...' : '+ Ingest Sonar Log (.XTF)'}
-          </button>
+          </MagneticButton>
         </div>
 
         {/* ── Center Column: Interactive Acoustic Seafloor Map / Sonar Waterfall (Solid Opaque Frame) ── */}
@@ -545,8 +592,7 @@ export default function DashboardPage() {
           style={{
             display: 'flex',
             flexDirection: 'column',
-            background: '#060b16',
-            border: '1px solid rgba(45, 212, 191, 0.12)',
+            background: '#060c18',
             overflow: 'hidden',
           }}
         >
@@ -558,7 +604,7 @@ export default function DashboardPage() {
               gap: '1rem',
               padding: '0.75rem 1.25rem',
               borderBottom: '1px solid rgba(45, 212, 191, 0.12)',
-              background: '#040812',
+              background: '#040814',
             }}
           >
             {[
@@ -581,6 +627,7 @@ export default function DashboardPage() {
                   borderLeft: 'none',
                   borderRight: 'none',
                   cursor: 'pointer',
+                  transition: 'color 0.2s',
                 }}
               >
                 {tab.label}
@@ -595,7 +642,7 @@ export default function DashboardPage() {
                 flex: 1,
                 position: 'relative',
                 background:
-                  'radial-gradient(ellipse at center, #051422 0%, #030a14 60%, #01040a 100%)',
+                  'radial-gradient(ellipse at center, #06182c 0%, #030d18 60%, #01040a 100%)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -636,7 +683,7 @@ export default function DashboardPage() {
                   height: '500px',
                   borderRadius: '50%',
                   background:
-                    'conic-gradient(from 0deg at 50% 50%, rgba(45,212,191,0.2) 0deg, transparent 60deg, transparent 360deg)',
+                    'conic-gradient(from 0deg at 50% 50%, rgba(45,212,191,0.25) 0deg, transparent 60deg, transparent 360deg)',
                   animation: 'sonar-sweep 5s linear infinite',
                   pointerEvents: 'none',
                 }}
@@ -689,7 +736,10 @@ export default function DashboardPage() {
                 return (
                   <div
                     key={t.id}
-                    onClick={() => setSelectedTarget(t)}
+                    onClick={() => {
+                      setSelectedTarget(t);
+                      triggerToast(`Target Blip ${t.code} Locked`);
+                    }}
                     style={{
                       position: 'absolute',
                       top: pos.top,
@@ -699,6 +749,8 @@ export default function DashboardPage() {
                       flexDirection: 'column',
                       alignItems: 'center',
                       zIndex: 10,
+                      transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+                      transition: 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}
                   >
                     <div
@@ -707,7 +759,7 @@ export default function DashboardPage() {
                         height: isSelected ? '18px' : '12px',
                         borderRadius: '50%',
                         background: t.status === 'Critical' ? '#f43f5e' : '#2dd4bf',
-                        boxShadow: `0 0 14px ${t.status === 'Critical' ? '#f43f5e' : '#2dd4bf'}`,
+                        boxShadow: `0 0 16px ${t.status === 'Critical' ? '#f43f5e' : '#2dd4bf'}`,
                         border: '2px solid #fff',
                         transition: 'all 0.2s',
                       }}
@@ -718,11 +770,11 @@ export default function DashboardPage() {
                         fontSize: '0.65rem',
                         fontWeight: 600,
                         color: isSelected ? '#ffffff' : 'rgba(226, 234, 244, 0.7)',
-                        background: '#040814',
-                        padding: '0.1rem 0.35rem',
-                        borderRadius: '3px',
+                        background: '#040916',
+                        padding: '0.15rem 0.45rem',
+                        borderRadius: '4px',
                         border: isSelected ? '1px solid #2dd4bf' : '1px solid rgba(255,255,255,0.1)',
-                        marginTop: '0.2rem',
+                        marginTop: '0.25rem',
                       }}
                     >
                       {t.code}
@@ -767,7 +819,6 @@ export default function DashboardPage() {
                   overflow: 'hidden',
                 }}
               >
-                {/* Acoustic scanlines */}
                 <div
                   style={{
                     position: 'absolute',
@@ -787,8 +838,8 @@ export default function DashboardPage() {
                     height: '110px',
                     border: '2px solid #2dd4bf',
                     borderRadius: '4px',
-                    background: 'rgba(45, 212, 191, 0.15)',
-                    boxShadow: '0 0 20px rgba(45, 212, 191, 0.3)',
+                    background: 'rgba(45, 212, 191, 0.18)',
+                    boxShadow: '0 0 25px rgba(45, 212, 191, 0.35)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
@@ -926,24 +977,17 @@ export default function DashboardPage() {
                   with no cloud dependency.
                 </p>
 
-                <button
+                <MagneticButton
                   onClick={handleSimulatedUpload}
                   disabled={isUploading}
                   style={{
                     marginTop: '1rem',
-                    padding: '0.75rem 2rem',
-                    borderRadius: '6px',
-                    background: '#2dd4bf',
-                    color: '#02050e',
-                    fontFamily: 'var(--font-display)',
+                    padding: '0.75rem 2.2rem',
                     fontSize: '0.85rem',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: 'pointer',
                   }}
                 >
                   Select File & Analyze
-                </button>
+                </MagneticButton>
               </div>
 
               {/* Upload Progress Stepper */}
@@ -985,10 +1029,12 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* ── Right Column: Target Details & Retrieval Plan (PREMIUM GLASS PANEL) ── */}
+        {/* ── Right Column: Target Details & Retrieval Plan (ULTRA-LUXURY GLASS PANEL) ── */}
         <div
+          ref={inspectorRef}
           id="target-telemetry-panel"
-          className="glass-panel"
+          onMouseMove={handleInspectorMouseMove}
+          className="ultra-glass mouse-spotlight"
           style={{
             display: 'flex',
             flexDirection: 'column',
@@ -1017,9 +1063,9 @@ export default function DashboardPage() {
               flexDirection: 'column',
               gap: '0.75rem',
               background: 'rgba(3, 7, 16, 0.45)',
-              padding: '1rem',
-              borderRadius: '10px',
-              border: '1px solid rgba(45, 212, 191, 0.1)',
+              padding: '1.1rem',
+              borderRadius: '12px',
+              border: '1px solid rgba(45, 212, 191, 0.12)',
               position: 'relative',
               zIndex: 2,
             }}
@@ -1055,7 +1101,7 @@ export default function DashboardPage() {
           <div
             style={{
               padding: '1rem',
-              borderRadius: '8px',
+              borderRadius: '10px',
               background: 'rgba(45, 212, 191, 0.08)',
               border: '1px solid rgba(45, 212, 191, 0.22)',
               position: 'relative',
@@ -1079,30 +1125,25 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Export Actions */}
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.6rem', position: 'relative', zIndex: 2 }}>
-            <button
-              onClick={() => alert(`Generated Retrieval Route Vector for ${selectedTarget.code}`)}
+          {/* Export Actions with Magnetic Buttons */}
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '0.65rem', position: 'relative', zIndex: 2 }}>
+            <MagneticButton
+              onClick={() => triggerToast(`Exported ${selectedTarget.code} GeoJSON Recovery Vector`)}
               style={{
-                padding: '0.75rem',
-                borderRadius: '6px',
-                background: '#2dd4bf',
-                color: '#02050e',
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.8rem',
-                fontWeight: 700,
-                border: 'none',
-                cursor: 'pointer',
+                width: '100%',
+                padding: '0.8rem',
+                fontSize: '0.82rem',
               }}
             >
               Export Recovery Plan (.GeoJSON)
-            </button>
+            </MagneticButton>
 
             <button
-              onClick={() => alert('Broadcasting hazard coordinates to NOAA / Coast Guard maritime feed.')}
+              onClick={() => triggerToast('Maritime Broadcast Sent to NOAA / USCG Emergency Feed')}
+              className="solid-panel"
               style={{
                 padding: '0.75rem',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 background: 'rgba(255, 255, 255, 0.04)',
                 color: '#e2eaf4',
                 fontFamily: 'var(--font-display)',

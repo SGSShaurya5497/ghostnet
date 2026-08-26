@@ -22,11 +22,16 @@ export default function CTASection() {
         trigger: sectionRef.current,
         start: 'top 75%',
         onEnter: () => {
-          gsap.fromTo(animatables,
+          gsap.fromTo(
+            animatables,
             { opacity: 0, y: 35, filter: 'blur(8px)' },
             {
-              opacity: 1, y: 0, filter: 'blur(0px)',
-              duration: 1.0, ease: 'expo.out', stagger: 0.18,
+              opacity: 1,
+              y: 0,
+              filter: 'blur(0px)',
+              duration: 1.0,
+              ease: 'expo.out',
+              stagger: 0.18,
             }
           );
         },
@@ -45,21 +50,23 @@ export default function CTASection() {
 
     // 1. Button glow burst
     tl.to(buttonRef.current, {
-      boxShadow: '0 0 100px rgba(45,212,191,1), 0 0 200px rgba(45,212,191,0.5)',
+      boxShadow: '0 0 100px rgba(45,212,191,1), 0 0 200px rgba(45,212,191,0.6)',
       scale: 1.06,
       duration: 0.25,
       ease: 'power2.out',
     });
 
     // 2. Teal wipe rises from bottom — like surfacing through water
-    tl.fromTo(wipeRef.current,
+    tl.fromTo(
+      wipeRef.current,
       { y: '102%' },
       { y: '0%', duration: 0.9, ease: 'expo.inOut' },
       '+=0.05'
     );
 
     // 3. Overlay brightens as it "breaks surface" — white flash
-    tl.fromTo(wipeOverlayRef.current,
+    tl.fromTo(
+      wipeOverlayRef.current,
       { opacity: 0 },
       { opacity: 1, duration: 0.4, ease: 'power2.in' },
       '-=0.25'
@@ -84,24 +91,32 @@ export default function CTASection() {
           position: 'relative',
         }}
       >
-        {/* Dark vignette — draws focus inward */}
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: 'radial-gradient(ellipse 65% 65% at 50% 50%, rgba(2,8,16,0.1) 0%, rgba(2,8,16,0.72) 100%)',
-          pointerEvents: 'none',
-        }} />
+        {/* Dark vignette */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'radial-gradient(ellipse 65% 65% at 50% 50%, rgba(2,8,16,0.1) 0%, rgba(2,8,16,0.75) 100%)',
+            pointerEvents: 'none',
+          }}
+        />
 
-        {/* Large teal ambient orb behind button */}
-        <div style={{
-          position: 'absolute',
-          top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'min(600px, 70vw)', height: 'min(600px, 70vw)',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(45,212,191,0.07) 0%, transparent 70%)',
-          pointerEvents: 'none',
-          animation: 'glow-pulse 4s ease-in-out infinite',
-        }} />
+        {/* Ambient Orb */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 'min(650px, 75vw)',
+            height: 'min(650px, 75vw)',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(45,212,191,0.08) 0%, transparent 70%)',
+            pointerEvents: 'none',
+            animation: 'glow-pulse 4s ease-in-out infinite',
+          }}
+        />
 
         <div style={{ position: 'relative', zIndex: 1 }}>
           {/* Micro-copy */}
@@ -114,23 +129,23 @@ export default function CTASection() {
               fontWeight: 600,
               letterSpacing: '0.24em',
               textTransform: 'uppercase',
-              color: 'rgba(45,212,191,0.6)',
+              color: 'rgba(45,212,191,0.7)',
               marginBottom: '2rem',
             }}
           >
             This is where it becomes real.
           </p>
 
-          {/* The button */}
+          {/* Master CTA Button */}
           <button
             ref={buttonRef}
             id="enter-dashboard-btn"
-            className="cta-item glass-button"
+            className="cta-item ultra-glass-btn ripple-container"
             onClick={handleClick}
             style={{
               opacity: 0,
-              padding: '1.25rem 3.6rem',
-              fontSize: 'clamp(1.1rem, 2.8vw, 1.4rem)',
+              padding: '1.35rem 4.2rem',
+              fontSize: 'clamp(1.15rem, 2.8vw, 1.45rem)',
               willChange: 'transform, box-shadow',
             }}
           >
@@ -143,7 +158,7 @@ export default function CTASection() {
             style={{
               opacity: 0,
               marginTop: '2rem',
-              color: 'rgba(226,234,244,0.3)',
+              color: 'rgba(226,234,244,0.4)',
               fontSize: '0.85rem',
               fontFamily: 'var(--font-body)',
               letterSpacing: '0.05em',
@@ -162,38 +177,40 @@ export default function CTASection() {
                 <path
                   key={i}
                   d={`M50 48 A${r} ${r} 0 0 0 50 ${48 - r * 2 + 2}`}
-                  stroke={`rgba(45,212,191,${0.12 + i * 0.06})`}
-                  strokeWidth="1"
+                  stroke={`rgba(45,212,191,${0.14 + i * 0.07})`}
+                  strokeWidth="1.2"
                   fill="none"
                   strokeLinecap="round"
                 />
               ))}
-              <circle cx="50" cy="46" r="2.5" fill="#2dd4bf" opacity="0.65" />
+              <circle cx="50" cy="46" r="2.5" fill="#2dd4bf" opacity="0.8" />
             </svg>
           </div>
         </div>
       </section>
 
-      {/* ── Wipe transition overlay ───────────────────────────────────────── */}
-      {/* Starts off-screen below; sweeps up on CTA click */}
+      {/* ── Wipe transition overlay ── */}
       <div
         ref={wipeRef}
         aria-hidden="true"
         style={{
-          position: 'fixed', inset: 0, zIndex: 9998,
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9998,
           background: 'linear-gradient(180deg, #0d9488 0%, #2dd4bf 50%, #5eead4 100%)',
           transform: 'translateY(102%)',
           pointerEvents: 'none',
           willChange: 'transform',
         }}
       />
-      {/* White flash on top of the teal wipe */}
       <div
         ref={wipeOverlayRef}
         aria-hidden="true"
         style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(255,255,255,0.9)',
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          background: 'rgba(255,255,255,0.95)',
           opacity: 0,
           pointerEvents: 'none',
           willChange: 'opacity',

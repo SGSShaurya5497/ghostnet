@@ -101,11 +101,19 @@ function StatRow({ stat, index }: { stat: typeof STATS[0]; index: number }) {
     return () => { appear.kill(); };
   }, [stat, index]);
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!rowRef.current) return;
+    const rect = rowRef.current.getBoundingClientRect();
+    rowRef.current.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    rowRef.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  };
+
   return (
     <div
       ref={rowRef}
       id={stat.id}
-      className="solid-panel"
+      onMouseMove={handleMouseMove}
+      className="solid-panel mouse-spotlight"
       style={{
         opacity: 0,
         display: 'grid',
@@ -120,6 +128,7 @@ function StatRow({ stat, index }: { stat: typeof STATS[0]; index: number }) {
         willChange: 'transform, opacity',
         position: 'relative',
         overflow: 'hidden',
+        cursor: 'default',
       }}
     >
       {/* Subtle background glow on hover */}
@@ -351,17 +360,23 @@ export default function ProblemSection() {
           {WHY_PANELS.map((p) => (
             <div
               key={p.id} id={p.id}
-              className="why-panel solid-panel"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+                e.currentTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+              }}
+              className="why-panel solid-panel mouse-spotlight"
               style={{
                 opacity: 0,
-                padding: '2rem 1.75rem',
-                borderRadius: '12px',
+                padding: '2.2rem 1.85rem',
+                borderRadius: '14px',
                 background: '#060b16',
-                border: '1px solid rgba(45,212,191,0.12)',
-                borderTop: '2px solid rgba(45,212,191,0.55)',
+                border: '1px solid rgba(45,212,191,0.14)',
+                borderTop: '2px solid rgba(45,212,191,0.65)',
                 willChange: 'transform, opacity, scale',
                 position: 'relative',
                 overflow: 'hidden',
+                cursor: 'default',
               }}
             >
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '60px', background: 'linear-gradient(to bottom, rgba(45,212,191,0.05), transparent)', pointerEvents: 'none' }} />
