@@ -1,30 +1,215 @@
-# GhostNet 🌊
+﻿# GhostNet 🌊
 
-**Marine debris (ghost net) detection via side-scan sonar imagery — computer vision pipeline.**
+> **Marine debris (ghost net) detection via side-scan sonar imagery — end-to-end computer vision pipeline for SIH.**
+
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js%2014-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![PyTorch](https://img.shields.io/badge/ML-YOLOv8%20%2B%20PyTorch-EE4C2C?style=for-the-badge&logo=pytorch)](https://pytorch.org/)
+[![Hugging Face](https://img.shields.io/badge/Model-Hugging%20Face-FFD21E?style=for-the-badge&logo=huggingface)](https://huggingface.co/zzephyrr/GhostNetyolo26m)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000?style=for-the-badge&logo=vercel)](https://vercel.com/)
+[![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render)](https://render.com/)
+
+---
+
+## 📐 System Architecture
+
+```mermaid
+flowchart LR
+    subgraph CLIENT["🖥️ CLIENT — Vercel (Next.js 14)"]
+        direction TB
+        A1["📄 Landing Page /"]
+        A2["📊 Dashboard /dashboard"]
+        A3["🔍 Detection UI /detect"]
+        A4["🗺️ Map View /map"]
+        A5["📋 Reports /reports"]
+        A1 --> A2
+        A2 --> A3
+        A2 --> A4
+        A2 --> A5
+    end
+
+    subgraph API["⚡ API LAYER — Render (FastAPI + Docker)"]
+        direction TB
+        B1["POST /api/v1/upload — Sonar Frame Ingestion"]
+        B2["POST /api/v1/detect — Direct Detect"]
+        B3["POST /api/v1/detect/{frame_id} — Detect by ID"]
+        B4["GET /api/v1/reports — Report History"]
+        B5["GET /health — Health Check"]
+    end
+
+    subgraph CORE["🧠 BACKEND CORE"]
+        direction TB
+        C1["🖼️ Preprocessing — load + sonar enhancement"]
+        C2["🔬 Detection Service — severity · bbox · geo-tag"]
+        C3["📦 Frame Store — in-memory cache"]
+        C4["📊 Analytics Service — hotspot · risk · survey"]
+    end
+
+    subgraph ML["🤖 ML INFERENCE — YOLO Model Manager"]
+        direction TB
+        D1["🏋️ YOLOModelManager Singleton"]
+        D3["📁 Local Weights — model_weights/best.pt"]
+        D2["☁️ Hugging Face Hub — zzephyrr/GhostNetyolo26m"]
+        D1 -->|"1st: local"| D3
+        D1 -->|"fallback: download"| D2
+    end
+
+    subgraph STORE["☁️ MODEL STORAGE"]
+        E1["🤗 HF Repo — best.pt weights"]
+    end
+
+    CLIENT -->|"HTTPS + JSON — CORS Controlled"| API
+    API --> CORE
+    CORE --> ML
+    D2 --> E1
+
+    style CLIENT fill:#0f172a,color:#38bdf8,stroke:#38bdf8,stroke-width:2px
+    style API fill:#0f172a,color:#a78bfa,stroke:#a78bfa,stroke-width:2px
+    style CORE fill:#0f172a,color:#34d399,stroke:#34d399,stroke-width:2px
+    style ML fill:#0f172a,color:#fb923c,stroke:#fb923c,stroke-width:2px
+    style STORE fill:#0f172a,color:#f472b6,stroke:#f472b6,stroke-width:2px
+```
+
+---
+
+## 🧠 Model Architecture — YOLOv8 Inference Pipeline
+
+```mermaid
+flowchart LR
+    subgraph INPUT["📥 INPUT"]
+        I1["🖼️ Sonar Image — .png / .jpg / .tiff"]
+        I2["📡 Sonar Metadata — range_m · freq_kHz"]
+        I3["🌍 GeoPoint — lat · lon · depth_m"]
+    end
+
+    subgraph PREPROCESS["🔧 PREPROCESSING"]
+        P1["📂 load_image_from_bytes — Decode to NumPy RGB"]
+        P2["✨ apply_sonar_enhancement — Contrast · Denoise · Norm"]
+        P3["📐 Resize to imgsz=640 — Letterbox padding"]
+        P1 --> P2 --> P3
+    end
+
+    subgraph MODEL["🤖 YOLOv8 MODEL — GhostNetyolo26m · best.pt"]
+        direction TB
+        M1["🏗️ Backbone — CSPDarkNet + C2f blocks — Feature Extraction"]
+        M2["🔗 Neck — PAFPN — Path Aggregation — Multi-scale Fusion"]
+        M3["🎯 Head — Anchor-Free Detection — conf=0.25 · iou=0.45"]
+        M1 --> M2 --> M3
+    end
+
+    subgraph POSTPROCESS["📤 POST-PROCESSING"]
+        Q1["📦 BBox Decode — xyxy to pixel coords — clip to bounds"]
+        Q2["🏷️ Class Assignment — ghost_net · rope · trawl_door · debris_patch"]
+        Q3["⚖️ Severity — CRITICAL ≥0.9+50m² · HIGH ≥0.7+10m² · MEDIUM ≥0.5 · LOW"]
+        Q4["📏 Area Estimation — bbox_ratio × range_m² × 0.1"]
+        Q1 --> Q2 --> Q3
+        Q1 --> Q4 --> Q3
+    end
+
+    subgraph OUTPUT["📊 OUTPUT — DetectionResponse"]
+        R1["🆔 Detection ID — det_xxxx"]
+        R2["📦 BoundingBox — x_min · y_min · x_max · y_max"]
+        R3["💯 Confidence Score — 0.0 to 1.0"]
+        R4["🚨 Severity — CRITICAL · HIGH · MEDIUM · LOW"]
+        R5["🌍 GeoTagged Location — lat · lon · depth"]
+        R6["⏱️ Processing Time — ms"]
+    end
+
+    INPUT --> PREPROCESS
+    PREPROCESS --> MODEL
+    MODEL --> POSTPROCESS
+    POSTPROCESS --> OUTPUT
+
+    style INPUT fill:#0f172a,color:#38bdf8,stroke:#38bdf8,stroke-width:2px
+    style PREPROCESS fill:#0f172a,color:#a78bfa,stroke:#a78bfa,stroke-width:2px
+    style MODEL fill:#0f172a,color:#fb923c,stroke:#fb923c,stroke-width:2px
+    style POSTPROCESS fill:#0f172a,color:#34d399,stroke:#34d399,stroke-width:2px
+    style OUTPUT fill:#0f172a,color:#f472b6,stroke:#f472b6,stroke-width:2px
+```
+
+---
+
+## 🏗️ Monorepo Structure
+
+```
+ghostnet/
+├── frontend/              # Next.js 14 (App Router, TypeScript) → Vercel
+│   ├── app/               # Pages & routing
+│   ├── components/        # UI components
+│   └── lib/api.ts         # TypeScript API client
+│
+├── backend/               # FastAPI + YOLO → Render (Docker)
+│   └── app/
+│       ├── api/routes/    # detect · upload · reports · health
+│       ├── core/          # config · preprocessing
+│       ├── models/        # YOLOModelManager (inference.py)
+│       ├── schemas/       # Pydantic models (Detection, BBox, GeoPoint…)
+│       └── services/      # DetectionService · AnalyticsService
+│
+├── ml/                    # Training pipeline (NOT deployed)
+│   ├── train.py
+│   ├── export_onnx.py
+│   └── notebooks/
+│
+├── features/              # Feature analytics modules
+│   ├── anomaly_alerts.py
+│   ├── cleanup_priority.py
+│   ├── depth_analysis.py
+│   ├── hotspot_detection.py
+│   ├── map_data.py
+│   ├── report_generator.py
+│   ├── risk_scoring.py
+│   ├── route_planning.py
+│   ├── survey_analytics.py
+│   └── survey_comparison.py
+│
+├── shared/                # Cross-boundary type definitions
+│   └── detection-schema.json
+│
+└── docs/
+    └── api-schema.md      ← single source of truth for Detection shape
+```
 
 | Layer | Tech | Deploys to |
 |---|---|---|
 | Frontend | Next.js 14 (App Router, TypeScript) | Vercel |
-| Backend | FastAPI + ONNX Runtime | Render (Docker) |
-| ML | PyTorch training pipeline | Local / Colab |
+| Backend | FastAPI + Ultralytics YOLO | Render (Docker) |
+| ML Training | PyTorch + YOLOv8 | Local / Colab |
+| Model Hosting | Hugging Face Hub (`zzephyrr/GhostNetyolo26m`) | HF Cloud |
 
 ---
 
-## Monorepo Structure
+## 🔌 API Reference
 
-```
-ghostnet/
-├── frontend/         # Next.js — Vercel root directory
-├── backend/          # FastAPI — Render root directory
-├── ml/               # Training-only, NOT deployed
-├── shared/           # Cross-boundary type definitions
-└── docs/
-    └── api-schema.md  ← single source of truth for Detection shape
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Health check — returns model load status |
+| `POST` | `/api/v1/upload` | Upload sonar image → returns `frame_id` |
+| `POST` | `/api/v1/detect` | Upload + detect in a single request |
+| `POST` | `/api/v1/detect/{frame_id}` | Detect on a previously uploaded frame |
+| `GET` | `/api/v1/reports` | List historical detection reports |
+
+### Detection Labels
+
+| Label | Description |
+|---|---|
+| `ghost_net` | Abandoned fishing nets |
+| `rope` | Loose rope / monofilament line |
+| `trawl_door` | Trawl net doors / otter boards |
+| `debris_patch` | General marine debris cluster |
+
+### Severity Levels
+
+| Severity | Confidence | Estimated Area |
+|---|---|---|
+| 🔴 `CRITICAL` | ≥ 0.90 | ≥ 50 m² |
+| 🟠 `HIGH` | ≥ 0.70 | ≥ 10 m² |
+| 🟡 `MEDIUM` | ≥ 0.50 | any |
+| 🟢 `LOW` | < 0.50 | any |
 
 ---
 
-## Local Development
+## 💻 Local Development
 
 ### Prerequisites
 
@@ -68,15 +253,16 @@ Open `http://localhost:3000` — landing page, then `http://localhost:3000/dashb
 
 ---
 
-## Deployment
+## 🚀 Deployment
 
 ### Backend → Render
 
 1. Connect the **`ghostnet/backend`** subdirectory as the Render root directory (or use `render.yaml`).
 2. Choose **Docker** as the environment — **not** the Python buildpack.
 3. Set these env vars in Render dashboard:
-   - `ALLOWED_ORIGINS` = `https://your-app.vercel.app` (update after Vercel deploy)
-   - `MODEL_DOWNLOAD_URL` = URL to your `.onnx` file (GitHub release / GCS / S3)
+   - `ALLOWED_ORIGINS` = `https://your-app.vercel.app`
+   - `MODEL_REPO` = `zzephyrr/GhostNetyolo26m`
+   - `MODEL_FILENAME` = `best.pt`
    - `ENVIRONMENT` = `production`
 4. Render will use `backend/Dockerfile` automatically.
 5. Add health check path: `/health`.
@@ -94,19 +280,19 @@ Open `http://localhost:3000` — landing page, then `http://localhost:3000/dashb
 
 ---
 
-## Model Weights
+## 🧪 Model Weights
 
-Model weights (`.onnx`) are **not committed to git** — Render has repo size limits.
+Model weights (`best.pt`) are hosted on **Hugging Face** at [`zzephyrr/GhostNetyolo26m`](https://huggingface.co/zzephyrr/GhostNetyolo26m) — not committed to git.
 
-Options:
-1. **Git LFS**: `git lfs track "*.onnx"` — then commit normally
-2. **Download script**: set `MODEL_DOWNLOAD_URL` env var; the backend downloads on first boot via `app/models/inference.py`
+The backend `YOLOModelManager` automatically:
+1. Checks for `model_weights/best.pt` locally first
+2. Falls back to downloading from Hugging Face on first boot
 
-Training pipeline lives in `ml/` — run `ml/export_onnx.py` to produce the weight file, then upload it to your chosen storage.
+Training pipeline lives in `ml/` — run `ml/train.py` to train, then `ml/export_onnx.py` to produce a portable weight file.
 
 ---
 
-## Schema Discipline
+## 📐 Schema Discipline
 
 `docs/api-schema.md` is the **single source of truth** for the `Detection` object.
 
@@ -118,13 +304,13 @@ Whenever a field changes:
 
 ---
 
-## Development Checklist (before first deploy)
+## ✅ Development Checklist (before first deploy)
 
 - [ ] Backend `/health` returns 200
 - [ ] Frontend calls `/health` and shows response
 - [ ] CORS set to `http://localhost:3000` locally
 - [ ] No hardcoded URLs in frontend code (use `NEXT_PUBLIC_API_URL`)
-- [ ] Model weights excluded from git (`.gitignore` covers `.onnx`)
-- [ ] Render env vars configured (without values committed)
+- [ ] Model weights auto-downloading from HF on backend startup
+- [ ] Render env vars configured (`MODEL_REPO`, `MODEL_FILENAME`, `ALLOWED_ORIGINS`)
 - [ ] Vercel env vars configured in dashboard
 - [ ] `ALLOWED_ORIGINS` updated to real Vercel URL after first deploy
