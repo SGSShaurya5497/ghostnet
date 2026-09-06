@@ -1,4 +1,4 @@
-﻿# GhostNet 🌊
+# GhostNet 🌊
 
 > **Marine debris (ghost net) detection via side-scan sonar imagery — end-to-end computer vision pipeline for SIH.**
 
@@ -14,48 +14,33 @@
 ## 📐 System Architecture
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph CLIENT["🖥️ CLIENT — Vercel (Next.js 14)"]
-        direction TB
-        A1["📄 Landing Page /"]
-        A2["📊 Dashboard /dashboard"]
-        A3["🔍 Detection UI /detect"]
-        A4["🗺️ Map View /map"]
-        A5["📋 Reports /reports"]
-        A1 --> A2
-        A2 --> A3
-        A2 --> A4
-        A2 --> A5
+        direction LR
+        A1["📄 Landing /"] --> A2["📊 Dashboard"]
+        A2 --> A3["🔍 Detect"]
+        A2 --> A4["🗺️ Map"]
+        A2 --> A5["📋 Reports"]
     end
 
     subgraph API["⚡ API LAYER — Render (FastAPI + Docker)"]
-        direction TB
-        B1["POST /api/v1/upload — Sonar Frame Ingestion"]
-        B2["POST /api/v1/detect — Direct Detect"]
-        B3["POST /api/v1/detect/{frame_id} — Detect by ID"]
-        B4["GET /api/v1/reports — Report History"]
-        B5["GET /health — Health Check"]
+        direction LR
+        B1["POST /upload"] & B2["POST /detect"] & B3["POST /detect/id"] & B4["GET /reports"] & B5["GET /health"]
     end
 
     subgraph CORE["🧠 BACKEND CORE"]
-        direction TB
-        C1["🖼️ Preprocessing — load + sonar enhancement"]
-        C2["🔬 Detection Service — severity · bbox · geo-tag"]
-        C3["📦 Frame Store — in-memory cache"]
-        C4["📊 Analytics Service — hotspot · risk · survey"]
+        direction LR
+        C1["🖼️ Preprocessing"] & C2["🔬 Detection Svc"] & C3["📦 Frame Store"] & C4["📊 Analytics Svc"]
     end
 
     subgraph ML["🤖 ML INFERENCE — YOLO Model Manager"]
-        direction TB
-        D1["🏋️ YOLOModelManager Singleton"]
-        D3["📁 Local Weights — model_weights/best.pt"]
-        D2["☁️ Hugging Face Hub — zzephyrr/GhostNetyolo26m"]
-        D1 -->|"1st: local"| D3
-        D1 -->|"fallback: download"| D2
+        direction LR
+        D1["🏋️ YOLOModelManager"] -->|"1st: local"| D3["📁 Local Weights"]
+        D1 -->|"fallback"| D2["☁️ Hugging Face Hub"]
     end
 
     subgraph STORE["☁️ MODEL STORAGE"]
-        E1["🤗 HF Repo — best.pt weights"]
+        E1["🤗 HF Repo — best.pt"]
     end
 
     CLIENT -->|"HTTPS + JSON — CORS Controlled"| API
@@ -75,44 +60,31 @@ flowchart LR
 ## 🧠 Model Architecture — YOLOv8 Inference Pipeline
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph INPUT["📥 INPUT"]
-        I1["🖼️ Sonar Image — .png / .jpg / .tiff"]
-        I2["📡 Sonar Metadata — range_m · freq_kHz"]
-        I3["🌍 GeoPoint — lat · lon · depth_m"]
+        direction LR
+        I1["🖼️ Sonar Image"] & I2["📡 Sonar Metadata"] & I3["🌍 GeoPoint — lat · lon · depth_m"]
     end
 
     subgraph PREPROCESS["🔧 PREPROCESSING"]
-        P1["📂 load_image_from_bytes — Decode to NumPy RGB"]
-        P2["✨ apply_sonar_enhancement — Contrast · Denoise · Norm"]
-        P3["📐 Resize to imgsz=640 — Letterbox padding"]
-        P1 --> P2 --> P3
+        direction LR
+        P1["📂 Decode → NumPy RGB"] --> P2["✨ Sonar Enhancement"] --> P3["📐 Resize 640px Letterbox"]
     end
 
-    subgraph MODEL["🤖 YOLOv8 MODEL — GhostNetyolo26m · best.pt"]
-        direction TB
-        M1["🏗️ Backbone — CSPDarkNet + C2f blocks — Feature Extraction"]
-        M2["🔗 Neck — PAFPN — Path Aggregation — Multi-scale Fusion"]
-        M3["🎯 Head — Anchor-Free Detection — conf=0.25 · iou=0.45"]
-        M1 --> M2 --> M3
+    subgraph MODEL["🤖 YOLOv8 — GhostNetyolo26m · best.pt"]
+        direction LR
+        M1["🏗️ Backbone — CSPDarkNet + C2f"] --> M2["🔗 Neck — PAFPN"] --> M3["🎯 Head — conf=0.25 · iou=0.45"]
     end
 
     subgraph POSTPROCESS["📤 POST-PROCESSING"]
-        Q1["📦 BBox Decode — xyxy to pixel coords — clip to bounds"]
-        Q2["🏷️ Class Assignment — ghost_net · rope · trawl_door · debris_patch"]
-        Q3["⚖️ Severity — CRITICAL ≥0.9+50m² · HIGH ≥0.7+10m² · MEDIUM ≥0.5 · LOW"]
-        Q4["📏 Area Estimation — bbox_ratio × range_m² × 0.1"]
-        Q1 --> Q2 --> Q3
-        Q1 --> Q4 --> Q3
+        direction LR
+        Q1["📦 BBox Decode"] --> Q2["🏷️ Class Assignment"] --> Q3["⚖️ Severity Calc"]
+        Q1 --> Q4["📏 Area Estimate"] --> Q3
     end
 
     subgraph OUTPUT["📊 OUTPUT — DetectionResponse"]
-        R1["🆔 Detection ID — det_xxxx"]
-        R2["📦 BoundingBox — x_min · y_min · x_max · y_max"]
-        R3["💯 Confidence Score — 0.0 to 1.0"]
-        R4["🚨 Severity — CRITICAL · HIGH · MEDIUM · LOW"]
-        R5["🌍 GeoTagged Location — lat · lon · depth"]
-        R6["⏱️ Processing Time — ms"]
+        direction LR
+        R1["🆔 Det ID"] & R2["📦 BBox"] & R3["💯 Confidence"] & R4["🚨 Severity"] & R5["🌍 GeoTag"] & R6["⏱️ Time ms"]
     end
 
     INPUT --> PREPROCESS
