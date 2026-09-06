@@ -1,13 +1,18 @@
-# Render service config — build command, start command, env var names (no values)
-# services:
-#   - type: web
-#     name: ghostnet-backend
-#     env: docker
-#     dockerfilePath: ./Dockerfile
-#     buildCommand: ""
-#     startCommand: ""
-#     envVars:
-#       - key: ALLOWED_ORIGINS
-#       - key: MODEL_DOWNLOAD_URL
-#       - key: ENVIRONMENT
-#     healthCheckPath: /health
+services:
+  - type: web
+    name: ghostnet-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: https://ghostnet.vercel.app,http://localhost:3000
+      - key: MODEL_REPO
+        value: zzephyrr/GhostNetyolo26m
+      - key: CONF_THRESHOLD
+        value: 0.25
+      - key: HF_TOKEN
+        sync: false
+    healthCheckPath: /health

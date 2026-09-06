@@ -1,12 +1,26 @@
-# Dockerfile — multi-stage build
-# Installs libgl1 and system deps explicitly (required for OpenCV / onnxruntime)
-# Use Docker on Render, not the Python buildpack
+# Production Dockerfile for GhostNet FastAPI Backend on Render
+FROM python:3.11-slim
 
-# FROM python:3.11-slim AS base
-# RUN apt-get update && apt-get install -y libgl1 libglib2.0-0 && rm -rf /var/lib/apt/lists/*
-# WORKDIR /app
-# COPY requirements.txt .
-# RUN pip install --no-cache-dir -r requirements.txt
-# COPY . .
-# EXPOSE 8000
-# CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Install system dependencies needed for OpenCV and imaging libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install Python dependencies first for caching
+COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Copy backend application code
+COPY . .
+
+# Default port for Render (Render dynamically injects $PORT at runtime)
+ENV PORT=8000
+EXPOSE 8000
+
+# Start Uvicorn bound to 0.0.0.0 and dynamically assigned PORT
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
