@@ -18,18 +18,18 @@ flowchart TB
     subgraph PRESENTATION ["🖥️ CLIENT & API GATEWAY TIER"]
         direction LR
         CLIENT["<b>🖥️ Frontend Client (Vercel)</b><br/><i>Next.js 14 • TypeScript • Tailwind</i><br/>• Sonar Frame Upload & Live Detection UI<br/>• Interactive GIS Map & Debris Hotspots<br/>• Exportable Survey Reports & History"]
-        --> |HTTPS / REST + CORS|
         API["<b>⚡ API Gateway (Render)</b><br/><i>FastAPI • Docker Container</i><br/>• POST /api/v1/upload (Sonar Ingestion)<br/>• POST /api/v1/detect (Direct Detection)<br/>• GET /api/v1/reports & /health Checks"]
+        CLIENT -->|HTTPS / REST + CORS| API
     end
 
     subgraph ENGINE ["🧠 BACKEND & INFERENCE TIER"]
         direction LR
         CORE["<b>🧠 Backend Core Engine</b><br/><i>Python 3.11 • OpenCV • Pydantic</i><br/>• Sonar CLAHE Contrast Enhancement<br/>• Geo-tagging & Bounding Box Logic<br/>• Risk Scoring & Hotspot Analytics"]
-        --> |Tensors & Fallback|
         ML["<b>🤖 ML Inference & Storage</b><br/><i>YOLOv8 • Hugging Face Hub</i><br/>• Singleton YOLOModelManager<br/>• Local Weights: model_weights/best.pt<br/>• Cloud Sync: zzephyrr/GhostNetyolo26m"]
+        CORE -->|Tensors & Fallback| ML
     end
 
-    API ==> |Validated Payload| CORE
+    API ==>|Validated Payload| CORE
 
     style PRESENTATION fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
     style ENGINE fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
@@ -48,18 +48,18 @@ flowchart TB
     subgraph INGESTION ["📥 PHASE 1: PREPROCESSING & FEATURE EXTRACTION"]
         direction LR
         S1["<b>📥 1. Sonar Ingestion & Prep</b><br/><i>Input Pipeline • OpenCV</i><br/>• Side-scan sonar frame (.png / .tiff)<br/>• CLAHE contrast enhancement & denoise<br/>• Resize to 640×640 letterbox tensor"]
-        --> |Preprocessed Tensor|
         S2["<b>🤖 2. YOLOv8 Deep Network</b><br/><i>GhostNetyolo26m • best.pt</i><br/>• <b>Backbone:</b> CSPDarkNet + C2f blocks<br/>• <b>Neck:</b> PAFPN multi-scale aggregation<br/>• <b>Head:</b> Decoupled anchor-free detection"]
+        S1 -->|Preprocessed Tensor| S2
     end
 
     subgraph INFERENCE ["📤 PHASE 2: POST-PROCESSING & STRUCTURED OUTPUT"]
         direction LR
         S3["<b>⚙️ 3. Debris & Severity Engine</b><br/><i>Detection Filtering • Analytics</i><br/>• NMS IoU=0.45, conf_thresh≥0.25<br/>• Area: bbox_ratio × range² × 0.1<br/>• Severity: CRITICAL / HIGH / MED / LOW"]
-        --> |Validated Detections|
         S4["<b>📊 4. Structured API Response</b><br/><i>FastAPI DetectionResponse Schema</i><br/>• Classes: ghost_net, rope, trawl_door<br/>• Normalized bbox (xyxy) & conf score<br/>• Geo-tagged (lat, lon, depth) + latency"]
+        S3 -->|Validated Detections| S4
     end
 
-    S2 ==> |Raw Predictions| S3
+    S2 ==>|Raw Predictions| S3
 
     style INGESTION fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
     style INFERENCE fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
