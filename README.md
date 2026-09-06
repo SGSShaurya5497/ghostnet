@@ -15,28 +15,88 @@
 
 ```mermaid
 flowchart TB
-    subgraph PRESENTATION ["🖥️ CLIENT & API GATEWAY TIER"]
+    %% =======================================================
+    %% GHOSTNET END-TO-END SYSTEM ARCHITECTURE
+    %% =======================================================
+
+    subgraph CLIENT_TIER ["🖥️ CLIENT & PRESENTATION TIER (Vercel)"]
         direction LR
-        CLIENT["<b>🖥️ Frontend Client (Vercel)</b><br/><i>Next.js 14 • TypeScript • Tailwind</i><br/>• Sonar Frame Upload & Live Detection UI<br/>• Interactive GIS Map & Debris Hotspots<br/>• Exportable Survey Reports & History"]
-        API["<b>⚡ API Gateway (Render)</b><br/><i>FastAPI • Docker Container</i><br/>• POST /api/v1/upload (Sonar Ingestion)<br/>• POST /api/v1/detect (Direct Detection)<br/>• GET /api/v1/reports & /health Checks"]
-        CLIENT -->|HTTPS / REST + CORS| API
+        subgraph UI_MODULES ["Next.js 14 App Router (TypeScript + Tailwind CSS)"]
+            direction TB
+            UI1["📄 <b>Landing Page (/)</b><br/>• Hero & Project Mission<br/>• Pipeline Overview & Live Metrics"]
+            UI2["📊 <b>Interactive Dashboard (/dashboard)</b><br/>• Real-time Sonar Telemetry<br/>• Multi-frame Detection Stream"]
+            UI3["🔍 <b>Detection & Inspector UI</b><br/>• Canvas Bounding Box Renderer<br/>• Confidence & Severity Badges"]
+            UI4["🗺️ <b>GIS Spatial Map View</b><br/>• Leaflet Debris Hotspots<br/>• Heatmap & Vessel GPS Markers"]
+            UI5["📋 <b>Survey Reports & History</b><br/>• Exportable Incident Summaries<br/>• Historical Comparison Trends"]
+        end
     end
 
-    subgraph ENGINE ["🧠 BACKEND & INFERENCE TIER"]
-        direction LR
-        CORE["<b>🧠 Backend Core Engine</b><br/><i>Python 3.11 • OpenCV • Pydantic</i><br/>• Sonar CLAHE Contrast Enhancement<br/>• Geo-tagging & Bounding Box Logic<br/>• Risk Scoring & Hotspot Analytics"]
-        ML["<b>🤖 ML Inference & Storage</b><br/><i>YOLOv8 • Hugging Face Hub</i><br/>• Singleton YOLOModelManager<br/>• Local Weights: model_weights/best.pt<br/>• Cloud Sync: zzephyrr/GhostNetyolo26m"]
-        CORE -->|Tensors & Fallback| ML
+    subgraph GATEWAY_TIER ["⚡ API GATEWAY & NETWORKING LAYER (Render Docker)"]
+        direction TB
+        GW["🛡️ <b>FastAPI Application (app.main:app)</b><br/>• Lifespan Model Pre-warming Manager<br/>• CORS Middleware (Strict Origin Control)<br/>• OpenAPI / Swagger Telemetry Docs"]
+        subgraph ENDPOINTS ["REST API v1 Endpoints (/api/v1)"]
+            direction LR
+            EP1["<b>POST /upload</b><br/>Multipart Sonar Image<br/>+ GeoPoint & Metadata"]
+            EP2["<b>POST /detect</b><br/>Direct Upload + Real-time<br/>Inference Pipeline"]
+            EP3["<b>POST /detect/{id}</b><br/>Run Inference on<br/>Cached Frame ID"]
+            EP4["<b>GET /reports</b><br/>List Incident Reports<br/>+ Pagination Filter"]
+            EP5["<b>GET /health</b><br/>Liveness Probe &<br/>Model Ready Status"]
+        end
+        GW --- ENDPOINTS
     end
 
-    API ==>|Validated Payload| CORE
+    subgraph CORE_TIER ["🧠 BACKEND CORE & ANALYTICS ENGINE"]
+        direction TB
+        subgraph PREPROC ["Image Preprocessing Engine (app.core.preprocessing)"]
+            direction LR
+            PP1["<b>load_image_from_bytes()</b><br/>• OpenCV Buffer Decode<br/>• BGR to RGB Conversion"]
+            --> PP2["<b>apply_sonar_enhancement()</b><br/>• RGB to LAB Color Conversion<br/>• CLAHE on L-Channel (clipLimit=2.0)<br/>• Acoustic Shadow Highlight"]
+        end
 
-    style PRESENTATION fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
-    style ENGINE fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
-    style CLIENT fill:#0d1b2a,stroke:#38bdf8,stroke-width:2px,color:#f1f5f9
-    style API fill:#0d1b2a,stroke:#a78bfa,stroke-width:2px,color:#f1f5f9
-    style CORE fill:#0d1b2a,stroke:#34d399,stroke-width:2px,color:#f1f5f9
-    style ML fill:#0d1b2a,stroke:#fb923c,stroke-width:2px,color:#f1f5f9
+        subgraph SVCS ["Domain Services & Caches (app.services)"]
+            direction LR
+            DS["🔬 <b>DetectionService</b><br/>• In-Memory FrameStore Cache<br/>• Coordinate BBox Clipping<br/>• Area Proxy Calc (range_m²)<br/>• Severity Decision Engine"]
+            AN["📊 <b>Analytics & Features</b><br/>• DBSCAN Hotspot Clustering<br/>• Multi-factor Risk Scoring<br/>• ROV Cleanup Route Optimizer<br/>• Depth & Anomaly Analytics"]
+        end
+    end
+
+    subgraph ML_TIER ["🤖 ML INFERENCE & MODEL WEIGHTS MANAGEMENT"]
+        direction TB
+        YMM["🏋️ <b>YOLOModelManager (Singleton Pattern)</b><br/>• Lazy Loader & Thread-safe Singleton<br/>• Dynamic Confidence & IoU Overrides<br/>• PyTorch & Ultralytics Inference Engine"]
+        
+        subgraph STORAGE ["Dual-Tier Weight Resolution"]
+            direction LR
+            LOCAL["📁 <b>Local Cache Check</b><br/>backend/model_weights/best.pt<br/><i>(Primary Resolution)</i>"]
+            HF["☁️ <b>Hugging Face Hub</b><br/>hf_hub_download()<br/>Repo: zzephyrr/GhostNetyolo26m<br/><i>(Automatic Fallback)</i>"]
+        end
+        YMM --> LOCAL
+        LOCAL -.->|Missing? Auto-download| HF
+    end
+
+    %% Flow Connections
+    CLIENT_TIER ==>|HTTPS / REST API + JSON Payload| GATEWAY_TIER
+    ENDPOINTS ==>|Decoded Image Bytes & Geo Metadata| PREPROC
+    PREPROC ==>|Enhanced RGB Image Array| DS
+    DS ==>|predict(enhanced_rgb, conf=0.25)| YMM
+    DS <==|Raw Predictions (xyxy, conf, cls)| YMM
+    DS ==>|Detections & Hotspots| AN
+    DS ==>|DetectionResponse Payload| GW
+    GW ==>|JSON Output (BBox, Conf, Severity, GeoTag)| CLIENT_TIER
+
+    %% Styling Theme
+    classDef clientStyle fill:#0b192c,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef apiStyle fill:#1e1b4b,stroke:#a78bfa,stroke-width:2px,color:#f8fafc;
+    classDef coreStyle fill:#062e24,stroke:#34d399,stroke-width:2px,color:#f8fafc;
+    classDef mlStyle fill:#311506,stroke:#fb923c,stroke-width:2px,color:#f8fafc;
+    classDef storageStyle fill:#3b0724,stroke:#f472b6,stroke-width:2px,color:#f8fafc;
+    classDef subCard fill:#0f172a,stroke:#334155,stroke-width:1px,color:#e2e8f0;
+
+    class CLIENT_TIER clientStyle;
+    class GATEWAY_TIER apiStyle;
+    class CORE_TIER coreStyle;
+    class ML_TIER mlStyle;
+    class STORAGE storageStyle;
+    class UI1,UI2,UI3,UI4,UI5,GW,EP1,EP2,EP3,EP4,EP5,PP1,PP2,DS,AN,YMM,LOCAL,HF subCard;
 ```
 
 ---
@@ -45,28 +105,69 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph INGESTION ["📥 PHASE 1: PREPROCESSING & FEATURE EXTRACTION"]
+    %% =======================================================
+    %% GHOSTNET COMPUTER VISION INFERENCE PIPELINE
+    %% =======================================================
+
+    subgraph STAGE1 ["📥 STAGE 1: MULTI-MODAL SONAR INGESTION"]
         direction LR
-        S1["<b>📥 1. Sonar Ingestion & Prep</b><br/><i>Input Pipeline • OpenCV</i><br/>• Side-scan sonar frame (.png / .tiff)<br/>• CLAHE contrast enhancement & denoise<br/>• Resize to 640×640 letterbox tensor"]
-        S2["<b>🤖 2. YOLOv8 Deep Network</b><br/><i>GhostNetyolo26m • best.pt</i><br/>• <b>Backbone:</b> CSPDarkNet + C2f blocks<br/>• <b>Neck:</b> PAFPN multi-scale aggregation<br/>• <b>Head:</b> Decoupled anchor-free detection"]
-        S1 -->|Preprocessed Tensor| S2
+        IN1["🖼️ <b>Raw Sonar Frame</b><br/>• Format: PNG, JPEG, TIFF<br/>• Acoustic backscatter intensity<br/>• Low-contrast seafloor texture"]
+        IN2["📡 <b>Sonar Telemetry Meta</b><br/>• Slant Range: range_m (e.g. 50m)<br/>• Acoustic Frequency: freq_kHz<br/>• Resolution: pixel_res_m"]
+        IN3["🌍 <b>AUV / Vessel GeoPoint</b><br/>• Latitude & Longitude (WGS84)<br/>• Bathymetric Depth: depth_m<br/>• Timestamp (ISO 8601 UTC)"]
     end
 
-    subgraph INFERENCE ["📤 PHASE 2: POST-PROCESSING & STRUCTURED OUTPUT"]
+    subgraph STAGE2 ["🔧 STAGE 2: ACOUSTIC PREPROCESSING & ENHANCEMENT"]
         direction LR
-        S3["<b>⚙️ 3. Debris & Severity Engine</b><br/><i>Detection Filtering • Analytics</i><br/>• NMS IoU=0.45, conf_thresh≥0.25<br/>• Area: bbox_ratio × range² × 0.1<br/>• Severity: CRITICAL / HIGH / MED / LOW"]
-        S4["<b>📊 4. Structured API Response</b><br/><i>FastAPI DetectionResponse Schema</i><br/>• Classes: ghost_net, rope, trawl_door<br/>• Normalized bbox (xyxy) & conf score<br/>• Geo-tagged (lat, lon, depth) + latency"]
-        S3 -->|Validated Detections| S4
+        PR1["<b>Step 2.1: NumPy Decoding</b><br/>• cv2.imdecode(buffer)<br/>• BGR to RGB colorspace matrix"]
+        --> PR2["<b>Step 2.2: LAB Sonar CLAHE</b><br/>• Convert RGB → LAB space<br/>• CLAHE on L-channel (clip=2.0)<br/>• Highlights acoustic net shadows"]
+        --> PR3["<b>Step 2.3: Letterbox Rescaling</b><br/>• Aspect-ratio preserved resize<br/>• imgsz=640 (stride 32 padded)<br/>• Normalization to [0.0, 1.0]"]
     end
 
-    S2 ==>|Raw Predictions| S3
+    subgraph STAGE3 ["🤖 STAGE 3: DEEP CONVOLUTIONAL INFERENCE (YOLOv8 — GhostNetyolo26m)"]
+        direction TB
+        subgraph NN_INTERNAL ["Deep Feature Extraction & Decoupled Prediction"]
+            direction LR
+            BB["🏗️ <b>CSPDarkNet Backbone</b><br/>• Cross-Stage Partial Network<br/>• C2f Multi-scale Feature Blocks<br/>• SPPF (Spatial Pyramid Pooling)"]
+            --> NK["🔗 <b>PAFPN Fusion Neck</b><br/>• Top-down & Bottom-up Paths<br/>• Multi-scale Acoustic Feature Fusion<br/>• Retains fine netting filament cues"]
+            --> HD["🎯 <b>Anchor-Free Decoupled Head</b><br/>• Separate Regression & Cls branches<br/>• Task-aligned Assigner<br/>• Inference: conf≥0.25, IoU=0.45"]
+        end
+    end
 
-    style INGESTION fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
-    style INFERENCE fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
-    style S1 fill:#0d1b2a,stroke:#38bdf8,stroke-width:2px,color:#f1f5f9
-    style S2 fill:#0d1b2a,stroke:#fb923c,stroke-width:2px,color:#f1f5f9
-    style S3 fill:#0d1b2a,stroke:#34d399,stroke-width:2px,color:#f1f5f9
-    style S4 fill:#0d1b2a,stroke:#f472b6,stroke-width:2px,color:#f1f5f9
+    subgraph STAGE4 ["⚙️ STAGE 4: POST-PROCESSING, HEURISTICS & SEVERITY RULES"]
+        direction LR
+        PO1["<b>Non-Max Suppression (NMS)</b><br/>• Suppress redundant overlaps<br/>• Clip xyxy to image boundary [0, W/H]"]
+        PO2["<b>Acoustic Area Proxy Estimation</b><br/>• bbox_ratio = (w_box × h_box) / (W × H)<br/>• area_m² = bbox_ratio × (range_m)² × 0.1"]
+        PO3["<b>Severity Classification Matrix</b><br/>• 🔴 <b>CRITICAL:</b> Conf ≥ 0.90 & Area ≥ 50 m²<br/>• 🟠 <b>HIGH:</b> Conf ≥ 0.70 & Area ≥ 10 m²<br/>• 🟡 <b>MEDIUM:</b> Conf ≥ 0.50<br/>• 🟢 <b>LOW:</b> Conf < 0.50"]
+        PO1 --> PO2 --> PO3
+    end
+
+    subgraph STAGE5 ["📊 STAGE 5: STRUCTURED OUTPUT & DOWNSTREAM ANALYTICS"]
+        direction LR
+        OUT1["🆔 <b>Detection Object</b><br/>• id: det_xxxx (UUID)<br/>• frame_id: frame_xxxx<br/>• label: ghost_net | rope | trawl_door<br/>• confidence: float (0.00 – 1.00)"]
+        OUT2["📦 <b>Spatial Bounding Box</b><br/>• x_min, y_min, x_max, y_max<br/>• Estimated Area: area_m²<br/>• Severity: CRITICAL / HIGH / MED / LOW"]
+        OUT3["🌍 <b>Geo-Tag & Downstream</b><br/>• GeoPoint: lat, lon, depth_m<br/>• DBSCAN Hotspot Density Map<br/>• ROV Recovery Route Priority Score"]
+    end
+
+    %% Pipeline Flow
+    STAGE1 ==>|Raw Acoustic Stream| STAGE2
+    STAGE2 ==>|640×640 Preprocessed Tensor| STAGE3
+    STAGE3 ==>|Raw Bounding Boxes & Logits| STAGE4
+    STAGE4 ==>|Validated & Scored Detection Set| STAGE5
+
+    %% Styling Theme
+    classDef s1Style fill:#0b192c,stroke:#38bdf8,stroke-width:2px,color:#f8fafc;
+    classDef s2Style fill:#1e1b4b,stroke:#a78bfa,stroke-width:2px,color:#f8fafc;
+    classDef s3Style fill:#311506,stroke:#fb923c,stroke-width:2px,color:#f8fafc;
+    classDef s4Style fill:#062e24,stroke:#34d399,stroke-width:2px,color:#f8fafc;
+    classDef s5Style fill:#3b0724,stroke:#f472b6,stroke-width:2px,color:#f8fafc;
+    classDef cardStyle fill:#0f172a,stroke:#334155,stroke-width:1px,color:#e2e8f0;
+
+    class STAGE1 s1Style;
+    class STAGE2 s2Style;
+    class STAGE3 s3Style;
+    class STAGE4 s4Style;
+    class STAGE5 s5Style;
+    class IN1,IN2,IN3,PR1,PR2,PR3,BB,NK,HD,PO1,PO2,PO3,OUT1,OUT2,OUT3 cardStyle;
 ```
 
 ---
