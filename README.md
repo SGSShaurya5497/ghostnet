@@ -15,44 +15,28 @@
 
 ```mermaid
 flowchart TB
-    subgraph CLIENT["🖥️ CLIENT — Vercel (Next.js 14)"]
+    subgraph PRESENTATION ["🖥️ CLIENT & API GATEWAY TIER"]
         direction LR
-        A1["📄 Landing /"] --> A2["📊 Dashboard"]
-        A2 --> A3["🔍 Detect"]
-        A2 --> A4["🗺️ Map"]
-        A2 --> A5["📋 Reports"]
+        CLIENT["<b>🖥️ Frontend Client (Vercel)</b><br/><i>Next.js 14 • TypeScript • Tailwind</i><br/>• Sonar Frame Upload & Live Detection UI<br/>• Interactive GIS Map & Debris Hotspots<br/>• Exportable Survey Reports & History"]
+        --> |HTTPS / REST + CORS|
+        API["<b>⚡ API Gateway (Render)</b><br/><i>FastAPI • Docker Container</i><br/>• POST /api/v1/upload (Sonar Ingestion)<br/>• POST /api/v1/detect (Direct Detection)<br/>• GET /api/v1/reports & /health Checks"]
     end
 
-    subgraph API["⚡ API LAYER — Render (FastAPI + Docker)"]
+    subgraph ENGINE ["🧠 BACKEND & INFERENCE TIER"]
         direction LR
-        B1["POST /upload"] & B2["POST /detect"] & B3["POST /detect/id"] & B4["GET /reports"] & B5["GET /health"]
+        CORE["<b>🧠 Backend Core Engine</b><br/><i>Python 3.11 • OpenCV • Pydantic</i><br/>• Sonar CLAHE Contrast Enhancement<br/>• Geo-tagging & Bounding Box Logic<br/>• Risk Scoring & Hotspot Analytics"]
+        --> |Tensors & Fallback|
+        ML["<b>🤖 ML Inference & Storage</b><br/><i>YOLOv8 • Hugging Face Hub</i><br/>• Singleton YOLOModelManager<br/>• Local Weights: model_weights/best.pt<br/>• Cloud Sync: zzephyrr/GhostNetyolo26m"]
     end
 
-    subgraph CORE["🧠 BACKEND CORE"]
-        direction LR
-        C1["🖼️ Preprocessing"] & C2["🔬 Detection Svc"] & C3["📦 Frame Store"] & C4["📊 Analytics Svc"]
-    end
+    API ==> |Validated Payload| CORE
 
-    subgraph ML["🤖 ML INFERENCE — YOLO Model Manager"]
-        direction LR
-        D1["🏋️ YOLOModelManager"] -->|"1st: local"| D3["📁 Local Weights"]
-        D1 -->|"fallback"| D2["☁️ Hugging Face Hub"]
-    end
-
-    subgraph STORE["☁️ MODEL STORAGE"]
-        E1["🤗 HF Repo — best.pt"]
-    end
-
-    CLIENT -->|"HTTPS + JSON — CORS Controlled"| API
-    API --> CORE
-    CORE --> ML
-    D2 --> E1
-
-    style CLIENT fill:#0f172a,color:#38bdf8,stroke:#38bdf8,stroke-width:2px
-    style API fill:#0f172a,color:#a78bfa,stroke:#a78bfa,stroke-width:2px
-    style CORE fill:#0f172a,color:#34d399,stroke:#34d399,stroke-width:2px
-    style ML fill:#0f172a,color:#fb923c,stroke:#fb923c,stroke-width:2px
-    style STORE fill:#0f172a,color:#f472b6,stroke:#f472b6,stroke-width:2px
+    style PRESENTATION fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
+    style ENGINE fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
+    style CLIENT fill:#0d1b2a,stroke:#38bdf8,stroke-width:2px,color:#f1f5f9
+    style API fill:#0d1b2a,stroke:#a78bfa,stroke-width:2px,color:#f1f5f9
+    style CORE fill:#0d1b2a,stroke:#34d399,stroke-width:2px,color:#f1f5f9
+    style ML fill:#0d1b2a,stroke:#fb923c,stroke-width:2px,color:#f1f5f9
 ```
 
 ---
@@ -61,42 +45,28 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    subgraph INPUT["📥 INPUT"]
+    subgraph INGESTION ["📥 PHASE 1: PREPROCESSING & FEATURE EXTRACTION"]
         direction LR
-        I1["🖼️ Sonar Image"] & I2["📡 Sonar Metadata"] & I3["🌍 GeoPoint — lat · lon · depth_m"]
+        S1["<b>📥 1. Sonar Ingestion & Prep</b><br/><i>Input Pipeline • OpenCV</i><br/>• Side-scan sonar frame (.png / .tiff)<br/>• CLAHE contrast enhancement & denoise<br/>• Resize to 640×640 letterbox tensor"]
+        --> |Preprocessed Tensor|
+        S2["<b>🤖 2. YOLOv8 Deep Network</b><br/><i>GhostNetyolo26m • best.pt</i><br/>• <b>Backbone:</b> CSPDarkNet + C2f blocks<br/>• <b>Neck:</b> PAFPN multi-scale aggregation<br/>• <b>Head:</b> Decoupled anchor-free detection"]
     end
 
-    subgraph PREPROCESS["🔧 PREPROCESSING"]
+    subgraph INFERENCE ["📤 PHASE 2: POST-PROCESSING & STRUCTURED OUTPUT"]
         direction LR
-        P1["📂 Decode → NumPy RGB"] --> P2["✨ Sonar Enhancement"] --> P3["📐 Resize 640px Letterbox"]
+        S3["<b>⚙️ 3. Debris & Severity Engine</b><br/><i>Detection Filtering • Analytics</i><br/>• NMS IoU=0.45, conf_thresh≥0.25<br/>• Area: bbox_ratio × range² × 0.1<br/>• Severity: CRITICAL / HIGH / MED / LOW"]
+        --> |Validated Detections|
+        S4["<b>📊 4. Structured API Response</b><br/><i>FastAPI DetectionResponse Schema</i><br/>• Classes: ghost_net, rope, trawl_door<br/>• Normalized bbox (xyxy) & conf score<br/>• Geo-tagged (lat, lon, depth) + latency"]
     end
 
-    subgraph MODEL["🤖 YOLOv8 — GhostNetyolo26m · best.pt"]
-        direction LR
-        M1["🏗️ Backbone — CSPDarkNet + C2f"] --> M2["🔗 Neck — PAFPN"] --> M3["🎯 Head — conf=0.25 · iou=0.45"]
-    end
+    S2 ==> |Raw Predictions| S3
 
-    subgraph POSTPROCESS["📤 POST-PROCESSING"]
-        direction LR
-        Q1["📦 BBox Decode"] --> Q2["🏷️ Class Assignment"] --> Q3["⚖️ Severity Calc"]
-        Q1 --> Q4["📏 Area Estimate"] --> Q3
-    end
-
-    subgraph OUTPUT["📊 OUTPUT — DetectionResponse"]
-        direction LR
-        R1["🆔 Det ID"] & R2["📦 BBox"] & R3["💯 Confidence"] & R4["🚨 Severity"] & R5["🌍 GeoTag"] & R6["⏱️ Time ms"]
-    end
-
-    INPUT --> PREPROCESS
-    PREPROCESS --> MODEL
-    MODEL --> POSTPROCESS
-    POSTPROCESS --> OUTPUT
-
-    style INPUT fill:#0f172a,color:#38bdf8,stroke:#38bdf8,stroke-width:2px
-    style PREPROCESS fill:#0f172a,color:#a78bfa,stroke:#a78bfa,stroke-width:2px
-    style MODEL fill:#0f172a,color:#fb923c,stroke:#fb923c,stroke-width:2px
-    style POSTPROCESS fill:#0f172a,color:#34d399,stroke:#34d399,stroke-width:2px
-    style OUTPUT fill:#0f172a,color:#f472b6,stroke:#f472b6,stroke-width:2px
+    style INGESTION fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
+    style INFERENCE fill:#070d1e,stroke:#1e293b,stroke-width:1.5px,color:#94a3b8
+    style S1 fill:#0d1b2a,stroke:#38bdf8,stroke-width:2px,color:#f1f5f9
+    style S2 fill:#0d1b2a,stroke:#fb923c,stroke-width:2px,color:#f1f5f9
+    style S3 fill:#0d1b2a,stroke:#34d399,stroke-width:2px,color:#f1f5f9
+    style S4 fill:#0d1b2a,stroke:#f472b6,stroke-width:2px,color:#f1f5f9
 ```
 
 ---
