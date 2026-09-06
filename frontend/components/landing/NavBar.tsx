@@ -153,7 +153,7 @@ export default function NavBar() {
 
         {/* Action: Enter Dashboard (Ultra Glass Button) */}
         <Link
-          href="/dashboard"
+          href="/startup"
           className="ultra-glass-btn"
           style={{
             fontSize: '0.78rem',
@@ -164,7 +164,7 @@ export default function NavBar() {
             zIndex: 2,
           }}
         >
-          Dashboard
+          Mission Control
         </Link>
       </nav>
     </header>

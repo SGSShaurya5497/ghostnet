@@ -1,1470 +1,639 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import dynamic from 'next/dynamic';
-import CustomCursor from '@/components/ui/CustomCursor';
-import MagneticButton from '@/components/ui/MagneticButton';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Maximize2,
+  Minimize2,
+  Crosshair,
+  Anchor,
+  Ship,
+  Sparkles,
+  ArrowRight,
+  X,
+  RotateCcw,
+  Compass,
+  Activity,
+  ShieldAlert,
+} from "lucide-react";
 
-// Lazy-load SonarConsole (heavy canvas, only rendered when tab active)
-const SonarConsole = dynamic(() => import('@/components/dashboard/SonarConsole'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.78rem', color: 'rgba(45,212,191,0.5)' }}>
-        Initialising sonar pipeline...
-      </span>
-    </div>
-  ),
-});
+export default function MainDashboardInteractive() {
+  const router = useRouter();
 
-interface DetectionTarget {
-  id: string;
-  code: string;
-  lat: string;
-  lon: string;
-  depth: string;
-  confidence: number;
-  area: string;
-  type: string;
-  status: 'Critical' | 'Moderate' | 'Resolved';
-  timestamp: string;
-}
+  // Map & Popup State
+  const [showPopup, setShowPopup] = useState<boolean>(true);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [selectedTarget, setSelectedTarget] = useState<string>("Possible Debris Cluster");
 
-const MOCK_TARGETS: DetectionTarget[] = [
-  {
-    id: '1',
-    code: 'GN-0482',
-    lat: "48°14'22.4\"N",
-    lon: "124°42'18.1\"W",
-    depth: '-142.8m',
-    confidence: 0.964,
-    area: '34.5m x 12.0m',
-    type: 'Monofilament Gillnet',
-    status: 'Critical',
-    timestamp: '12:44:02 UTC',
-  },
-  {
-    id: '2',
-    code: 'GN-0483',
-    lat: "48°15'04.8\"N",
-    lon: "124°40'55.3\"W",
-    depth: '-218.4m',
-    confidence: 0.918,
-    area: '58.0m x 24.5m',
-    type: 'Trawl Webbing Cluster',
-    status: 'Critical',
-    timestamp: '12:41:19 UTC',
-  },
-  {
-    id: '3',
-    code: 'GN-0484',
-    lat: "48°13'49.1\"N",
-    lon: "124°44'02.9\"W",
-    depth: '-98.2m',
-    confidence: 0.887,
-    area: '18.2m x 8.4m',
-    type: 'Longline & Buoy Cluster',
-    status: 'Moderate',
-    timestamp: '12:38:55 UTC',
-  },
-  {
-    id: '4',
-    code: 'GN-0485',
-    lat: "48°16'11.0\"N",
-    lon: "124°39'22.7\"W",
-    depth: '-312.0m',
-    confidence: 0.942,
-    area: '42.0m x 16.8m',
-    type: 'Commercial Purse Seine',
-    status: 'Critical',
-    timestamp: '12:35:10 UTC',
-  },
-  {
-    id: '5',
-    code: 'GN-0486',
-    lat: "48°12'35.2\"N",
-    lon: "124°45'50.1\"W",
-    depth: '-165.7m',
-    confidence: 0.852,
-    area: '14.0m x 9.5m',
-    type: 'Drift Net Segment',
-    status: 'Moderate',
-    timestamp: '12:29:44 UTC',
-  },
-];
+  // Environmental Layer Toggles in Right Sidebar
+  const [layers, setLayers] = useState({
+    vessels: true,
+    anomalies: true,
+    riskZones: true,
+    oceanCurrents: true,
+    windLayer: true,
+  });
 
-// ── Ambient particle canvas ──
-function AmbientParticles() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animId: number;
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const particles = Array.from({ length: 90 }, () => ({
-      x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight,
-      r: Math.random() * 1.8 + 0.6,
-      vx: (Math.random() - 0.5) * 0.32,
-      vy: Math.random() * 0.38 + 0.08,
-      alpha: Math.random() * 0.5 + 0.2,
-    }));
-
-    const render = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#2dd4bf';
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.y > canvas.height) p.y = 0;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        ctx.globalAlpha = p.alpha;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      animId = requestAnimationFrame(render);
-    };
-    render();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
+  const toggleLayer = (key: keyof typeof layers) => {
+    setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        pointerEvents: 'none',
-        zIndex: 0,
-        opacity: 0.45,
-      }}
-    />
-  );
-}
-
-// ── Main Dashboard ──
-export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'map' | 'waterfall' | 'upload' | 'console'>('map');
-  const [selectedTarget, setSelectedTarget] = useState<DetectionTarget>(MOCK_TARGETS[0]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStep, setUploadStep] = useState('Standby');
-  const [isFilterCritical, setIsFilterCritical] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const inspectorRef = useRef<HTMLDivElement>(null);
-
-  // Live UTC clock
-  const [timeUtc, setTimeUtc] = useState('');
-  useEffect(() => {
-    const update = () => setTimeUtc(new Date().toUTCString().slice(17, 25) + ' UTC');
-    update();
-    const iv = setInterval(update, 1000);
-    return () => clearInterval(iv);
-  }, []);
-
-  const triggerToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3200);
-  };
-
-  const handleInspectorMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!inspectorRef.current) return;
-    const rect = inspectorRef.current.getBoundingClientRect();
-    inspectorRef.current.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
-    inspectorRef.current.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
-  };
-
-  const handleSimulatedUpload = () => {
-    setIsUploading(true);
-    setUploadProgress(0);
-    setUploadStep('01 Ingesting Sonar Stream (XTF)...');
-
-    const steps = [
-      { p: 22,  s: '02 De-speckling & Resolution Normalization...' },
-      { p: 48,  s: '03 Slant-range Correction & Nadir Fill...' },
-      { p: 70,  s: '04 YOLO-seg ONNX Inference (CUDA EP)...' },
-      { p: 88,  s: '05 Geotagging & Coordinate Projection...' },
-      { p: 100, s: '06 Complete — 3 New Targets Identified ✓' },
-    ];
-
-    let stepIdx = 0;
-    const interval = setInterval(() => {
-      if (stepIdx < steps.length) {
-        setUploadProgress(steps[stepIdx].p);
-        setUploadStep(steps[stepIdx].s);
-        stepIdx++;
-      } else {
-        clearInterval(interval);
-        setTimeout(() => {
-          setIsUploading(false);
-          triggerToast('Sonar log processed — 3 confirmed ghost nets identified');
-        }, 800);
-      }
-    }, 900);
-  };
-
-  const filteredTargets = isFilterCritical
-    ? MOCK_TARGETS.filter((t) => t.status === 'Critical')
-    : MOCK_TARGETS;
-
-  const TABS = [
-    { key: 'map',       label: 'Bathymetric Map' },
-    { key: 'waterfall', label: 'Sonar Spectrogram' },
-    { key: 'upload',    label: 'Log Preprocessor' },
-    { key: 'console',   label: 'Sonar Console', live: true },
-  ] as const;
-
-  return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background:
-          'radial-gradient(ellipse at 50% 0%, #06162a 0%, #030b16 50%, #010408 100%)',
-        color: '#e8f1fa',
-        fontFamily: 'var(--font-body)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        cursor: 'none',
-      }}
-    >
-      <CustomCursor />
-      <AmbientParticles />
-
-      {/* ── Toast Notification ── */}
-      {toastMessage && (
-        <div
-          className="ultra-glass"
-          style={{
-            position: 'fixed',
-            bottom: '28px',
-            right: '28px',
-            zIndex: 9999,
-            padding: '0.9rem 1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            color: '#2dd4bf',
-            fontFamily: 'var(--font-mono)',
-            fontSize: '0.8rem',
-            animation: 'card-rise 0.4s var(--ease-smooth)',
-            boxShadow: '0 16px 50px rgba(0,0,0,0.85), 0 0 35px rgba(45,212,191,0.3)',
-            borderRadius: '12px',
-            maxWidth: '380px',
-          }}
-        >
-          <span
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#2dd4bf',
-              boxShadow: '0 0 10px #2dd4bf',
-              flexShrink: 0,
-            }}
-          />
-          <span style={{ position: 'relative', zIndex: 2 }}>{toastMessage}</span>
-        </div>
-      )}
-
-      {/* ══ TOP HEADER BAR ══ */}
-      <header
-        style={{
-          height: '66px',
-          padding: '0 clamp(1.5rem, 3vw, 2.5rem)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          position: 'relative',
-          zIndex: 10,
-          background: 'rgba(3, 8, 20, 0.72)',
-          backdropFilter: 'blur(24px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-          borderBottom: '1px solid rgba(45, 212, 191, 0.12)',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Shimmer accent line along the bottom of header */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent 0%, rgba(45,212,191,0.6) 30%, rgba(255,255,255,0.3) 50%, rgba(45,212,191,0.6) 70%, transparent 100%)',
-            opacity: 0.7,
-          }}
-        />
-        {/* Moving shimmer sweep */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '30%',
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-            animation: 'shimmer-line 4s ease-in-out infinite',
-          }}
-        />
-
-        {/* Brand */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <Link
-            href="/"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.65rem',
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.15rem',
-              fontWeight: 800,
-              color: '#ffffff',
-              letterSpacing: '-0.02em',
-              textDecoration: 'none',
-            }}
+    <div className="flex-1 h-full flex overflow-hidden gap-4 select-none">
+      {/* ── CENTER WORKSPACE: INTERACTIVE MAP + 4 BOTTOM CARDS ── */}
+      <main className="flex-1 flex flex-col gap-4 overflow-hidden">
+        {/* Main Tactical Map Canvas Card */}
+        <div className="flex-1 bg-[#060e20] border border-cyan-900/40 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-2xl">
+          {/* Interactive Satellite Oceanic Canvas */}
+          <div
+            className="absolute inset-0 transition-transform duration-300"
+            style={{ transform: `scale(${zoomLevel})` }}
           >
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                border: '1.5px solid #2dd4bf',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 0 14px rgba(45, 212, 191, 0.55)',
-                background: 'rgba(45,212,191,0.07)',
-              }}
+            <svg
+              className="w-full h-full object-cover"
+              viewBox="0 0 1200 600"
+              preserveAspectRatio="xMidYMid slice"
             >
-              <div
-                style={{
-                  width: '7px',
-                  height: '7px',
-                  borderRadius: '50%',
-                  background: '#2dd4bf',
-                  boxShadow: '0 0 8px #2dd4bf',
-                  animation: 'glow-pulse 2s ease-in-out infinite',
+              <defs>
+                {/* Ocean Radial Gradient */}
+                <radialGradient id="oceanCenterGrad" cx="55%" cy="40%" r="65%">
+                  <stop offset="0%" stopColor="#0a2040" />
+                  <stop offset="45%" stopColor="#051329" />
+                  <stop offset="100%" stopColor="#030814" />
+                </radialGradient>
+
+                {/* Hotspot Pulse Gradient */}
+                <radialGradient id="debrisPulseGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.8" />
+                  <stop offset="60%" stopColor="#f43f5e" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
+                </radialGradient>
+
+                {/* Transponder Beacon Gradient */}
+                <radialGradient id="beaconPulseGrad" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#818cf8" stopOpacity="0.9" />
+                  <stop offset="50%" stopColor="#6366f1" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#4338ca" stopOpacity="0" />
+                </radialGradient>
+
+                {/* Landmass Shading */}
+                <linearGradient id="indiaTopoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0d2e2b" />
+                  <stop offset="50%" stopColor="#0b2422" />
+                  <stop offset="100%" stopColor="#081817" />
+                </linearGradient>
+              </defs>
+
+              {/* Ocean Background */}
+              <rect width="1200" height="600" fill="url(#oceanCenterGrad)" />
+
+              {/* Bathymetry Depth Contours */}
+              <g stroke="#083344" strokeWidth="0.75" fill="none" opacity="0.45">
+                <path d="M-50 120 Q 200 180, 450 140 T 900 220 T 1300 160" />
+                <path d="M-50 220 Q 300 320, 600 240 T 1100 340 T 1300 280" />
+                <path d="M-50 350 Q 250 480, 550 380 T 950 490 T 1300 420" />
+                <path d="M100 50 Q 400 90, 700 30 T 1200 80" />
+                <path d="M-50 480 Q 350 560, 750 510 T 1300 580" />
+              </g>
+
+              {/* Indian Subcontinent Landmass Vector */}
+              <g id="landmass" filter="drop-shadow(0 0 10px rgba(13,46,43,0.8))">
+                <path
+                  d="M 520,0 L 590,40 L 640,60 L 690,110 L 740,150 L 700,210 L 670,250 L 630,290 L 600,320 L 590,300 L 580,260 L 560,220 L 520,190 L 480,180 L 450,150 L 420,120 L 470,80 L 500,40 Z"
+                  fill="url(#indiaTopoGrad)"
+                  stroke="#14b8a6"
+                  strokeWidth="1.2"
+                  opacity="0.85"
+                />
+                {/* Coastal Glow */}
+                <path
+                  d="M 520,0 L 590,40 L 640,60 L 690,110 L 740,150 L 700,210 L 670,250 L 630,290 L 600,320 L 590,300 L 580,260 L 560,220 L 520,190 L 480,180 L 450,150 L 420,120 L 470,80 L 500,40 Z"
+                  fill="none"
+                  stroke="#2dd4bf"
+                  strokeWidth="2.5"
+                  opacity="0.3"
+                  className="animate-pulse"
+                />
+                {/* Arabian Peninsula & Horn of Africa Hints */}
+                <path
+                  d="M 120,40 L 220,90 L 260,170 L 220,240 L 160,280 L 110,260 L 80,180 L 60,100 Z"
+                  fill="#061c1a"
+                  stroke="#0f766e"
+                  strokeWidth="1"
+                  opacity="0.6"
+                />
+                {/* Southeast Asia Hints */}
+                <path
+                  d="M 880,120 L 940,180 L 980,270 L 930,340 L 890,300 L 870,220 L 850,160 Z"
+                  fill="#061c1a"
+                  stroke="#0f766e"
+                  strokeWidth="1"
+                  opacity="0.6"
+                />
+                {/* India Label */}
+                <text
+                  x="590"
+                  y="180"
+                  fill="#5eead4"
+                  fontSize="12"
+                  fontWeight="bold"
+                  fontFamily="monospace"
+                  letterSpacing="3"
+                  opacity="0.75"
+                >
+                  INDIA
+                </text>
+              </g>
+
+              {/* Tactical Mesh Network & Coordinate Link Lines */}
+              <g stroke="#06b6d4" strokeWidth="0.8" strokeDasharray="3,4" opacity="0.5">
+                {/* Major routes & sensor baselines */}
+                <line x1="280" y1="280" x2="430" y2="240" />
+                <line x1="430" y1="240" x2="495" y2="205" />
+                <line x1="495" y1="205" x2="630" y2="200" />
+                <line x1="630" y1="200" x2="800" y2="280" />
+                <line x1="430" y1="240" x2="520" y2="350" />
+                <line x1="520" y1="350" x2="630" y2="400" />
+                <line x1="630" y1="400" x2="800" y2="280" />
+                <line x1="430" y1="240" x2="500" y2="480" />
+                <line x1="500" y1="480" x2="630" y2="400" />
+                <line x1="280" y1="280" x2="350" y2="180" />
+                <line x1="350" y1="180" x2="495" y2="205" />
+                <line x1="495" y1="205" x2="400" y2="90" />
+                <line x1="400" y1="90" x2="630" y2="200" />
+              </g>
+
+              {/* Cyan Animated Oceanic Current Trajectory Streamlines */}
+              {layers.oceanCurrents && (
+                <g>
+                  <path
+                    d="M 180,380 C 300,320 400,360 520,350 C 640,340 720,440 850,380"
+                    fill="none"
+                    stroke="#22d3ee"
+                    strokeWidth="2.5"
+                    strokeDasharray="6,8"
+                    opacity="0.85"
+                  >
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      from="100"
+                      to="0"
+                      dur="6s"
+                      repeatCount="indefinite"
+                    />
+                  </path>
+                  <path
+                    d="M 220,190 C 350,220 450,160 580,240 C 700,310 820,240 920,290"
+                    fill="none"
+                    stroke="#06b6d4"
+                    strokeWidth="1.8"
+                    strokeDasharray="4,6"
+                    opacity="0.75"
+                  >
+                    <animate
+                      attributeName="stroke-dashoffset"
+                      from="0"
+                      to="100"
+                      dur="8s"
+                      repeatCount="indefinite"
+                    />
+                  </path>
+                </g>
+              )}
+
+              {/* Concentric Radar Sonar Waves at Active Beacon (South Cluster) */}
+              <g transform="translate(630, 400)">
+                <circle r="60" fill="none" stroke="#6366f1" strokeWidth="1" opacity="0.25" />
+                <circle r="45" fill="none" stroke="#6366f1" strokeWidth="1.2" opacity="0.45" />
+                <circle r="30" fill="none" stroke="#818cf8" strokeWidth="1.5" opacity="0.65" />
+                <circle r="15" fill="none" stroke="#a5b4fc" strokeWidth="2" opacity="0.85" />
+                <circle r="80" fill="url(#beaconPulseGrad)" />
+                {/* Radial Crosshairs */}
+                <line x1="-70" y1="0" x2="70" y2="0" stroke="#818cf8" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3" />
+                <line x1="0" y1="-70" x2="0" y2="70" stroke="#818cf8" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3" />
+                {/* Center Glowing Transponder */}
+                <circle r="5" fill="#ffffff" filter="drop-shadow(0 0 10px #818cf8)" />
+              </g>
+
+              {/* Concentric Radar Waves at Primary Hotspot Target (Arabian Sea) */}
+              <g
+                transform="translate(430, 240)"
+                className="cursor-pointer"
+                onClick={() => {
+                  setShowPopup(true);
+                  setSelectedTarget("Possible Debris Cluster");
                 }}
-              />
-            </div>
-            Ghost<span style={{ color: '#2dd4bf' }}>Net</span>
-          </Link>
+              >
+                <circle r="45" fill="none" stroke="#f43f5e" strokeWidth="1" opacity="0.3" />
+                <circle r="32" fill="none" stroke="#f43f5e" strokeWidth="1.5" opacity="0.55" />
+                <circle r="18" fill="none" stroke="#fb7185" strokeWidth="2" opacity="0.85" />
+                <circle r="55" fill="url(#debrisPulseGrad)" />
+                {/* Center Target Dot */}
+                <circle r="4.5" fill="#ffffff" filter="drop-shadow(0 0 8px #f43f5e)" />
+              </g>
 
-          <div style={{ height: '20px', width: '1px', background: 'rgba(45, 212, 191, 0.18)' }} />
-
-          <span
-            style={{
-              fontFamily: 'var(--font-mono)',
-              fontSize: '0.72rem',
-              color: 'rgba(45, 212, 191, 0.8)',
-              letterSpacing: '0.08em',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.45rem',
-            }}
-          >
-            <span
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                background: '#2dd4bf',
-                boxShadow: '0 0 8px #2dd4bf',
-                animation: 'glow-pulse 2s infinite',
-              }}
-            />
-            AUV-DRONE // LINKED (5.8 GHz)
-          </span>
-        </div>
-
-        {/* Telemetry Status */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.8rem' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.74rem', textAlign: 'right' }}>
-            <span style={{ color: 'rgba(226, 234, 244, 0.4)' }}>UTC: </span>
-            <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{timeUtc}</span>
-          </div>
-
-          <Link
-            href="/"
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.74rem',
-              fontWeight: 600,
-              letterSpacing: '0.05em',
-              color: 'rgba(226, 234, 244, 0.7)',
-              padding: '0.45rem 1.1rem',
-              borderRadius: '8px',
-              textDecoration: 'none',
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(8px)',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            ← Pitch Deck
-          </Link>
-        </div>
-      </header>
-
-      {/* ══ KEY METRICS BAR ══ */}
-      <div
-        style={{
-          padding: '1.1rem clamp(1.5rem, 3vw, 2.5rem)',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
-          gap: '0.85rem',
-          borderBottom: '1px solid rgba(45, 212, 191, 0.08)',
-          background: 'rgba(2, 6, 16, 0.5)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          position: 'relative',
-          zIndex: 5,
-        }}
-      >
-        {[
-          { label: 'Area Scanned',           val: '148.4 km²',   sub: 'Olympic Coast Sector 4' },
-          { label: 'Confirmed Ghost Nets',    val: '18 Targets',  sub: '92.4% Avg Confidence' },
-          { label: 'Critical Entanglements',  val: '7 High Risk', sub: 'Action Vector Ready' },
-          { label: 'Active Sonar Depth',      val: '−248.4 m',    sub: 'Dual-Frequency 455 kHz' },
-        ].map((m, i) => (
-          <div
-            key={i}
-            className="glass-tile mouse-spotlight"
-            style={{ padding: '0.95rem 1.2rem' }}
-          >
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.65rem',
-                color: 'rgba(45, 212, 191, 0.7)',
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                marginBottom: '0.2rem',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              {m.label}
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.3rem',
-                fontWeight: 700,
-                color: '#ffffff',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              {m.val}
-            </div>
-            <div
-              style={{
-                fontSize: '0.7rem',
-                color: 'rgba(226, 234, 244, 0.4)',
-                marginTop: '0.1rem',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              {m.sub}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ══ MAIN WORKSPACE ══ */}
-      <div
-        style={{
-          flex: 1,
-          display: 'grid',
-          gridTemplateColumns: 'minmax(290px, 340px) 1fr minmax(300px, 365px)',
-          gap: '1.1rem',
-          padding: '1.1rem clamp(1.5rem, 3vw, 2.5rem)',
-          overflow: 'hidden',
-          position: 'relative',
-          zIndex: 5,
-          minHeight: 0,
-        }}
-      >
-        {/* ══ LEFT: Targets + Upload trigger ══ */}
-        <div
-          className="glass-sidebar"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.9rem',
-            padding: '1.2rem',
-            minHeight: 0,
-          }}
-        >
-          {/* List header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 2 }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.92rem',
-                fontWeight: 700,
-                color: '#ffffff',
-              }}
-            >
-              Identified Targets ({filteredTargets.length})
-            </div>
-
-            <button
-              onClick={() => setIsFilterCritical(!isFilterCritical)}
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.65rem',
-                padding: '0.32rem 0.65rem',
-                borderRadius: '6px',
-                background: isFilterCritical ? 'rgba(244, 63, 94, 0.18)' : 'rgba(255,255,255,0.04)',
-                border: isFilterCritical ? '1px solid rgba(244, 63, 94, 0.55)' : '1px solid rgba(255,255,255,0.1)',
-                color: isFilterCritical ? '#f43f5e' : 'rgba(226, 234, 244, 0.65)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {isFilterCritical ? '● Critical' : 'All'}
-            </button>
-          </div>
-
-          {/* Scrollable target list */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.6rem',
-              overflowY: 'auto',
-              flex: 1,
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
-            {filteredTargets.map((t) => {
-              const isSel = selectedTarget.id === t.id;
-              return (
-                <div
-                  key={t.id}
-                  onClick={() => {
-                    setSelectedTarget(t);
-                    triggerToast(`Target ${t.code} locked — ${t.type}`);
-                  }}
-                  className="ripple-container"
-                  style={{
-                    padding: '0.85rem 1rem',
-                    borderRadius: '12px',
-                    background: isSel
-                      ? 'rgba(45, 212, 191, 0.1)'
-                      : 'rgba(255, 255, 255, 0.03)',
-                    border: isSel
-                      ? '1px solid rgba(45, 212, 191, 0.45)'
-                      : '1px solid rgba(255, 255, 255, 0.07)',
-                    boxShadow: isSel
-                      ? '0 0 24px rgba(45, 212, 191, 0.2), inset 0 1px 0 rgba(255,255,255,0.08)'
-                      : 'none',
-                    cursor: 'pointer',
-                    transform: isSel ? 'scale(1.01)' : 'scale(1)',
-                    transition:
-                      'transform 0.25s var(--ease-elastic), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease',
-                    backdropFilter: isSel ? 'blur(4px)' : 'none',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontWeight: 600,
-                        color: isSel ? '#2dd4bf' : '#ffffff',
-                        fontSize: '0.86rem',
-                        letterSpacing: '0.02em',
-                      }}
-                    >
-                      {t.code}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.62rem',
-                        padding: '0.18rem 0.5rem',
-                        borderRadius: '5px',
-                        background:
-                          t.status === 'Critical'
-                            ? 'rgba(244, 63, 94, 0.18)'
-                            : 'rgba(45, 212, 191, 0.12)',
-                        color: t.status === 'Critical' ? '#f43f5e' : '#2dd4bf',
-                        border:
-                          t.status === 'Critical'
-                            ? '1px solid rgba(244, 63, 94, 0.4)'
-                            : '1px solid rgba(45, 212, 191, 0.35)',
-                      }}
-                    >
-                      {t.status}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      fontSize: '0.76rem',
-                      color: 'rgba(226, 234, 244, 0.7)',
-                      margin: '0.3rem 0',
-                    }}
-                  >
-                    {t.type}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.64rem',
-                      color: 'rgba(226, 234, 244, 0.38)',
-                    }}
-                  >
-                    <span>{t.depth}</span>
-                    <span>{(t.confidence * 100).toFixed(1)}% conf.</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Upload CTA */}
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <MagneticButton
-              onClick={handleSimulatedUpload}
-              disabled={isUploading}
-              style={{ padding: '0.82rem', borderRadius: '10px', fontSize: '0.82rem', width: '100%' }}
-            >
-              {isUploading ? 'Ingesting Sonar Stream...' : '+ Ingest Sonar Log (.XTF)'}
-            </MagneticButton>
-
-            {isUploading && (
-              <div style={{ marginTop: '0.85rem' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.65rem',
-                    color: '#2dd4bf',
-                    marginBottom: '0.45rem',
-                  }}
-                >
-                  <span>{uploadStep}</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                {/* Progress bar */}
-                <div
-                  style={{
-                    height: '5px',
-                    background: 'rgba(255,255,255,0.06)',
-                    borderRadius: '3px',
-                    overflow: 'hidden',
-                    border: '1px solid rgba(45,212,191,0.12)',
-                  }}
-                >
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${uploadProgress}%`,
-                      background: 'linear-gradient(90deg, #2dd4bf, #5eead4)',
-                      boxShadow: '0 0 10px rgba(45,212,191,0.6)',
-                      transition: 'width 0.5s var(--ease-smooth)',
-                      borderRadius: '3px',
-                    }}
+              {/* Anomaly Triangles (Rose/Pink) */}
+              {layers.anomalies && (
+                <g>
+                  {/* North Triangle */}
+                  <polygon
+                    points="400,85 406,97 394,97"
+                    fill="#f43f5e"
+                    stroke="#ffe4e6"
+                    strokeWidth="1"
+                    filter="drop-shadow(0 0 6px #f43f5e)"
                   />
+                  {/* Central Upper Triangle */}
+                  <polygon
+                    points="495,200 502,212 488,212"
+                    fill="#f43f5e"
+                    stroke="#ffe4e6"
+                    strokeWidth="1"
+                    filter="drop-shadow(0 0 6px #f43f5e)"
+                  />
+                  {/* Southern Triangle */}
+                  <polygon
+                    points="640,358 647,370 633,370"
+                    fill="#f43f5e"
+                    stroke="#ffe4e6"
+                    strokeWidth="1"
+                    filter="drop-shadow(0 0 6px #f43f5e)"
+                  />
+                  {/* Bay of Bengal Anomaly */}
+                  <polygon
+                    points="770,185 777,197 763,197"
+                    fill="#f43f5e"
+                    stroke="#ffe4e6"
+                    strokeWidth="1"
+                    filter="drop-shadow(0 0 6px #f43f5e)"
+                  />
+                  {/* Deep South Anomaly */}
+                  <polygon
+                    points="530,475 537,487 523,487"
+                    fill="#ec4899"
+                    stroke="#fdf2f8"
+                    strokeWidth="1"
+                    filter="drop-shadow(0 0 6px #ec4899)"
+                  />
+                </g>
+              )}
+
+              {/* Vessel Icons / Cyan Triangles */}
+              {layers.vessels && (
+                <g>
+                  <polygon
+                    points="500,240 505,250 495,250"
+                    fill="#22d3ee"
+                    stroke="#cffafe"
+                    strokeWidth="0.8"
+                    filter="drop-shadow(0 0 5px #22d3ee)"
+                  />
+                  <polygon
+                    points="520,345 526,357 514,357"
+                    fill="#22d3ee"
+                    stroke="#cffafe"
+                    strokeWidth="0.8"
+                    filter="drop-shadow(0 0 5px #22d3ee)"
+                  />
+                  <polygon
+                    points="370,190 375,200 365,200"
+                    fill="#22d3ee"
+                    stroke="#cffafe"
+                    strokeWidth="0.8"
+                    filter="drop-shadow(0 0 5px #22d3ee)"
+                  />
+                  <polygon
+                    points="800,275 806,287 794,287"
+                    fill="#22d3ee"
+                    stroke="#cffafe"
+                    strokeWidth="0.8"
+                    filter="drop-shadow(0 0 5px #22d3ee)"
+                  />
+                </g>
+              )}
+
+              {/* Risk Zones / Amber Indicators */}
+              {layers.riskZones && (
+                <g>
+                  <polygon
+                    points="350,215 355,225 345,225"
+                    fill="#f59e0b"
+                    stroke="#fef3c7"
+                    strokeWidth="0.8"
+                    filter="drop-shadow(0 0 6px #f59e0b)"
+                  />
+                  <polygon
+                    points="505,420 511,432 499,432"
+                    fill="#f59e0b"
+                    stroke="#fef3c7"
+                    strokeWidth="0.8"
+                    filter="drop-shadow(0 0 6px #f59e0b)"
+                  />
+                </g>
+              )}
+            </svg>
+
+            {/* Target Popup Overlay matching screenshot */}
+            {showPopup && (
+              <div
+                className="absolute top-44 left-[53%] -translate-x-1/2 w-64 bg-[#08152e]/95 border border-cyan-500/50 rounded-xl p-4 shadow-[0_0_30px_rgba(6,182,212,0.35)] backdrop-blur-md z-20"
+                style={{ animation: "fadeIn 0.2s ease-out" }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-white tracking-wide">
+                      {selectedTarget}
+                    </h4>
+                    <p className="text-[10px] font-mono text-cyan-300/80">
+                      Lat 19.4321° N &nbsp; Lon 72.8656° E
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowPopup(false)}
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between border-t border-cyan-950/80 pt-2 text-xs">
+                  <span className="text-slate-300 font-medium">Confidence 87%</span>
+                  <button
+                    onClick={() => router.push("/dashboard/alerts")}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/60 text-cyan-200 text-[11px] font-medium transition-all shadow-sm"
+                  >
+                    <span>View Details</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             )}
           </div>
+
+          {/* Floating Map HUD Control Overlay (Top Right of Map) */}
+          <div className="absolute top-4 right-4 flex flex-col gap-1.5 z-20">
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(z + 0.25, 2.5))}
+              title="Zoom In"
+              className="p-2 rounded-xl bg-[#09152a]/80 hover:bg-cyan-950/80 border border-cyan-800/40 text-cyan-300 hover:text-white backdrop-blur-md transition-all shadow-md"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(z - 0.25, 0.75))}
+              title="Zoom Out"
+              className="p-2 rounded-xl bg-[#09152a]/80 hover:bg-cyan-950/80 border border-cyan-800/40 text-cyan-300 hover:text-white backdrop-blur-md transition-all shadow-md"
+            >
+              <Minimize2 className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setZoomLevel(1)}
+              title="Reset View"
+              className="p-2 rounded-xl bg-[#09152a]/80 hover:bg-cyan-950/80 border border-cyan-800/40 text-cyan-300 hover:text-white backdrop-blur-md transition-all shadow-md"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setShowPopup(!showPopup)}
+              title="Focus Anomaly Target"
+              className="p-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/50 text-rose-300 hover:text-white backdrop-blur-md transition-all shadow-md"
+            >
+              <Crosshair className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Map Scale Bar Overlay (Bottom Right) */}
+          <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end pointer-events-none">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-cyan-300/80">100 km</span>
+              <div className="w-16 h-1 bg-cyan-400/80 rounded-full shadow-[0_0_8px_#22d3ee]" />
+            </div>
+          </div>
         </div>
 
-        {/* ══ CENTER: Tabbed workspace ══ */}
-        <div
-          className="ultra-glass"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            minHeight: 0,
-          }}
-        >
-          {/* Tab bar */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '0 1.25rem',
-              borderBottom: '1px solid rgba(45, 212, 191, 0.1)',
-              background: 'rgba(2, 5, 14, 0.6)',
-              backdropFilter: 'blur(8px)',
-              position: 'relative',
-              zIndex: 2,
-              flexShrink: 0,
-            }}
-          >
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '0.76rem',
-                  fontWeight: 600,
-                  color:
-                    activeTab === tab.key
-                      ? '#2dd4bf'
-                      : 'rgba(226, 234, 244, 0.45)',
-                  borderBottom:
-                    activeTab === tab.key
-                      ? '2px solid #2dd4bf'
-                      : '2px solid transparent',
-                  paddingBottom: '0.7rem',
-                  paddingTop: '0.85rem',
-                  paddingLeft: '0.6rem',
-                  paddingRight: '0.6rem',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'color 0.2s ease, border-color 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {'live' in tab && tab.live && (
-                  <span
-                    style={{
-                      width: '5px',
-                      height: '5px',
-                      borderRadius: '50%',
-                      background: activeTab === tab.key ? '#2dd4bf' : 'rgba(45,212,191,0.4)',
-                      boxShadow: activeTab === tab.key ? '0 0 8px #2dd4bf' : 'none',
-                      animation: 'glow-pulse 1.5s ease-in-out infinite',
-                      flexShrink: 0,
-                    }}
+        {/* ── 4 BOTTOM KPI TELEMETRY CARDS ── */}
+        <div className="grid grid-cols-4 gap-4 h-32 shrink-0">
+          {/* Card 1: Ocean Health Index */}
+          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-slate-300">Ocean Health Index</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-2xl font-black font-mono text-white">72</span>
+                <span className="ml-2 text-xs font-mono font-bold text-emerald-400">↑+5%</span>
+              </div>
+              {/* Cyan Sparkline SVG */}
+              <div className="w-24 h-10">
+                <svg className="w-full h-full" viewBox="0 0 100 40">
+                  <path
+                    d="M0 35 Q 25 10, 45 28 T 80 15 T 100 8"
+                    fill="none"
+                    stroke="#22d3ee"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
                   />
-                )}
-                {tab.label}
-              </button>
-            ))}
+                  <path
+                    d="M0 35 Q 25 10, 45 28 T 80 15 T 100 8 L 100 40 L 0 40 Z"
+                    fill="rgba(34, 211, 238, 0.15)"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
 
-            {/* Export button in tab bar */}
-            <button
-              onClick={() => triggerToast('Exported mission_report.json — 5 targets')}
-              style={{
-                marginLeft: 'auto',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.65rem',
-                padding: '0.38rem 0.85rem',
-                borderRadius: '6px',
-                background: 'rgba(45,212,191,0.08)',
-                border: '1px solid rgba(45,212,191,0.25)',
-                color: '#2dd4bf',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-              }}
-            >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="7 10 12 15 17 10"/>
-                <line x1="12" y1="15" x2="12" y2="3"/>
-              </svg>
-              Export JSON
+          {/* Card 2: Area Monitored */}
+          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-slate-300">Area Monitored</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-xl font-black font-mono text-white">12,450</span>
+                <span className="ml-1 text-xs font-mono text-slate-400">km²</span>
+              </div>
+              {/* Blue Wave Filled Area SVG */}
+              <div className="w-24 h-10">
+                <svg className="w-full h-full" viewBox="0 0 100 40">
+                  <path
+                    d="M0 30 C 20 38, 40 20, 60 28 C 80 35, 90 15, 100 12"
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth="2.5"
+                  />
+                  <path
+                    d="M0 30 C 20 38, 40 20, 60 28 C 80 35, 90 15, 100 12 L 100 40 L 0 40 Z"
+                    fill="rgba(56, 189, 248, 0.2)"
+                  />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Total Anomalies */}
+          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-slate-300">Total Anomalies</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <span className="text-2xl font-black font-mono text-white">1,324</span>
+              {/* Vibrant Violet-to-Cyan Equalizer Bars */}
+              <div className="flex items-end gap-1 h-8">
+                <div className="w-1.5 h-3 bg-cyan-400 rounded-t" />
+                <div className="w-1.5 h-5 bg-cyan-400 rounded-t" />
+                <div className="w-1.5 h-4 bg-teal-400 rounded-t" />
+                <div className="w-1.5 h-7 bg-indigo-400 rounded-t" />
+                <div className="w-1.5 h-5 bg-indigo-500 rounded-t" />
+                <div className="w-1.5 h-8 bg-purple-500 rounded-t" />
+                <div className="w-1.5 h-6 bg-pink-500 rounded-t" />
+                <div className="w-1.5 h-7 bg-rose-500 rounded-t" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 4: Cleanup Priority */}
+          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-semibold text-slate-300">Cleanup Priority</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <span className="text-2xl font-black font-mono text-white">18</span>
+                <span className="ml-2 text-xs font-mono text-slate-400">Zones</span>
+              </div>
+              {/* Donut Ring Gauge SVG */}
+              <div className="w-10 h-10 relative flex items-center justify-center">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="#1e293b"
+                    strokeWidth="3.5"
+                  />
+                  <path
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    fill="none"
+                    stroke="url(#ringGrad)"
+                    strokeDasharray="75, 100"
+                    strokeWidth="3.5"
+                    strokeLinecap="round"
+                  />
+                  <defs>
+                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#22d3ee" />
+                      <stop offset="100%" stopColor="#f59e0b" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      {/* ── RIGHT SIDEBAR: LIVE STATS & ENVIRONMENTAL LAYERS ── */}
+      <aside className="w-72 h-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-4 flex flex-col justify-between shrink-0 backdrop-blur-xl shadow-2xl overflow-y-auto">
+        {/* Top Section: Live Stats Header */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b border-cyan-950/80 pb-3">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-white">Live Stats</h3>
+            <button className="text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* ── Tab 1: Bathymetric Hazard Map ── */}
-          {activeTab === 'map' && (
-            <div
-              style={{
-                flex: 1,
-                position: 'relative',
-                background: 'radial-gradient(ellipse at center, #06182c 0%, #030d18 60%, #01040a 100%)',
-                overflow: 'hidden',
-              }}
-            >
-              {/* Coordinate grid */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  backgroundImage:
-                    'linear-gradient(rgba(45,212,191,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(45,212,191,0.05) 1px, transparent 1px)',
-                  backgroundSize: '40px 40px',
-                }}
-              />
-
-              {/* Radar rings */}
-              {[100, 200, 300, 430].map((r, i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    width: `${r * 1.5}px`,
-                    height: `${r * 1.5}px`,
-                    marginTop: `-${r * 0.75}px`,
-                    marginLeft: `-${r * 0.75}px`,
-                    borderRadius: '50%',
-                    border: '1px solid rgba(45, 212, 191, 0.1)',
-                    pointerEvents: 'none',
-                  }}
-                />
-              ))}
-
-              {/* Sweeping sonar line */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: '480px',
-                  height: '480px',
-                  marginTop: '-240px',
-                  marginLeft: '-240px',
-                  borderRadius: '50%',
-                  background:
-                    'conic-gradient(from 0deg at 50% 50%, rgba(45,212,191,0.28) 0deg, transparent 55deg, transparent 360deg)',
-                  animation: 'sonar-sweep 5s linear infinite',
-                  pointerEvents: 'none',
-                }}
-              />
-
-              {/* AUV blip */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '48%',
-                  left: '42%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  zIndex: 8,
-                }}
-              >
-                {/* Ping ring */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '50%',
-                    border: '1px solid rgba(45,212,191,0.5)',
-                    animation: 'sonar-ping 2.5s ease-out infinite',
-                    marginTop: '-13px',
-                    marginLeft: '-13px',
-                  }}
-                />
-                <div
-                  style={{
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    background: '#2dd4bf',
-                    boxShadow: '0 0 18px #2dd4bf, 0 0 40px rgba(45,212,191,0.35)',
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontSize: '0.6rem',
-                    color: '#2dd4bf',
-                    marginTop: '0.3rem',
-                    background: 'rgba(2,5,14,0.8)',
-                    padding: '0.1rem 0.35rem',
-                    borderRadius: '3px',
-                    border: '1px solid rgba(45,212,191,0.2)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  AUV-04 (LIVE)
-                </span>
-              </div>
-
-              {/* Target blips */}
-              {MOCK_TARGETS.map((t, idx) => {
-                const positions = [
-                  { top: '32%', left: '62%' },
-                  { top: '67%', left: '70%' },
-                  { top: '55%', left: '24%' },
-                  { top: '20%', left: '40%' },
-                  { top: '78%', left: '46%' },
-                ];
-                const pos = positions[idx % positions.length];
-                const isSel = selectedTarget.id === t.id;
-
-                return (
-                  <div
-                    key={t.id}
-                    onClick={() => {
-                      setSelectedTarget(t);
-                      triggerToast(`Blip ${t.code} locked`);
-                    }}
-                    style={{
-                      position: 'absolute',
-                      top: pos.top,
-                      left: pos.left,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      zIndex: 10,
-                      transform: isSel ? 'scale(1.2)' : 'scale(1)',
-                      transition: 'transform 0.25s var(--ease-elastic)',
-                    }}
-                  >
-                    {isSel && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '50%',
-                          border: `1.5px solid ${t.status === 'Critical' ? '#f43f5e' : '#2dd4bf'}`,
-                          animation: 'sonar-ping 2s ease-out infinite',
-                          marginTop: '-10px',
-                          marginLeft: '-10px',
-                          opacity: 0.6,
-                        }}
-                      />
-                    )}
-                    <div
-                      style={{
-                        width: isSel ? '16px' : '11px',
-                        height: isSel ? '16px' : '11px',
-                        borderRadius: '50%',
-                        background: t.status === 'Critical' ? '#f43f5e' : '#2dd4bf',
-                        boxShadow: `0 0 14px ${t.status === 'Critical' ? '#f43f5e' : '#2dd4bf'}`,
-                        border: '2px solid rgba(255,255,255,0.9)',
-                        transition: 'all 0.2s ease',
-                      }}
-                    />
-                    <span
-                      style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.62rem',
-                        fontWeight: 600,
-                        color: isSel ? '#ffffff' : 'rgba(226, 234, 244, 0.65)',
-                        background: 'rgba(2,5,14,0.85)',
-                        padding: '0.12rem 0.4rem',
-                        borderRadius: '4px',
-                        border: isSel ? '1px solid rgba(45,212,191,0.4)' : '1px solid rgba(255,255,255,0.08)',
-                        marginTop: '0.25rem',
-                        whiteSpace: 'nowrap',
-                        backdropFilter: 'blur(4px)',
-                      }}
-                    >
-                      {t.code}
-                    </span>
-                  </div>
-                );
-              })}
-
-              {/* Map scale + coords overlay */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '16px',
-                  left: '16px',
-                  fontFamily: 'var(--font-mono)',
-                  fontSize: '0.6rem',
-                  color: 'rgba(45,212,191,0.5)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.25rem',
-                }}
-              >
-                <span>48°14′N — 124°42′W</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  <div style={{ width: '40px', height: '2px', background: 'rgba(45,212,191,0.5)' }} />
-                  <span>500 m</span>
+          {/* 4 Live Stats Cards */}
+          <div className="space-y-2.5">
+            {/* Stat 1: Active Vessels */}
+            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
+                  <Ship className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base font-black text-white font-mono">24</span>
+                  <span className="text-[10px] font-mono text-slate-400">Active Vessels</span>
                 </div>
               </div>
             </div>
-          )}
 
-          {/* ── Tab 2: Sonar Spectrogram (static preview) ── */}
-          {activeTab === 'waterfall' && (
-            <div
-              style={{
-                flex: 1,
-                padding: '1.5rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1rem',
-                overflowY: 'auto',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: '#2dd4bf' }}>
-                // MULTI-BEAM HIGH FREQUENCY SONAR SPECTROGRAM [455 kHz]
-              </div>
-
-              {/* Spectrogram display */}
-              <div
-                style={{
-                  height: '280px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(180deg, #0f2d3a 0%, #081d26 50%, #030d12 100%)',
-                  border: '1px solid rgba(45, 212, 191, 0.2)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                {/* Scan lines */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    backgroundImage:
-                      'repeating-linear-gradient(0deg, rgba(45,212,191,0.05) 0px, rgba(45,212,191,0.05) 1px, transparent 1px, transparent 4px)',
-                  }}
-                />
-
-                {/* Animated sweep */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    right: 0,
-                    height: '2px',
-                    background: 'linear-gradient(90deg, transparent, rgba(45,212,191,0.8), rgba(255,255,255,0.4), rgba(45,212,191,0.8), transparent)',
-                    boxShadow: '0 0 12px rgba(45,212,191,0.6)',
-                    animation: 'scan-line 2.5s linear infinite',
-                  }}
-                />
-
-                {/* Detection bounding box */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: '28%',
-                    left: '38%',
-                    width: '180px',
-                    height: '110px',
-                    border: '2px solid #2dd4bf',
-                    borderRadius: '4px',
-                    background: 'rgba(45, 212, 191, 0.12)',
-                    boxShadow: '0 0 24px rgba(45, 212, 191, 0.3)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    padding: '0.4rem',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.62rem',
-                      fontWeight: 700,
-                      color: '#02050e',
-                      background: '#2dd4bf',
-                      padding: '0.1rem 0.35rem',
-                      borderRadius: '3px',
-                      alignSelf: 'flex-start',
-                    }}
-                  >
-                    GHOST_NET: 96.4%
-                  </span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.6rem', color: '#2dd4bf' }}>
-                    MASK: 4,820 PX
-                  </span>
+            {/* Stat 2: Anomalies */}
+            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-400/40 flex items-center justify-center text-rose-400">
+                  <ShieldAlert className="w-4 h-4" />
                 </div>
-              </div>
-
-              {/* Metric row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
-                {[
-                  { label: 'Speckle SNR', val: '+24.8 dB', hi: true },
-                  { label: 'Inference', val: '14.2 ms', hi: false },
-                  { label: 'Resolution', val: '0.05 m/px', hi: false },
-                ].map((s) => (
-                  <div
-                    key={s.label}
-                    className="glass-tile"
-                    style={{ padding: '0.75rem' }}
-                  >
-                    <div style={{ fontSize: '0.64rem', color: 'rgba(226,234,244,0.45)', position: 'relative', zIndex: 2 }}>
-                      {s.label}
-                    </div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 700, color: s.hi ? '#2dd4bf' : '#ffffff', position: 'relative', zIndex: 2 }}>
-                      {s.val}
-                    </div>
-                  </div>
-                ))}
+                <div className="flex flex-col">
+                  <span className="text-base font-black text-white font-mono">5</span>
+                  <span className="text-[10px] font-mono text-slate-400">Anomalies</span>
+                </div>
               </div>
             </div>
-          )}
 
-          {/* ── Tab 3: Upload & Preprocessor ── */}
-          {activeTab === 'upload' && (
-            <div
-              style={{
-                flex: 1,
-                padding: '2.5rem 2rem',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '1.5rem',
-                position: 'relative',
-                zIndex: 2,
-              }}
-            >
-              {/* Drop zone */}
-              <div
-                style={{
-                  width: '100%',
-                  maxWidth: '520px',
-                  padding: '3.5rem 2rem',
-                  border: '1.5px dashed rgba(45, 212, 191, 0.3)',
-                  borderRadius: '16px',
-                  background: 'rgba(45,212,191,0.03)',
-                  backdropFilter: 'blur(8px)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  transition: 'border-color 0.25s ease, background 0.25s ease',
-                }}
-              >
-                <div
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '50%',
-                    background: 'rgba(45,212,191,0.1)',
-                    border: '1px solid rgba(45,212,191,0.3)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" strokeWidth="1.5">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
+            {/* Stat 3: Missions */}
+            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-400/40 flex items-center justify-center text-teal-300">
+                  <Compass className="w-4 h-4" />
                 </div>
-
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 700, color: '#ffffff' }}>
-                  Upload Raw Sonar Log
+                <div className="flex flex-col">
+                  <span className="text-base font-black text-white font-mono">3</span>
+                  <span className="text-[10px] font-mono text-slate-400">Missions</span>
                 </div>
-                <p style={{ fontSize: '0.78rem', color: 'rgba(226, 234, 244, 0.45)', maxWidth: '360px', textAlign: 'center', lineHeight: 1.6 }}>
-                  Drag & drop sonar logs (.XTF / .JSF / .SGY) from Edgetech, Klein, or C-MAX systems. Runs local ONNX — zero cloud dependency.
-                </p>
-
-                <MagneticButton
-                  onClick={handleSimulatedUpload}
-                  disabled={isUploading}
-                  style={{ marginTop: '0.5rem', padding: '0.75rem 2rem', fontSize: '0.85rem' }}
-                >
-                  Select File & Analyse
-                </MagneticButton>
               </div>
+            </div>
 
-              {/* Progress stepper */}
-              {isUploading && (
-                <div style={{ width: '100%', maxWidth: '520px' }}>
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.7rem',
-                      color: '#2dd4bf',
-                      marginBottom: '0.6rem',
-                    }}
-                  >
-                    <span>{uploadStep}</span>
-                    <span>{uploadProgress}%</span>
-                  </div>
-                  <div
-                    style={{
-                      height: '6px',
-                      background: 'rgba(255,255,255,0.05)',
-                      borderRadius: '4px',
-                      overflow: 'hidden',
-                      border: '1px solid rgba(45,212,191,0.12)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${uploadProgress}%`,
-                        background: 'linear-gradient(90deg, #2dd4bf, #5eead4)',
-                        boxShadow: '0 0 12px rgba(45,212,191,0.6)',
-                        transition: 'width 0.5s var(--ease-smooth)',
-                        borderRadius: '4px',
-                      }}
-                    />
-                  </div>
+            {/* Stat 4: High-Risk Zones */}
+            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-400/40 flex items-center justify-center text-amber-300">
+                  <Activity className="w-4 h-4" />
                 </div>
-              )}
+                <div className="flex flex-col">
+                  <span className="text-base font-black text-white font-mono">12</span>
+                  <span className="text-[10px] font-mono text-slate-400">High-Risk Zones</span>
+                </div>
+              </div>
             </div>
-          )}
-
-          {/* ── Tab 4: Sonar Console ── */}
-          {activeTab === 'console' && (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden', position: 'relative', zIndex: 2 }}>
-              <SonarConsole />
-            </div>
-          )}
+          </div>
         </div>
 
-        {/* ══ RIGHT: Target Telemetry Panel ══ */}
-        <div
-          ref={inspectorRef}
-          id="target-telemetry-panel"
-          onMouseMove={handleInspectorMouseMove}
-          className="ultra-glass mouse-spotlight"
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-            padding: '1.4rem',
-            position: 'relative',
-            minHeight: 0,
-            overflowY: 'auto',
-          }}
-        >
-          {/* Panel header */}
-          <div
-            style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.92rem',
-              fontWeight: 700,
-              color: '#ffffff',
-              position: 'relative',
-              zIndex: 2,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.6rem',
-            }}
-          >
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: '#2dd4bf',
-                boxShadow: '0 0 10px #2dd4bf',
-                animation: 'glow-pulse 2s ease-in-out infinite',
-                flexShrink: 0,
-              }}
-            />
-            Target Telemetry
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: '#2dd4bf' }}>
-              {selectedTarget.code}
-            </span>
-          </div>
+        {/* Bottom Section: Environmental Layers */}
+        <div className="pt-4 border-t border-cyan-950/80 space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-white">Environmental Layers</h4>
 
-          {/* Details table */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.65rem',
-              background: 'rgba(2, 5, 14, 0.55)',
-              padding: '1rem 1.1rem',
-              borderRadius: '12px',
-              border: '1px solid rgba(45, 212, 191, 0.1)',
-              backdropFilter: 'blur(6px)',
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
+          <div className="space-y-2.5">
             {[
-              { label: 'Latitude',          val: selectedTarget.lat },
-              { label: 'Longitude',         val: selectedTarget.lon },
-              { label: 'Seafloor Depth',    val: selectedTarget.depth },
-              { label: 'Footprint',         val: selectedTarget.area },
-              { label: 'Gear Class',        val: selectedTarget.type },
-              { label: 'YOLO-seg Conf.',    val: `${(selectedTarget.confidence * 100).toFixed(1)}%` },
-              { label: 'First Detected',    val: selectedTarget.timestamp },
-            ].map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: '0.76rem',
-                  borderBottom: '1px solid rgba(255,255,255,0.04)',
-                  paddingBottom: '0.4rem',
-                  gap: '0.5rem',
-                }}
-              >
-                <span style={{ color: 'rgba(226, 234, 244, 0.45)', flexShrink: 0 }}>{item.label}</span>
-                <span
-                  style={{
-                    fontFamily: 'var(--font-mono)',
-                    fontWeight: 600,
-                    color: '#ffffff',
-                    textAlign: 'right',
-                  }}
+              { key: "vessels" as const, label: "Vessels", color: "bg-cyan-400" },
+              { key: "anomalies" as const, label: "Anomalies", color: "bg-rose-500" },
+              { key: "riskZones" as const, label: "Risk Zones", color: "bg-purple-500" },
+              { key: "oceanCurrents" as const, label: "Ocean Currents", color: "bg-amber-500" },
+              { key: "windLayer" as const, label: "Wind Layer", color: "bg-yellow-400" },
+            ].map((layer) => (
+              <div key={layer.key} className="flex items-center justify-between text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${layer.color} shadow-sm`} />
+                  <span>{layer.label}</span>
+                </div>
+
+                {/* Toggle Switch */}
+                <button
+                  onClick={() => toggleLayer(layer.key)}
+                  className={`w-8 h-4 rounded-full transition-colors relative ${
+                    layers[layer.key] ? "bg-cyan-500" : "bg-zinc-800"
+                  }`}
                 >
-                  {item.val}
-                </span>
+                  <div
+                    className={`w-3 h-3 rounded-full bg-white transition-all absolute top-0.5 ${
+                      layers[layer.key] ? "right-0.5" : "left-0.5"
+                    }`}
+                  />
+                </button>
               </div>
             ))}
           </div>
-
-          {/* Confidence visual bar */}
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.62rem', color: 'rgba(226,234,244,0.45)', marginBottom: '0.35rem' }}>
-              <span>YOLO-SEG CONFIDENCE</span>
-              <span style={{ color: '#2dd4bf' }}>{(selectedTarget.confidence * 100).toFixed(1)}%</span>
-            </div>
-            <div style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  height: '100%',
-                  width: `${selectedTarget.confidence * 100}%`,
-                  background: `linear-gradient(90deg, #2dd4bf, ${selectedTarget.confidence > 0.9 ? '#5eead4' : '#f59e0b'})`,
-                  boxShadow: '0 0 10px rgba(45,212,191,0.5)',
-                  borderRadius: '3px',
-                  transition: 'width 0.4s var(--ease-smooth)',
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Retrieval advisory */}
-          <div
-            style={{
-              padding: '1rem 1.1rem',
-              borderRadius: '10px',
-              background: 'rgba(45, 212, 191, 0.07)',
-              border: '1px solid rgba(45, 212, 191, 0.18)',
-              backdropFilter: 'blur(4px)',
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.64rem',
-                color: '#2dd4bf',
-                letterSpacing: '0.1em',
-                marginBottom: '0.45rem',
-              }}
-            >
-              RETRIEVAL VECTOR ADVISORY
-            </div>
-            <p style={{ fontSize: '0.76rem', color: 'rgba(226, 234, 244, 0.75)', lineHeight: 1.6 }}>
-              Surface vessel approach from 240° SW to avoid prevailing bottom currents. Recommended ROV grapple hook approach angle: 15° pitch.
-            </p>
-          </div>
-
-          {/* Status badge */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0.65rem 1rem',
-              borderRadius: '8px',
-              background:
-                selectedTarget.status === 'Critical'
-                  ? 'rgba(244, 63, 94, 0.1)'
-                  : 'rgba(45, 212, 191, 0.06)',
-              border:
-                selectedTarget.status === 'Critical'
-                  ? '1px solid rgba(244, 63, 94, 0.3)'
-                  : '1px solid rgba(45, 212, 191, 0.2)',
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--font-mono)',
-                fontSize: '0.65rem',
-                color:
-                  selectedTarget.status === 'Critical' ? '#f43f5e' : '#2dd4bf',
-              }}
-            >
-              STATUS: {selectedTarget.status.toUpperCase()}
-            </span>
-            <div
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                background: selectedTarget.status === 'Critical' ? '#f43f5e' : '#2dd4bf',
-                boxShadow: `0 0 10px ${selectedTarget.status === 'Critical' ? '#f43f5e' : '#2dd4bf'}`,
-                animation: 'glow-pulse 2s ease-in-out infinite',
-              }}
-            />
-          </div>
-
-          {/* Action buttons */}
-          <div
-            style={{
-              marginTop: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.6rem',
-              position: 'relative',
-              zIndex: 2,
-            }}
-          >
-            <MagneticButton
-              onClick={() => triggerToast(`Exported ${selectedTarget.code} GeoJSON Recovery Vector`)}
-              style={{ width: '100%', padding: '0.78rem', fontSize: '0.8rem' }}
-            >
-              Export Recovery Plan (.GeoJSON)
-            </MagneticButton>
-
-            <button
-              onClick={() => triggerToast('Maritime Broadcast Sent → NOAA / USCG Emergency Feed')}
-              style={{
-                padding: '0.72rem',
-                borderRadius: '10px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                color: 'rgba(226, 234, 244, 0.75)',
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                border: '1px solid rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(8px)',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              Broadcast to Maritime Net
-            </button>
-          </div>
         </div>
-      </div>
+      </aside>
     </div>
   );
 }

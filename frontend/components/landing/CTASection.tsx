@@ -45,7 +45,7 @@ export default function CTASection() {
     buttonRef.current.disabled = true;
 
     const tl = gsap.timeline({
-      onComplete: () => router.push('/dashboard'),
+      onComplete: () => router.push('/startup'),
     });
 
     // 1. Button glow burst

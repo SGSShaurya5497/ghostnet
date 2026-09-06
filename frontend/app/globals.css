@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* ==========================================================
    GhostNet — Ultra-Luxury Design System & Micro-Interactions
    Apple visionOS / Linear / Darkroom Engineering Tier Glass
