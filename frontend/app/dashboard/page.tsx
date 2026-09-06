@@ -543,8 +543,8 @@ export default function AIWorkstationPage() {
       {/* ── Main Workstation Controls Bar ── */}
       <div className="light-saas-card p-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-            <Scan className="w-4 h-4 text-emerald-400" />
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
+            <Scan className="w-4 h-4 text-white" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-900">
@@ -712,7 +712,7 @@ export default function AIWorkstationPage() {
             id="workstation-detect-btn"
             onClick={runDetection}
             disabled={isProcessing || (!uploadedFile && !imageBlobUrl)}
-            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md mt-1"
+            className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/25 mt-1"
           >
             {isProcessing ? (
               <>
@@ -721,7 +721,7 @@ export default function AIWorkstationPage() {
               </>
             ) : (
               <>
-                <Scan className="w-3.5 h-3.5 text-emerald-400" />
+                <Scan className="w-3.5 h-3.5 text-white" />
                 <span>Run AI Detection</span>
               </>
             )}
@@ -742,7 +742,7 @@ export default function AIWorkstationPage() {
           {/* Viewport Canvas Frame */}
           <div
             ref={containerRef}
-            className="flex-1 min-h-[360px] h-[360px] bg-slate-950 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 select-none my-3 shadow-inner"
+            className="flex-1 min-h-[360px] h-[360px] bg-[#0c1524] border border-slate-700/60 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 select-none my-3 shadow-inner"
           >
             {showGrid && (
               <div

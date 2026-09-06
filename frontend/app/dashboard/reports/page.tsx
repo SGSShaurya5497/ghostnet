@@ -118,8 +118,8 @@ export default function ReportsAuditPage() {
       <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-              <FileText className="w-4 h-4 text-emerald-400" />
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
+              <FileText className="w-4 h-4 text-white" />
             </div>
             <h1 className="text-base font-bold text-slate-900">
               Audit Logs & Incident Reports
@@ -152,7 +152,7 @@ export default function ReportsAuditPage() {
           <button
             onClick={() => downloadJSON(reportsToExport, 'ghostnet-audit-logs.json')}
             disabled={filteredReports.length === 0}
-            className="btn-primary-dark text-xs disabled:opacity-40"
+            className="btn-primary text-xs disabled:opacity-40"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export JSON ({selectedIds.size > 0 ? selectedIds.size : 'All'})</span>
@@ -181,7 +181,7 @@ export default function ReportsAuditPage() {
               key={sev}
               onClick={() => setSeverityFilter(sev)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
-                severityFilter === sev ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                severityFilter === sev ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
               {sev}

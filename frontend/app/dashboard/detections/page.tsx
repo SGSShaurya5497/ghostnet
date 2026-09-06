@@ -134,8 +134,8 @@ export default function LiveDetectionsFeedPage() {
       {/* ── Top Header Toolbar Card ── */}
       <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-            <Target className="w-4 h-4 text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
+            <Target className="w-4 h-4 text-white" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900">
@@ -181,7 +181,7 @@ export default function LiveDetectionsFeedPage() {
                   key={s}
                   onClick={() => setFilterSeverity(s)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
-                    filterSeverity === s ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    filterSeverity === s ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   {s}

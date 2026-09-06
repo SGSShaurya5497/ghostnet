@@ -109,8 +109,8 @@ export default function DepthAnalysisPage() {
       {/* ── Top Header Toolbar Card ── */}
       <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-            <Layers className="w-4 h-4 text-cyan-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-600 to-teal-700 flex items-center justify-center text-white shadow-xs">
+            <Layers className="w-4 h-4 text-white" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900">
@@ -222,7 +222,7 @@ export default function DepthAnalysisPage() {
           </div>
 
           {/* Interactive Echogram Canvas */}
-          <div className="relative w-full h-[380px] rounded-2xl bg-slate-950 overflow-hidden flex flex-col justify-between p-6 shadow-inner select-none">
+          <div className="relative w-full h-[380px] rounded-2xl bg-[#0c1524] border border-slate-700/60 overflow-hidden flex flex-col justify-between p-6 shadow-inner select-none">
             {/* Depth Markers Left Axis */}
             <div className="absolute left-3 top-4 bottom-4 flex flex-col justify-between text-[10px] font-mono text-slate-500 border-r border-slate-800 pr-2 pointer-events-none">
               <span>0m</span>
@@ -323,7 +323,7 @@ export default function DepthAnalysisPage() {
                     onClick={() => setBathymetryResolution(res)}
                     className={`flex-1 py-1.5 rounded-xl text-xs font-mono font-bold transition-all border ${
                       bathymetryResolution === res
-                        ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/25'
                         : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >

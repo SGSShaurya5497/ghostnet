@@ -126,8 +126,8 @@ export default function SonarConsolePage() {
       {/* ── Top Header Toolbar Card ── */}
       <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-            <Waves className="w-4 h-4 text-cyan-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white shadow-xs">
+            <Waves className="w-4 h-4 text-white" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900">
@@ -147,7 +147,7 @@ export default function SonarConsolePage() {
                 key={c}
                 onClick={() => setColormap(c)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
-                  colormap === c ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  colormap === c ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {c}
@@ -157,7 +157,7 @@ export default function SonarConsolePage() {
 
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="btn-primary-dark text-xs"
+            className="btn-primary text-xs"
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
             <span>{isPlaying ? 'Pause Stream' : 'Resume Ping'}</span>
@@ -175,7 +175,7 @@ export default function SonarConsolePage() {
             <span>STARBOARD SWATH [ +{swathWidth}m ]</span>
           </div>
 
-          <div className="h-96 w-full rounded-2xl bg-slate-950 overflow-hidden relative shadow-inner">
+          <div className="h-96 w-full rounded-2xl bg-[#0c1524] border border-slate-700/60 overflow-hidden relative shadow-inner">
             <canvas
               ref={waterfallCanvasRef}
               width={800}
@@ -196,7 +196,7 @@ export default function SonarConsolePage() {
               </div>
               <span className="text-slate-400 font-mono text-[11px]">2.4 MSPS Sampling</span>
             </div>
-            <div className="h-24 w-full rounded-2xl bg-slate-950 overflow-hidden shadow-inner">
+            <div className="h-24 w-full rounded-2xl bg-[#0c1524] border border-slate-700/60 overflow-hidden shadow-inner">
               <canvas
                 ref={waveformCanvasRef}
                 width={800}
@@ -242,7 +242,7 @@ export default function SonarConsolePage() {
                 <button
                   onClick={() => setFrequency(455)}
                   className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                    frequency === 455 ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    frequency === 455 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   455 kHz (Wide)
@@ -250,7 +250,7 @@ export default function SonarConsolePage() {
                 <button
                   onClick={() => setFrequency(900)}
                   className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                    frequency === 900 ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    frequency === 900 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
                   900 kHz (Hi-Res)

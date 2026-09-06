@@ -473,7 +473,7 @@ export default function SurveyAnalyticsPage() {
               {data.channels.map((channel, i) => {
                 const maxMass = Math.max(...data.channels.map(c => c.mass_kg));
                 const pct = (channel.mass_kg / maxMass) * 100;
-                const colors = ['bg-slate-900', 'bg-slate-500', 'bg-slate-300', 'bg-slate-200'];
+                const colors = ['bg-blue-600', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-400'];
                 return (
                   <div key={i} className="space-y-1">
                     <div className="flex justify-between text-xs">
@@ -548,9 +548,9 @@ export default function SurveyAnalyticsPage() {
               </div>
 
               {[
-                { label: '06-12h', cells: ['bg-slate-100', 'bg-slate-900', 'bg-slate-100', 'bg-slate-200', 'bg-slate-900'] },
-                { label: '12-18h', cells: ['bg-slate-900', 'bg-slate-100', 'bg-slate-200', 'bg-slate-900', 'bg-slate-100'] },
-                { label: '18-24h', cells: ['bg-slate-100', 'bg-slate-900', 'bg-slate-200', 'bg-slate-100', 'bg-slate-900'] },
+                { label: '06-12h', cells: ['bg-slate-100', 'bg-blue-600', 'bg-slate-100', 'bg-blue-300', 'bg-blue-600'] },
+                { label: '12-18h', cells: ['bg-blue-600', 'bg-slate-100', 'bg-blue-200', 'bg-blue-600', 'bg-slate-100'] },
+                { label: '18-24h', cells: ['bg-slate-100', 'bg-blue-600', 'bg-blue-200', 'bg-slate-100', 'bg-blue-600'] },
               ].map((row, ri) => (
                 <div key={ri} className="grid grid-cols-6 gap-1.5 items-center my-1.5">
                   <span className="font-mono text-[9px] text-slate-400 truncate">{row.label}</span>

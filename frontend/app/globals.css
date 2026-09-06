@@ -251,27 +251,29 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 /* ── Buttons ── */
+.btn-primary,
 .btn-primary-dark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: #0F172A;
+  background: #2563EB;
   color: #FFFFFF;
   font-weight: 700;
   font-size: 13px;
   padding: 10px 20px;
   border-radius: 14px;
-  border: 1px solid transparent;
+  border: 1px solid #1D4ED8;
   transition: all 0.15s ease;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
 }
 
+.btn-primary:hover:not(:disabled),
 .btn-primary-dark:hover:not(:disabled) {
-  background: #1E293B;
+  background: #1D4ED8;
   transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.38);
 }
 
 .btn-pill-filter {

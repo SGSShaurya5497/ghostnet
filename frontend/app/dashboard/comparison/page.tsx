@@ -91,8 +91,8 @@ export default function SurveyComparisonPage() {
       {/* ── Top Header Toolbar Card ── */}
       <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-            <GitCompare className="w-4 h-4 text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center text-white shadow-xs">
+            <GitCompare className="w-4 h-4 text-white" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900">
@@ -210,9 +210,9 @@ export default function SurveyComparisonPage() {
         </div>
 
         {/* Visualizer Canvas */}
-        <div className="relative w-full h-[440px] rounded-2xl bg-slate-950 overflow-hidden shadow-inner select-none">
+        <div className="relative w-full h-[440px] rounded-2xl bg-[#0c1524] border border-slate-700/60 overflow-hidden shadow-inner select-none">
           {/* Epoch A (Left Base Layer) */}
-          <div className="absolute inset-0 bg-slate-950 flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#0c1524] flex items-center justify-center">
             <svg className="w-full h-full opacity-40">
               <circle cx="220" cy="170" r="14" fill="#94A3B8" fillOpacity="0.3" />
               <circle cx="220" cy="170" r="5" fill="#94A3B8" />

@@ -45,8 +45,8 @@ export default function SaaSOverviewLanding() {
       {/* ── Top Header Bar ── */}
       <header className="h-16 bg-white border-b border-slate-200/80 sticky top-0 z-50 flex items-center justify-between px-8 lg:px-16 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white shadow-md">
-            <Radio className="w-4 h-4 text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-md shadow-blue-600/20">
+            <Radio className="w-4 h-4 text-white" />
           </div>
           <span className="text-base font-bold tracking-tight text-slate-900 flex items-center gap-2">
             GhostNet
@@ -72,7 +72,7 @@ export default function SaaSOverviewLanding() {
 
           <Link
             href="/dashboard"
-            className="btn-primary-dark text-xs"
+            className="btn-primary text-xs"
           >
             <span>Open Workstation</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -103,9 +103,9 @@ export default function SaaSOverviewLanding() {
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={() => router.push('/dashboard')}
-              className="px-8 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm flex items-center gap-2.5 transition-all shadow-lg hover:scale-[1.02]"
+              className="px-8 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center gap-2.5 transition-all shadow-lg shadow-blue-600/25 hover:scale-[1.02]"
             >
-              <Scan className="w-4 h-4 text-emerald-400" />
+              <Scan className="w-4 h-4 text-white" />
               <span>Launch Workstation</span>
               <ArrowRight className="w-4 h-4" />
             </button>

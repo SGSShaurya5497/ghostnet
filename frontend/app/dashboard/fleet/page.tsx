@@ -110,8 +110,8 @@ export default function FleetOperationsPage() {
       {/* ── Top Header Toolbar Card ── */}
       <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-            <Navigation className="w-4 h-4 text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
+            <Navigation className="w-4 h-4 text-white" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900">
@@ -172,8 +172,8 @@ export default function FleetOperationsPage() {
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-                      <Ship className="w-5 h-5 text-emerald-400" />
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                      <Ship className="w-5 h-5 text-white" />
                     </div>
 
                     <div className="space-y-1">

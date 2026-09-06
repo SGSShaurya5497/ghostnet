@@ -83,8 +83,8 @@ export default function HydrographicMapPage() {
       {/* ── Top Header Toolbar Card ── */}
       <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
-            <Map className="w-4 h-4 text-emerald-400" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
+            <Map className="w-4 h-4 text-white" />
           </div>
           <div>
             <h1 className="text-base font-bold text-slate-900">
@@ -104,7 +104,7 @@ export default function HydrographicMapPage() {
                 key={l}
                 onClick={() => setLayerMode(l)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
-                  layerMode === l ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  layerMode === l ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {l} Layer
@@ -129,7 +129,7 @@ export default function HydrographicMapPage() {
           </div>
 
           {/* Interactive Simulated Hydrographic Canvas */}
-          <div className="h-[370px] w-full rounded-2xl bg-slate-950 relative overflow-hidden shadow-inner flex items-center justify-center select-none">
+          <div className="h-[370px] w-full rounded-2xl bg-[#0c1524] border border-slate-700/60 relative overflow-hidden shadow-inner flex items-center justify-center select-none">
             {/* Bathymetry depth contours (vector curved lines) */}
             <svg viewBox="0 0 800 370" className="absolute inset-0 w-full h-full opacity-40">
               <path d="M 0 80 Q 200 130 400 100 T 800 150" fill="none" stroke="#0284C7" strokeWidth="1.5" strokeDasharray="6 4" />
