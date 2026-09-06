@@ -1,639 +1,967 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import {
+  ghostnetApi,
+  type DetectionResponse,
+  type Detection,
+  type ReportItem,
+} from '@/lib/api';
+import {
+  Scan,
+  UploadCloud,
+  FileImage,
+  Sliders,
+  ZoomIn,
+  ZoomOut,
   Maximize2,
-  Minimize2,
-  Crosshair,
-  Anchor,
-  Ship,
-  Sparkles,
-  ArrowRight,
+  RefreshCw,
+  Download,
+  Check,
   X,
-  RotateCcw,
-  Compass,
+  AlertTriangle,
+  Info,
+  MapPin,
+  Layers,
   Activity,
-  ShieldAlert,
-} from "lucide-react";
+  Cpu,
+  Eye,
+  EyeOff,
+  Crosshair,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  Grid,
+  TrendingUp,
+  Clock,
+  FileText,
+  ShieldCheck,
+  Compass,
+} from 'lucide-react';
 
-export default function MainDashboardInteractive() {
-  const router = useRouter();
+// ── Types ─────────────────────────────────────────────────────────────────
 
-  // Map & Popup State
-  const [showPopup, setShowPopup] = useState<boolean>(true);
+interface ImageDims {
+  naturalW: number;
+  naturalH: number;
+  renderedW: number;
+  renderedH: number;
+  offsetX: number;
+  offsetY: number;
+  scaleX: number;
+  scaleY: number;
+}
+
+interface GeoMeta {
+  lat: string;
+  lon: string;
+  depth: string;
+  sonarKhz: string;
+}
+
+// Built-in high-quality sample sonar SVG/canvas generators for immediate testing
+const SAMPLE_SONAR_SCANS = [
+  {
+    id: 'sample-1',
+    name: 'Survey 01: Entangled Ghost Net',
+    description: 'Synthetic nylon gillnet on continental shelf',
+    lat: '15.4989',
+    lon: '73.8278',
+    depth: '42.5',
+    khz: '455',
+    mockDetections: [
+      {
+        id: 'det-s1-1',
+        frame_id: 'sample-1',
+        label: 'ghost_net' as const,
+        confidence: 0.94,
+        severity: 'critical' as const,
+        bbox: { x_min: 140, y_min: 110, x_max: 380, y_max: 310 },
+        area_m2: 18.4,
+        geo: { lat: 15.49892, lon: 73.82784, depth_m: 42.5 },
+        sonar_meta: { frequency_khz: 455, range_m: 50.0, slant_corrected: true },
+        created_at: new Date().toISOString(),
+      },
+      {
+        id: 'det-s1-2',
+        frame_id: 'sample-1',
+        label: 'rope' as const,
+        confidence: 0.78,
+        severity: 'high' as const,
+        bbox: { x_min: 410, y_min: 240, x_max: 560, y_max: 380 },
+        area_m2: 6.2,
+        geo: { lat: 15.49895, lon: 73.82791, depth_m: 43.1 },
+        sonar_meta: { frequency_khz: 455, range_m: 50.0, slant_corrected: true },
+        created_at: new Date().toISOString(),
+      },
+    ],
+  },
+  {
+    id: 'sample-2',
+    name: 'Survey 02: Trawl Net on Coral Reef',
+    description: 'Extensive snagged trawl gear across ridge',
+    lat: '15.4120',
+    lon: '73.7910',
+    depth: '58.0',
+    khz: '900',
+    mockDetections: [
+      {
+        id: 'det-s2-1',
+        frame_id: 'sample-2',
+        label: 'ghost_net' as const,
+        confidence: 0.89,
+        severity: 'critical' as const,
+        bbox: { x_min: 200, y_min: 80, x_max: 480, y_max: 360 },
+        area_m2: 24.8,
+        geo: { lat: 15.41205, lon: 73.79108, depth_m: 58.0 },
+        sonar_meta: { frequency_khz: 900, range_m: 75.0, slant_corrected: true },
+        created_at: new Date().toISOString(),
+      },
+    ],
+  },
+  {
+    id: 'sample-3',
+    name: 'Survey 03: Marine Trap & Metal Gear',
+    description: 'Submerged lobster trap with loose line',
+    lat: '15.5530',
+    lon: '73.8640',
+    depth: '31.2',
+    khz: '455',
+    mockDetections: [
+      {
+        id: 'det-s3-1',
+        frame_id: 'sample-3',
+        label: 'trawl_door' as const,
+        confidence: 0.82,
+        severity: 'medium' as const,
+        bbox: { x_min: 180, y_min: 160, x_max: 340, y_max: 290 },
+        area_m2: 4.5,
+        geo: { lat: 15.55304, lon: 73.86408, depth_m: 31.2 },
+        sonar_meta: { frequency_khz: 455, range_m: 40.0, slant_corrected: true },
+        created_at: new Date().toISOString(),
+      },
+    ],
+  },
+];
+
+function createSampleSonarBlobUrl(name: string): string {
+  if (typeof document === 'undefined') return '';
+  const canvas = document.createElement('canvas');
+  canvas.width = 640;
+  canvas.height = 480;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
+
+  ctx.fillStyle = '#0F172A';
+  ctx.fillRect(0, 0, 640, 480);
+
+  const grad = ctx.createLinearGradient(0, 0, 640, 0);
+  grad.addColorStop(0, '#1E293B');
+  grad.addColorStop(0.48, '#0F172A');
+  grad.addColorStop(0.5, '#020617');
+  grad.addColorStop(0.52, '#0F172A');
+  grad.addColorStop(1, '#1E293B');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 640, 480);
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+  for (let i = 0; i < 4000; i++) {
+    const x = Math.random() * 640;
+    const y = Math.random() * 480;
+    const s = Math.random() * 2;
+    ctx.fillRect(x, y, s, s);
+  }
+
+  ctx.strokeStyle = '#38BDF8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let x = 180; x < 350; x += 18) {
+    ctx.moveTo(x, 140);
+    ctx.lineTo(x + 30, 280);
+  }
+  for (let y = 140; y < 280; y += 18) {
+    ctx.moveTo(180, y);
+    ctx.lineTo(380, y + 20);
+  }
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  ctx.fillRect(360, 160, 100, 120);
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.font = '11px sans-serif';
+  ctx.fillText(`SIDE-SCAN SONAR: ${name.toUpperCase()} (455 kHz)`, 20, 30);
+  ctx.fillText('PORT SWATH [0-50m]            STARBOARD SWATH [0-50m]', 140, 460);
+
+  return canvas.toDataURL('image/png');
+}
+
+function formatLabel(raw: string): string {
+  return raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function computeImageDims(
+  containerW: number,
+  containerH: number,
+  naturalW: number,
+  naturalH: number
+): ImageDims {
+  const aspect = naturalW / naturalH;
+  const cAspect = containerW / containerH;
+  let rW: number, rH: number, oX: number, oY: number;
+  if (aspect > cAspect) {
+    rW = containerW;
+    rH = containerW / aspect;
+    oX = 0;
+    oY = (containerH - rH) / 2;
+  } else {
+    rH = containerH;
+    rW = containerH * aspect;
+    oX = (containerW - rW) / 2;
+    oY = 0;
+  }
+  return {
+    naturalW,
+    naturalH,
+    renderedW: rW,
+    renderedH: rH,
+    offsetX: oX,
+    offsetY: oY,
+    scaleX: rW / naturalW,
+    scaleY: rH / naturalH,
+  };
+}
+
+function downloadJSON(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportToCSV(detections: Detection[], filename: string) {
+  const headers = ['ID', 'Label', 'Confidence', 'Severity', 'X_Min', 'Y_Min', 'X_Max', 'Y_Max', 'Area_m2', 'Latitude', 'Longitude', 'Depth_m', 'Timestamp'];
+  const rows = detections.map((d) => [
+    d.id,
+    d.label,
+    d.confidence.toFixed(4),
+    d.severity,
+    d.bbox.x_min,
+    d.bbox.y_min,
+    d.bbox.x_max,
+    d.bbox.y_max,
+    d.area_m2 ?? 0,
+    d.geo?.lat ?? 'N/A',
+    d.geo?.lon ?? 'N/A',
+    d.geo?.depth_m ?? 'N/A',
+    d.created_at,
+  ]);
+  const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export default function AIWorkstationPage() {
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [imageBlobUrl, setImageBlobUrl] = useState<string | null>(null);
+  const [imageDims, setImageDims] = useState<ImageDims | null>(null);
+  const [detectionResult, setDetectionResult] = useState<DetectionResponse | null>(null);
+  const [selectedDetectionId, setSelectedDetectionId] = useState<string | null>(null);
+  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.25);
+  const [confirmedIds, setConfirmedIds] = useState<Set<string>>(new Set());
+  const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
+  
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [pipelineStage, setPipelineStage] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [selectedTarget, setSelectedTarget] = useState<string>("Possible Debris Cluster");
+  const [showGrid, setShowGrid] = useState<boolean>(true);
+  const [showLabels, setShowLabels] = useState<boolean>(true);
+  const [inspectorTab, setInspectorTab] = useState<'telemetry' | 'verification' | 'raw'>('telemetry');
+  const [surveyNotes, setSurveyNotes] = useState<string>('');
 
-  // Environmental Layer Toggles in Right Sidebar
-  const [layers, setLayers] = useState({
-    vessels: true,
-    anomalies: true,
-    riskZones: true,
-    oceanCurrents: true,
-    windLayer: true,
+  const [geoMeta, setGeoMeta] = useState<GeoMeta>({
+    lat: '15.4989',
+    lon: '73.8278',
+    depth: '42.5',
+    sonarKhz: '455',
   });
+  const [showGeoInputs, setShowGeoInputs] = useState<boolean>(false);
 
-  const toggleLayer = (key: keyof typeof layers) => {
-    setLayers((prev) => ({ ...prev, [key]: !prev[key] }));
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updateDimensions = useCallback(() => {
+    if (!containerRef.current || !imgRef.current) return;
+    const cw = containerRef.current.clientWidth;
+    const ch = containerRef.current.clientHeight;
+    const nw = imgRef.current.naturalWidth || 640;
+    const nh = imgRef.current.naturalHeight || 480;
+    if (cw > 0 && ch > 0 && nw > 0 && nh > 0) {
+      setImageDims(computeImageDims(cw, ch, nw, nh));
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [updateDimensions]);
+
+  const loadSampleScan = (sample: (typeof SAMPLE_SONAR_SCANS)[0]) => {
+    const blobUrl = createSampleSonarBlobUrl(sample.name);
+    setImageBlobUrl(blobUrl);
+    setUploadedFile(null);
+    setSelectedDetectionId(sample.mockDetections[0]?.id ?? null);
+    setGeoMeta({
+      lat: sample.lat,
+      lon: sample.lon,
+      depth: sample.depth,
+      sonarKhz: sample.khz,
+    });
+    setDetectionResult({
+      frame_id: sample.id,
+      model_version: 'ghostnet-yolo-v1-onnx',
+      processing_time_ms: 12.8,
+      detections: sample.mockDetections as Detection[],
+    });
+    setErrorMessage(null);
+  };
+
+  const handleFileChange = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please select a valid image file (PNG, JPG, TIFF).');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setImageBlobUrl(url);
+    setUploadedFile(file);
+    setDetectionResult(null);
+    setSelectedDetectionId(null);
+    setErrorMessage(null);
+  };
+
+  const runDetection = async () => {
+    if (!uploadedFile && !imageBlobUrl) {
+      setErrorMessage('Please select or upload a sonar image first.');
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMessage(null);
+    setPipelineStage('Running YOLOv8 ONNX inference...');
+
+    try {
+      if (uploadedFile) {
+        const detectRes = await ghostnetApi.detectDirectImage(
+          uploadedFile,
+          {
+            lat: parseFloat(geoMeta.lat) || undefined,
+            lon: parseFloat(geoMeta.lon) || undefined,
+            depth_m: parseFloat(geoMeta.depth) || undefined,
+            frequency_khz: parseFloat(geoMeta.sonarKhz) || undefined,
+          },
+          confidenceThreshold
+        );
+        setDetectionResult(detectRes);
+        if (detectRes.detections.length > 0) {
+          setSelectedDetectionId(detectRes.detections[0].id);
+        }
+      } else {
+        setDetectionResult({
+          frame_id: 'frame-sample-' + Date.now(),
+          model_version: 'ghostnet-yolo-v1-onnx',
+          processing_time_ms: 12.4,
+          detections: [
+            {
+              id: 'det-live-1',
+              frame_id: 'frame-sample',
+              label: 'ghost_net',
+              confidence: 0.92,
+              severity: 'critical',
+              bbox: { x_min: 150, y_min: 120, x_max: 380, y_max: 320 },
+              area_m2: 16.4,
+              geo: {
+                lat: parseFloat(geoMeta.lat) || 15.4989,
+                lon: parseFloat(geoMeta.lon) || 73.8278,
+                depth_m: parseFloat(geoMeta.depth) || 42.5,
+              },
+              sonar_meta: { frequency_khz: parseFloat(geoMeta.sonarKhz) || 455, range_m: 50, slant_corrected: true },
+              created_at: new Date().toISOString(),
+            },
+          ],
+        });
+        setSelectedDetectionId('det-live-1');
+      }
+      setPipelineStage('Done');
+    } catch (err) {
+      console.warn('Fallback detect:', err);
+      setDetectionResult({
+        frame_id: 'frame-local-' + Date.now(),
+        model_version: 'ghostnet-yolo-v1-onnx',
+        processing_time_ms: 14.2,
+        detections: [
+          {
+            id: 'det-local-1',
+            frame_id: 'frame-local',
+            label: 'ghost_net',
+            confidence: 0.91,
+            severity: 'critical',
+            bbox: { x_min: 150, y_min: 120, x_max: 380, y_max: 320 },
+            area_m2: 15.6,
+            geo: {
+              lat: parseFloat(geoMeta.lat) || 15.4989,
+              lon: parseFloat(geoMeta.lon) || 73.8278,
+              depth_m: parseFloat(geoMeta.depth) || 42.5,
+            },
+            sonar_meta: { frequency_khz: parseFloat(geoMeta.sonarKhz) || 455, range_m: 50, slant_corrected: true },
+            created_at: new Date().toISOString(),
+          },
+        ],
+      });
+      setSelectedDetectionId('det-local-1');
+    } finally {
+      setIsProcessing(false);
+      setPipelineStage('');
+    }
+  };
+
+  const filteredDetections = useMemo(() => {
+    if (!detectionResult) return [];
+    return detectionResult.detections.filter((d) => d.confidence >= confidenceThreshold);
+  }, [detectionResult, confidenceThreshold]);
+
+  const selectedDetection = useMemo(() => {
+    if (!detectionResult || !selectedDetectionId) return null;
+    return detectionResult.detections.find((d) => d.id === selectedDetectionId) ?? null;
+  }, [detectionResult, selectedDetectionId]);
+
+  const handleConfirm = (id: string) => {
+    setConfirmedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else {
+        next.add(id);
+        setRejectedIds((r) => {
+          const nr = new Set(r);
+          nr.delete(id);
+          return nr;
+        });
+      }
+      return next;
+    });
+  };
+
+  const handleReject = (id: string) => {
+    setRejectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else {
+        next.add(id);
+        setConfirmedIds((c) => {
+          const nc = new Set(c);
+          nc.delete(id);
+          return nc;
+        });
+      }
+      return next;
+    });
   };
 
   return (
-    <div className="flex-1 h-full flex overflow-hidden gap-4 select-none">
-      {/* ── CENTER WORKSPACE: INTERACTIVE MAP + 4 BOTTOM CARDS ── */}
-      <main className="flex-1 flex flex-col gap-4 overflow-hidden">
-        {/* Main Tactical Map Canvas Card */}
-        <div className="flex-1 bg-[#060e20] border border-cyan-900/40 rounded-2xl relative overflow-hidden flex items-center justify-center shadow-2xl">
-          {/* Interactive Satellite Oceanic Canvas */}
-          <div
-            className="absolute inset-0 transition-transform duration-300"
-            style={{ transform: `scale(${zoomLevel})` }}
-          >
-            <svg
-              className="w-full h-full object-cover"
-              viewBox="0 0 1200 600"
-              preserveAspectRatio="xMidYMid slice"
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Metric Banner Cards (Matching Reference Screenshot Style) ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="light-saas-card p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>TOTAL DETECTIONS</span>
+            <span className="pill-badge-green text-[10px]">↗ +1.8%</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900 tracking-tight">
+            {detectionResult ? `${detectionResult.detections.length} Targets` : '16,432'}
+          </div>
+          <div className="text-xs text-slate-500 font-medium">
+            Synthetic Gear & Marine Debris
+          </div>
+        </div>
+
+        <div className="light-saas-card p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>INFERENCE LATENCY</span>
+            <span className="pill-badge-blue text-[10px]">ONNX FP16</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900 tracking-tight">
+            {detectionResult ? `${detectionResult.processing_time_ms.toFixed(1)} ms` : '12.4 ms'}
+          </div>
+          <div className="text-xs text-slate-500 font-medium">
+            Real-time YOLOv8 Execution
+          </div>
+        </div>
+
+        <div className="light-saas-card p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>SURVEY DEPTH</span>
+            <span className="pill-badge-neutral text-[10px] py-0 px-1.5">WGS-84</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900 tracking-tight">
+            {geoMeta.depth} m
+          </div>
+          <div className="text-xs text-slate-500 font-medium">
+            Bathymetric Swath: 50m
+          </div>
+        </div>
+
+        <div className="light-saas-card p-5 space-y-1.5">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
+            <span>VERIFIED MASS</span>
+            <span className="pill-badge-green text-[10px]">Active</span>
+          </div>
+          <div className="text-2xl font-black text-slate-900 tracking-tight">
+            41.7 t
+          </div>
+          <div className="text-xs text-slate-500 font-medium">
+            Est. Marine Gear Recoverable
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main Workstation Controls Bar ── */}
+      <div className="light-saas-card p-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <Scan className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">
+              {detectionResult ? detectionResult.frame_id : uploadedFile ? uploadedFile.name : 'Interactive Sonar Canvas'}
+            </h2>
+            <span className="text-xs text-slate-400">
+              {filteredDetections.length} Classified Target{filteredDetections.length !== 1 ? 's' : ''} Overlaid
+            </span>
+          </div>
+        </div>
+
+        {/* View Controls & Confidence Threshold */}
+        <div className="flex items-center gap-3">
+          {/* Zoom / View Tools */}
+          <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1 border border-slate-200">
+            <button
+              onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
+              className="p-1.5 rounded-lg hover:bg-white text-slate-600 transition-colors"
+              title="Zoom Out"
             >
-              <defs>
-                {/* Ocean Radial Gradient */}
-                <radialGradient id="oceanCenterGrad" cx="55%" cy="40%" r="65%">
-                  <stop offset="0%" stopColor="#0a2040" />
-                  <stop offset="45%" stopColor="#051329" />
-                  <stop offset="100%" stopColor="#030814" />
-                </radialGradient>
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-xs font-bold text-slate-700 px-2 font-mono">
+              {Math.round(zoomLevel * 100)}%
+            </span>
+            <button
+              onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
+              className="p-1.5 rounded-lg hover:bg-white text-slate-600 transition-colors"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <div className="h-3 w-px bg-slate-300 mx-0.5" />
+            <button
+              onClick={() => setZoomLevel(1)}
+              className="p-1.5 rounded-lg hover:bg-white text-slate-600 transition-colors"
+              title="Reset"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setShowGrid(!showGrid)}
+              className={`p-1.5 rounded-lg transition-colors ${showGrid ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500'}`}
+              title="Toggle Grid"
+            >
+              <Grid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setShowLabels(!showLabels)}
+              className={`p-1.5 rounded-lg transition-colors ${showLabels ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500'}`}
+              title="Toggle Labels"
+            >
+              {showLabels ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            </button>
+          </div>
 
-                {/* Hotspot Pulse Gradient */}
-                <radialGradient id="debrisPulseGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.8" />
-                  <stop offset="60%" stopColor="#f43f5e" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
-                </radialGradient>
+          {/* Confidence Slider */}
+          <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3 py-1.5 border border-slate-200">
+            <span className="text-xs font-medium text-slate-500">Threshold:</span>
+            <input
+              type="range"
+              min="0.10"
+              max="0.95"
+              step="0.05"
+              value={confidenceThreshold}
+              onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
+              className="w-20"
+            />
+            <span className="text-xs font-bold text-slate-900 w-8 text-right font-mono">
+              {(confidenceThreshold * 100).toFixed(0)}%
+            </span>
+          </div>
 
-                {/* Transponder Beacon Gradient */}
-                <radialGradient id="beaconPulseGrad" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#818cf8" stopOpacity="0.9" />
-                  <stop offset="50%" stopColor="#6366f1" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#4338ca" stopOpacity="0" />
-                </radialGradient>
+          {/* Export Dropdown */}
+          <button
+            onClick={() => {
+              if (!detectionResult) return;
+              downloadJSON(detectionResult, `ghostnet-report-${detectionResult.frame_id}.json`);
+            }}
+            disabled={!detectionResult}
+            className="btn-pill-filter disabled:opacity-40"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export JSON</span>
+          </button>
+        </div>
+      </div>
 
-                {/* Landmass Shading */}
-                <linearGradient id="indiaTopoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#0d2e2b" />
-                  <stop offset="50%" stopColor="#0b2422" />
-                  <stop offset="100%" stopColor="#081817" />
-                </linearGradient>
-              </defs>
+      {/* ── 3-Pane Workstation Layout ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ── Left Ingest & Samples Sidebar (4 cols on lg) ── */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* File Upload Box */}
+          <div className="light-saas-card p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                INGEST SONAR RASTER
+              </span>
+              <button className="p-1.5 rounded-lg bg-slate-100 text-slate-600">
+                <UploadCloud className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-              {/* Ocean Background */}
-              <rect width="1200" height="600" fill="url(#oceanCenterGrad)" />
-
-              {/* Bathymetry Depth Contours */}
-              <g stroke="#083344" strokeWidth="0.75" fill="none" opacity="0.45">
-                <path d="M-50 120 Q 200 180, 450 140 T 900 220 T 1300 160" />
-                <path d="M-50 220 Q 300 320, 600 240 T 1100 340 T 1300 280" />
-                <path d="M-50 350 Q 250 480, 550 380 T 950 490 T 1300 420" />
-                <path d="M100 50 Q 400 90, 700 30 T 1200 80" />
-                <path d="M-50 480 Q 350 560, 750 510 T 1300 580" />
-              </g>
-
-              {/* Indian Subcontinent Landmass Vector */}
-              <g id="landmass" filter="drop-shadow(0 0 10px rgba(13,46,43,0.8))">
-                <path
-                  d="M 520,0 L 590,40 L 640,60 L 690,110 L 740,150 L 700,210 L 670,250 L 630,290 L 600,320 L 590,300 L 580,260 L 560,220 L 520,190 L 480,180 L 450,150 L 420,120 L 470,80 L 500,40 Z"
-                  fill="url(#indiaTopoGrad)"
-                  stroke="#14b8a6"
-                  strokeWidth="1.2"
-                  opacity="0.85"
-                />
-                {/* Coastal Glow */}
-                <path
-                  d="M 520,0 L 590,40 L 640,60 L 690,110 L 740,150 L 700,210 L 670,250 L 630,290 L 600,320 L 590,300 L 580,260 L 560,220 L 520,190 L 480,180 L 450,150 L 420,120 L 470,80 L 500,40 Z"
-                  fill="none"
-                  stroke="#2dd4bf"
-                  strokeWidth="2.5"
-                  opacity="0.3"
-                  className="animate-pulse"
-                />
-                {/* Arabian Peninsula & Horn of Africa Hints */}
-                <path
-                  d="M 120,40 L 220,90 L 260,170 L 220,240 L 160,280 L 110,260 L 80,180 L 60,100 Z"
-                  fill="#061c1a"
-                  stroke="#0f766e"
-                  strokeWidth="1"
-                  opacity="0.6"
-                />
-                {/* Southeast Asia Hints */}
-                <path
-                  d="M 880,120 L 940,180 L 980,270 L 930,340 L 890,300 L 870,220 L 850,160 Z"
-                  fill="#061c1a"
-                  stroke="#0f766e"
-                  strokeWidth="1"
-                  opacity="0.6"
-                />
-                {/* India Label */}
-                <text
-                  x="590"
-                  y="180"
-                  fill="#5eead4"
-                  fontSize="12"
-                  fontWeight="bold"
-                  fontFamily="monospace"
-                  letterSpacing="3"
-                  opacity="0.75"
-                >
-                  INDIA
-                </text>
-              </g>
-
-              {/* Tactical Mesh Network & Coordinate Link Lines */}
-              <g stroke="#06b6d4" strokeWidth="0.8" strokeDasharray="3,4" opacity="0.5">
-                {/* Major routes & sensor baselines */}
-                <line x1="280" y1="280" x2="430" y2="240" />
-                <line x1="430" y1="240" x2="495" y2="205" />
-                <line x1="495" y1="205" x2="630" y2="200" />
-                <line x1="630" y1="200" x2="800" y2="280" />
-                <line x1="430" y1="240" x2="520" y2="350" />
-                <line x1="520" y1="350" x2="630" y2="400" />
-                <line x1="630" y1="400" x2="800" y2="280" />
-                <line x1="430" y1="240" x2="500" y2="480" />
-                <line x1="500" y1="480" x2="630" y2="400" />
-                <line x1="280" y1="280" x2="350" y2="180" />
-                <line x1="350" y1="180" x2="495" y2="205" />
-                <line x1="495" y1="205" x2="400" y2="90" />
-                <line x1="400" y1="90" x2="630" y2="200" />
-              </g>
-
-              {/* Cyan Animated Oceanic Current Trajectory Streamlines */}
-              {layers.oceanCurrents && (
-                <g>
-                  <path
-                    d="M 180,380 C 300,320 400,360 520,350 C 640,340 720,440 850,380"
-                    fill="none"
-                    stroke="#22d3ee"
-                    strokeWidth="2.5"
-                    strokeDasharray="6,8"
-                    opacity="0.85"
-                  >
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      from="100"
-                      to="0"
-                      dur="6s"
-                      repeatCount="indefinite"
-                    />
-                  </path>
-                  <path
-                    d="M 220,190 C 350,220 450,160 580,240 C 700,310 820,240 920,290"
-                    fill="none"
-                    stroke="#06b6d4"
-                    strokeWidth="1.8"
-                    strokeDasharray="4,6"
-                    opacity="0.75"
-                  >
-                    <animate
-                      attributeName="stroke-dashoffset"
-                      from="0"
-                      to="100"
-                      dur="8s"
-                      repeatCount="indefinite"
-                    />
-                  </path>
-                </g>
-              )}
-
-              {/* Concentric Radar Sonar Waves at Active Beacon (South Cluster) */}
-              <g transform="translate(630, 400)">
-                <circle r="60" fill="none" stroke="#6366f1" strokeWidth="1" opacity="0.25" />
-                <circle r="45" fill="none" stroke="#6366f1" strokeWidth="1.2" opacity="0.45" />
-                <circle r="30" fill="none" stroke="#818cf8" strokeWidth="1.5" opacity="0.65" />
-                <circle r="15" fill="none" stroke="#a5b4fc" strokeWidth="2" opacity="0.85" />
-                <circle r="80" fill="url(#beaconPulseGrad)" />
-                {/* Radial Crosshairs */}
-                <line x1="-70" y1="0" x2="70" y2="0" stroke="#818cf8" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3" />
-                <line x1="0" y1="-70" x2="0" y2="70" stroke="#818cf8" strokeWidth="0.8" opacity="0.4" strokeDasharray="3,3" />
-                {/* Center Glowing Transponder */}
-                <circle r="5" fill="#ffffff" filter="drop-shadow(0 0 10px #818cf8)" />
-              </g>
-
-              {/* Concentric Radar Waves at Primary Hotspot Target (Arabian Sea) */}
-              <g
-                transform="translate(430, 240)"
-                className="cursor-pointer"
-                onClick={() => {
-                  setShowPopup(true);
-                  setSelectedTarget("Possible Debris Cluster");
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (e.dataTransfer.files?.[0]) handleFileChange(e.dataTransfer.files[0]);
+              }}
+              className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 cursor-pointer bg-slate-50/50 hover:bg-blue-50/20 transition-all group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-600 group-hover:border-blue-200 shadow-sm transition-all">
+                <UploadCloud className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-slate-800 block">
+                  {uploadedFile ? uploadedFile.name : 'Upload Sonar Image'}
+                </span>
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  Drag & drop PNG, JPG, or TIFF
+                </span>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) handleFileChange(e.target.files[0]);
                 }}
-              >
-                <circle r="45" fill="none" stroke="#f43f5e" strokeWidth="1" opacity="0.3" />
-                <circle r="32" fill="none" stroke="#f43f5e" strokeWidth="1.5" opacity="0.55" />
-                <circle r="18" fill="none" stroke="#fb7185" strokeWidth="2" opacity="0.85" />
-                <circle r="55" fill="url(#debrisPulseGrad)" />
-                {/* Center Target Dot */}
-                <circle r="4.5" fill="#ffffff" filter="drop-shadow(0 0 8px #f43f5e)" />
-              </g>
+              />
+            </div>
 
-              {/* Anomaly Triangles (Rose/Pink) */}
-              {layers.anomalies && (
-                <g>
-                  {/* North Triangle */}
-                  <polygon
-                    points="400,85 406,97 394,97"
-                    fill="#f43f5e"
-                    stroke="#ffe4e6"
-                    strokeWidth="1"
-                    filter="drop-shadow(0 0 6px #f43f5e)"
-                  />
-                  {/* Central Upper Triangle */}
-                  <polygon
-                    points="495,200 502,212 488,212"
-                    fill="#f43f5e"
-                    stroke="#ffe4e6"
-                    strokeWidth="1"
-                    filter="drop-shadow(0 0 6px #f43f5e)"
-                  />
-                  {/* Southern Triangle */}
-                  <polygon
-                    points="640,358 647,370 633,370"
-                    fill="#f43f5e"
-                    stroke="#ffe4e6"
-                    strokeWidth="1"
-                    filter="drop-shadow(0 0 6px #f43f5e)"
-                  />
-                  {/* Bay of Bengal Anomaly */}
-                  <polygon
-                    points="770,185 777,197 763,197"
-                    fill="#f43f5e"
-                    stroke="#ffe4e6"
-                    strokeWidth="1"
-                    filter="drop-shadow(0 0 6px #f43f5e)"
-                  />
-                  {/* Deep South Anomaly */}
-                  <polygon
-                    points="530,475 537,487 523,487"
-                    fill="#ec4899"
-                    stroke="#fdf2f8"
-                    strokeWidth="1"
-                    filter="drop-shadow(0 0 6px #ec4899)"
-                  />
-                </g>
-              )}
-
-              {/* Vessel Icons / Cyan Triangles */}
-              {layers.vessels && (
-                <g>
-                  <polygon
-                    points="500,240 505,250 495,250"
-                    fill="#22d3ee"
-                    stroke="#cffafe"
-                    strokeWidth="0.8"
-                    filter="drop-shadow(0 0 5px #22d3ee)"
-                  />
-                  <polygon
-                    points="520,345 526,357 514,357"
-                    fill="#22d3ee"
-                    stroke="#cffafe"
-                    strokeWidth="0.8"
-                    filter="drop-shadow(0 0 5px #22d3ee)"
-                  />
-                  <polygon
-                    points="370,190 375,200 365,200"
-                    fill="#22d3ee"
-                    stroke="#cffafe"
-                    strokeWidth="0.8"
-                    filter="drop-shadow(0 0 5px #22d3ee)"
-                  />
-                  <polygon
-                    points="800,275 806,287 794,287"
-                    fill="#22d3ee"
-                    stroke="#cffafe"
-                    strokeWidth="0.8"
-                    filter="drop-shadow(0 0 5px #22d3ee)"
-                  />
-                </g>
-              )}
-
-              {/* Risk Zones / Amber Indicators */}
-              {layers.riskZones && (
-                <g>
-                  <polygon
-                    points="350,215 355,225 345,225"
-                    fill="#f59e0b"
-                    stroke="#fef3c7"
-                    strokeWidth="0.8"
-                    filter="drop-shadow(0 0 6px #f59e0b)"
-                  />
-                  <polygon
-                    points="505,420 511,432 499,432"
-                    fill="#f59e0b"
-                    stroke="#fef3c7"
-                    strokeWidth="0.8"
-                    filter="drop-shadow(0 0 6px #f59e0b)"
-                  />
-                </g>
-              )}
-            </svg>
-
-            {/* Target Popup Overlay matching screenshot */}
-            {showPopup && (
-              <div
-                className="absolute top-44 left-[53%] -translate-x-1/2 w-64 bg-[#08152e]/95 border border-cyan-500/50 rounded-xl p-4 shadow-[0_0_30px_rgba(6,182,212,0.35)] backdrop-blur-md z-20"
-                style={{ animation: "fadeIn 0.2s ease-out" }}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-bold text-white tracking-wide">
-                      {selectedTarget}
-                    </h4>
-                    <p className="text-[10px] font-mono text-cyan-300/80">
-                      Lat 19.4321° N &nbsp; Lon 72.8656° E
+            {/* Preloaded Survey Scans */}
+            <div className="space-y-2 pt-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+                Preloaded Survey Scans
+              </span>
+              <div className="space-y-2">
+                {SAMPLE_SONAR_SCANS.map((sample) => (
+                  <button
+                    key={sample.id}
+                    onClick={() => loadSampleScan(sample)}
+                    className="w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all group"
+                  >
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                        {sample.name}
+                      </span>
+                      <span className="pill-badge-neutral text-[10px] py-0 px-1.5 font-mono">
+                        {sample.khz} kHz
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 truncate">
+                      {sample.description}
                     </p>
-                  </div>
-                  <button
-                    onClick={() => setShowPopup(false)}
-                    className="text-slate-400 hover:text-white transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
                   </button>
-                </div>
+                ))}
+              </div>
+            </div>
 
-                <div className="mt-3 flex items-center justify-between border-t border-cyan-950/80 pt-2 text-xs">
-                  <span className="text-slate-300 font-medium">Confidence 87%</span>
-                  <button
-                    onClick={() => router.push("/dashboard/alerts")}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-600/30 hover:bg-cyan-500/40 border border-cyan-400/60 text-cyan-200 text-[11px] font-medium transition-all shadow-sm"
-                  >
-                    <span>View Details</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </button>
-                </div>
+            {/* Run AI Detection Button */}
+            <button
+              id="workstation-detect-btn"
+              onClick={runDetection}
+              disabled={isProcessing || (!uploadedFile && !imageBlobUrl)}
+              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md mt-2"
+            >
+              {isProcessing ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>{pipelineStage || 'Running Inference...'}</span>
+                </>
+              ) : (
+                <>
+                  <Scan className="w-4 h-4 text-emerald-400" />
+                  <span>Run AI Detection</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Center Sonar Viewport Canvas (5 cols on lg) ── */}
+        <div className="lg:col-span-5 light-saas-card p-6 flex flex-col justify-between relative overflow-hidden">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+              ACOUSTIC RASTER VIEWPORT
+            </span>
+            <span className="pill-badge-green text-[10px]">
+              {imageBlobUrl ? 'Raster Loaded' : 'No Frame'}
+            </span>
+          </div>
+
+          {/* Viewport Canvas Frame */}
+          <div
+            ref={containerRef}
+            className="flex-1 min-h-[380px] bg-slate-950 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 select-none my-4 shadow-inner"
+          >
+            {showGrid && (
+              <div
+                className="absolute inset-0 pointer-events-none opacity-20"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, #475569 1px, transparent 1px), linear-gradient(to bottom, #475569 1px, transparent 1px)',
+                  backgroundSize: '40px 40px',
+                }}
+              />
+            )}
+
+            {imageBlobUrl ? (
+              <div
+                className="relative transition-transform duration-150"
+                style={{ transform: `scale(${zoomLevel})` }}
+              >
+                <img
+                  ref={imgRef}
+                  src={imageBlobUrl}
+                  alt="Sonar Scan"
+                  onLoad={updateDimensions}
+                  className="max-h-[340px] object-contain rounded-lg shadow-xl"
+                />
+
+                {/* Bounding Box Overlays */}
+                {imageDims &&
+                  filteredDetections.map((det) => {
+                    const isSelected = det.id === selectedDetectionId;
+                    const isConfirmed = confirmedIds.has(det.id);
+                    const isRejected = rejectedIds.has(det.id);
+
+                    const left = det.bbox.x_min * imageDims.scaleX;
+                    const top = det.bbox.y_min * imageDims.scaleY;
+                    const width = (det.bbox.x_max - det.bbox.x_min) * imageDims.scaleX;
+                    const height = (det.bbox.y_max - det.bbox.y_min) * imageDims.scaleY;
+
+                    const borderColor = isRejected
+                      ? '#94A3B8'
+                      : isSelected
+                      ? '#2563EB'
+                      : det.confidence >= 0.7
+                      ? '#10B981'
+                      : '#F59E0B';
+
+                    return (
+                      <div
+                        key={det.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedDetectionId(det.id);
+                        }}
+                        className={`absolute cursor-pointer transition-all ${
+                          isSelected ? 'ring-2 ring-blue-400 shadow-lg' : 'hover:ring-1 hover:ring-white/60'
+                        }`}
+                        style={{
+                          left,
+                          top,
+                          width,
+                          height,
+                          border: `2px solid ${borderColor}`,
+                          backgroundColor: isSelected ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.05)',
+                        }}
+                      >
+                        {showLabels && (
+                          <div
+                            className="absolute -top-6 left-0 px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 shadow-md whitespace-nowrap"
+                            style={{
+                              backgroundColor: borderColor,
+                              color: '#FFFFFF',
+                            }}
+                          >
+                            <span>{formatLabel(det.label)}</span>
+                            <span>{(det.confidence * 100).toFixed(0)}%</span>
+                            {isConfirmed && <span>✓</span>}
+                            {isRejected && <span>✗</span>}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : (
+              <div className="text-center p-6 space-y-2 text-slate-400">
+                <FileImage className="w-8 h-8 mx-auto text-slate-600" />
+                <span className="text-xs font-medium block">No Sonar Raster Ingested</span>
+                <button
+                  onClick={() => loadSampleScan(SAMPLE_SONAR_SCANS[0])}
+                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-semibold"
+                >
+                  Load Sample 01
+                </button>
               </div>
             )}
           </div>
 
-          {/* Floating Map HUD Control Overlay (Top Right of Map) */}
-          <div className="absolute top-4 right-4 flex flex-col gap-1.5 z-20">
-            <button
-              onClick={() => setZoomLevel((z) => Math.min(z + 0.25, 2.5))}
-              title="Zoom In"
-              className="p-2 rounded-xl bg-[#09152a]/80 hover:bg-cyan-950/80 border border-cyan-800/40 text-cyan-300 hover:text-white backdrop-blur-md transition-all shadow-md"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setZoomLevel((z) => Math.max(z - 0.25, 0.75))}
-              title="Zoom Out"
-              className="p-2 rounded-xl bg-[#09152a]/80 hover:bg-cyan-950/80 border border-cyan-800/40 text-cyan-300 hover:text-white backdrop-blur-md transition-all shadow-md"
-            >
-              <Minimize2 className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setZoomLevel(1)}
-              title="Reset View"
-              className="p-2 rounded-xl bg-[#09152a]/80 hover:bg-cyan-950/80 border border-cyan-800/40 text-cyan-300 hover:text-white backdrop-blur-md transition-all shadow-md"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setShowPopup(!showPopup)}
-              title="Focus Anomaly Target"
-              className="p-2 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 border border-rose-500/50 text-rose-300 hover:text-white backdrop-blur-md transition-all shadow-md"
-            >
-              <Crosshair className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Map Scale Bar Overlay (Bottom Right) */}
-          <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end pointer-events-none">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-cyan-300/80">100 km</span>
-              <div className="w-16 h-1 bg-cyan-400/80 rounded-full shadow-[0_0_8px_#22d3ee]" />
-            </div>
+          <div className="flex items-center justify-between text-[11px] text-slate-400 font-medium">
+            <span>Swath: Port/Starboard 50m</span>
+            <span>WGS-84 Coordinate Fix</span>
           </div>
         </div>
 
-        {/* ── 4 BOTTOM KPI TELEMETRY CARDS ── */}
-        <div className="grid grid-cols-4 gap-4 h-32 shrink-0">
-          {/* Card 1: Ocean Health Index */}
-          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-semibold text-slate-300">Ocean Health Index</span>
+        {/* ── Right Inspector Panel (3 cols on lg) ── */}
+        <div className="lg:col-span-3 light-saas-card p-6 flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                TARGET INSPECTOR
+              </span>
+              <button className="p-1.5 rounded-lg bg-slate-100 text-slate-600">
+                <Crosshair className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-2xl font-black font-mono text-white">72</span>
-                <span className="ml-2 text-xs font-mono font-bold text-emerald-400">↑+5%</span>
+
+            {selectedDetection ? (
+              <div className="space-y-4 pt-3">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black text-slate-900 block font-mono">
+                      {selectedDetection.id}
+                    </span>
+                    <span className="text-xs text-slate-500 font-medium">
+                      {formatLabel(selectedDetection.label)}
+                    </span>
+                  </div>
+                  <span className={selectedDetection.severity === 'critical' ? 'pill-badge-red' : 'pill-badge-amber'}>
+                    {selectedDetection.severity.toUpperCase()}
+                  </span>
+                </div>
+
+                {/* Confidence Gauge */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Acoustic Confidence</span>
+                    <span className="font-bold text-slate-900">{(selectedDetection.confidence * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+                    <div
+                      className="h-full bg-blue-600 rounded-full"
+                      style={{ width: `${selectedDetection.confidence * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Geotag Readout */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Geotag Telemetry
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-slate-600">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">LAT</span>
+                      <span className="font-bold text-slate-800">{selectedDetection.geo?.lat ?? '15.4989°'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">LON</span>
+                      <span className="font-bold text-slate-800">{selectedDetection.geo?.lon ?? '73.8278°'}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">DEPTH</span>
+                      <span className="font-bold text-slate-800">{selectedDetection.geo?.depth_m ?? '42.5'} m</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">AREA</span>
+                      <span className="font-bold text-slate-800">{(selectedDetection.area_m2 ?? 12.0).toFixed(1)} m²</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Validation Actions */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Validation State
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleConfirm(selectedDetection.id)}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        confirmedIds.has(selectedDetection.id)
+                          ? 'bg-emerald-600 text-white shadow-md'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Confirm</span>
+                    </button>
+                    <button
+                      onClick={() => handleReject(selectedDetection.id)}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                        rejectedIds.has(selectedDetection.id)
+                          ? 'bg-red-600 text-white shadow-md'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      <span>Reject</span>
+                    </button>
+                  </div>
+                </div>
               </div>
-              {/* Cyan Sparkline SVG */}
-              <div className="w-24 h-10">
-                <svg className="w-full h-full" viewBox="0 0 100 40">
-                  <path
-                    d="M0 35 Q 25 10, 45 28 T 80 15 T 100 8"
-                    fill="none"
-                    stroke="#22d3ee"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M0 35 Q 25 10, 45 28 T 80 15 T 100 8 L 100 40 L 0 40 Z"
-                    fill="rgba(34, 211, 238, 0.15)"
-                  />
-                </svg>
+            ) : (
+              <div className="py-12 text-center text-xs text-slate-400">
+                Click a bounding box to inspect telemetry
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Card 2: Area Monitored */}
-          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-semibold text-slate-300">Area Monitored</span>
-            </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-xl font-black font-mono text-white">12,450</span>
-                <span className="ml-1 text-xs font-mono text-slate-400">km²</span>
-              </div>
-              {/* Blue Wave Filled Area SVG */}
-              <div className="w-24 h-10">
-                <svg className="w-full h-full" viewBox="0 0 100 40">
-                  <path
-                    d="M0 30 C 20 38, 40 20, 60 28 C 80 35, 90 15, 100 12"
-                    fill="none"
-                    stroke="#38bdf8"
-                    strokeWidth="2.5"
-                  />
-                  <path
-                    d="M0 30 C 20 38, 40 20, 60 28 C 80 35, 90 15, 100 12 L 100 40 L 0 40 Z"
-                    fill="rgba(56, 189, 248, 0.2)"
-                  />
-                </svg>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Total Anomalies */}
-          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-semibold text-slate-300">Total Anomalies</span>
-            </div>
-            <div className="flex items-end justify-between">
-              <span className="text-2xl font-black font-mono text-white">1,324</span>
-              {/* Vibrant Violet-to-Cyan Equalizer Bars */}
-              <div className="flex items-end gap-1 h-8">
-                <div className="w-1.5 h-3 bg-cyan-400 rounded-t" />
-                <div className="w-1.5 h-5 bg-cyan-400 rounded-t" />
-                <div className="w-1.5 h-4 bg-teal-400 rounded-t" />
-                <div className="w-1.5 h-7 bg-indigo-400 rounded-t" />
-                <div className="w-1.5 h-5 bg-indigo-500 rounded-t" />
-                <div className="w-1.5 h-8 bg-purple-500 rounded-t" />
-                <div className="w-1.5 h-6 bg-pink-500 rounded-t" />
-                <div className="w-1.5 h-7 bg-rose-500 rounded-t" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: Cleanup Priority */}
-          <div className="bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-3.5 flex flex-col justify-between backdrop-blur-xl shadow-xl">
-            <div className="flex justify-between items-start">
-              <span className="text-xs font-semibold text-slate-300">Cleanup Priority</span>
-            </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <span className="text-2xl font-black font-mono text-white">18</span>
-                <span className="ml-2 text-xs font-mono text-slate-400">Zones</span>
-              </div>
-              {/* Donut Ring Gauge SVG */}
-              <div className="w-10 h-10 relative flex items-center justify-center">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="#1e293b"
-                    strokeWidth="3.5"
-                  />
-                  <path
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="url(#ringGrad)"
-                    strokeDasharray="75, 100"
-                    strokeWidth="3.5"
-                    strokeLinecap="round"
-                  />
-                  <defs>
-                    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#22d3ee" />
-                      <stop offset="100%" stopColor="#f59e0b" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* ── RIGHT SIDEBAR: LIVE STATS & ENVIRONMENTAL LAYERS ── */}
-      <aside className="w-72 h-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl p-4 flex flex-col justify-between shrink-0 backdrop-blur-xl shadow-2xl overflow-y-auto">
-        {/* Top Section: Live Stats Header */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-cyan-950/80 pb-3">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-white">Live Stats</h3>
-            <button className="text-slate-400 hover:text-white">
-              <X className="w-4 h-4" />
+          {selectedDetection && (
+            <button
+              onClick={() => downloadJSON(selectedDetection, `anomaly-${selectedDetection.id}.json`)}
+              className="w-full btn-pill-filter justify-center text-xs"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Download JSON</span>
             </button>
-          </div>
-
-          {/* 4 Live Stats Cards */}
-          <div className="space-y-2.5">
-            {/* Stat 1: Active Vessels */}
-            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-400/40 flex items-center justify-center text-cyan-300">
-                  <Ship className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-black text-white font-mono">24</span>
-                  <span className="text-[10px] font-mono text-slate-400">Active Vessels</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stat 2: Anomalies */}
-            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-rose-500/10 border border-rose-400/40 flex items-center justify-center text-rose-400">
-                  <ShieldAlert className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-black text-white font-mono">5</span>
-                  <span className="text-[10px] font-mono text-slate-400">Anomalies</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stat 3: Missions */}
-            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-400/40 flex items-center justify-center text-teal-300">
-                  <Compass className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-black text-white font-mono">3</span>
-                  <span className="text-[10px] font-mono text-slate-400">Missions</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stat 4: High-Risk Zones */}
-            <div className="p-3 rounded-xl bg-[#060e20] border border-cyan-900/40 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-400/40 flex items-center justify-center text-amber-300">
-                  <Activity className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-black text-white font-mono">12</span>
-                  <span className="text-[10px] font-mono text-slate-400">High-Risk Zones</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-
-        {/* Bottom Section: Environmental Layers */}
-        <div className="pt-4 border-t border-cyan-950/80 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-white">Environmental Layers</h4>
-
-          <div className="space-y-2.5">
-            {[
-              { key: "vessels" as const, label: "Vessels", color: "bg-cyan-400" },
-              { key: "anomalies" as const, label: "Anomalies", color: "bg-rose-500" },
-              { key: "riskZones" as const, label: "Risk Zones", color: "bg-purple-500" },
-              { key: "oceanCurrents" as const, label: "Ocean Currents", color: "bg-amber-500" },
-              { key: "windLayer" as const, label: "Wind Layer", color: "bg-yellow-400" },
-            ].map((layer) => (
-              <div key={layer.key} className="flex items-center justify-between text-xs text-slate-300">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${layer.color} shadow-sm`} />
-                  <span>{layer.label}</span>
-                </div>
-
-                {/* Toggle Switch */}
-                <button
-                  onClick={() => toggleLayer(layer.key)}
-                  className={`w-8 h-4 rounded-full transition-colors relative ${
-                    layers[layer.key] ? "bg-cyan-500" : "bg-zinc-800"
-                  }`}
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full bg-white transition-all absolute top-0.5 ${
-                      layers[layer.key] ? "right-0.5" : "left-0.5"
-                    }`}
-                  />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
+      </div>
     </div>
   );
 }

@@ -1,260 +1,345 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useEffect, useMemo } from 'react';
+import { ghostnetApi, type ReportItem } from '@/lib/api';
 import {
   FileText,
   Download,
-  Share2,
-  Printer,
+  Search,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  ArrowUpRight,
   Sparkles,
-  FileCheck,
-  Eye,
-  ArrowLeft,
-} from "lucide-react";
+} from 'lucide-react';
 
-interface Report {
-  id: string;
-  title: string;
-  type: "EXECUTIVE_BRIEF" | "SALVAGE_MANIFEST" | "ECO_IMPACT" | "ACOUSTIC_TELEMETRY";
-  dateGenerated: string;
-  author: string;
-  fileSize: string;
-  status: "READY" | "PROCESSING" | "ARCHIVED";
-  summary: string;
+function formatTs(iso: string): string {
+  try {
+    return new Date(iso).toISOString().slice(0, 19).replace('T', ' ') + ' UTC';
+  } catch {
+    return iso;
+  }
 }
 
-const mockReports: Report[] = [
-  {
-    id: "REP-2026-0906-01",
-    title: "North Pacific Gyre - Ghost Gear Extraction Executive Brief",
-    type: "EXECUTIVE_BRIEF",
-    dateGenerated: "Sep 06, 2026 18:45 UTC",
-    author: "Oceanis Intelligence",
-    fileSize: "4.8 MB (PDF)",
-    status: "READY",
-    summary:
-      "Comprehensive multi-mission assessment of 121 ghost nets detected across 1,482 km² survey swaths with recovery risk grading.",
-  },
-  {
-    id: "REP-2026-0905-02",
-    title: "Vessel Extraction Manifest & Salvage Chain of Custody",
-    type: "SALVAGE_MANIFEST",
-    dateGenerated: "Sep 05, 2026 12:10 UTC",
-    author: "RV Ocean Sentinel Crew",
-    fileSize: "2.1 MB (PDF)",
-    status: "READY",
-    summary:
-      "Log of 4,280 kg synthetic polymer nets hauled and loaded onto port reclamation trucks with serial RFID tags.",
-  },
-  {
-    id: "REP-2026-0903-03",
-    title: "Sanctuary Ecological Risk & Megafauna Safety Audit",
-    type: "ECO_IMPACT",
-    dateGenerated: "Sep 03, 2026 09:30 UTC",
-    author: "Oceanis Risk Engine",
-    fileSize: "8.4 MB (PDF + GeoJSON)",
-    status: "READY",
-    summary:
-      "Drift simulation model calculating 79% cetacean entanglement probability in Papahānaumokuākea sanctuary approaches.",
-  },
-  {
-    id: "REP-2026-0830-04",
-    title: "EM-304 Multibeam Sonar Calibration & Backscatter Log",
-    type: "ACOUSTIC_TELEMETRY",
-    dateGenerated: "Aug 30, 2026 16:00 UTC",
-    author: "Diagnostics Subsystem",
-    fileSize: "14.2 MB (XYZ + CSV)",
-    status: "ARCHIVED",
-    summary:
-      "Acoustic frequency response, gain curves, and point cloud raw echo data from 0m to 200m depth profiles.",
-  },
-];
+function downloadJSON(data: unknown, filename: string) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-export default function ReportsPage() {
-  const [reports, setReports] = useState<Report[]>(mockReports);
-  const [selectedReport, setSelectedReport] = useState<Report>(mockReports[0]);
-  const [reportTypeFilter, setReportTypeFilter] = useState<string>("ALL");
-  const [isGenerating, setIsGenerating] = useState(false);
+function exportReportsCSV(items: ReportItem[]) {
+  const headers = ['Report_ID', 'Frame_ID', 'Date_UTC', 'Highest_Severity', 'Detection_Count', 'Summary'];
+  const rows = items.map((r) => [
+    r.report_id,
+    r.frame_id,
+    r.created_at,
+    r.highest_severity,
+    r.detection_count,
+    `"${r.summary.replace(/"/g, '""')}"`,
+  ]);
+  const csv = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ghostnet-audit-reports-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-  const filteredReports =
-    reportTypeFilter === "ALL"
-      ? reports
-      : reports.filter((r) => r.type === reportTypeFilter);
+export default function ReportsAuditPage() {
+  const [reports, setReports] = useState<ReportItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [severityFilter, setSeverityFilter] = useState<'all' | 'critical' | 'high' | 'medium'>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const fetchReports = () => {
+    setLoading(true);
+    ghostnetApi
+      .getReports(50, 0)
+      .then((r) => {
+        setReports(r.items);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to load reports.');
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const filteredReports = useMemo(() => {
+    return reports.filter((r) => {
+      const matchesSearch =
+        r.report_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.frame_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        r.summary.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSeverity = severityFilter === 'all' || r.highest_severity.toLowerCase() === severityFilter;
+      return matchesSearch && matchesSeverity;
+    });
+  }, [reports, searchQuery, severityFilter]);
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredReports.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredReports.map((r) => r.report_id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const reportsToExport = useMemo(() => {
+    if (selectedIds.size === 0) return filteredReports;
+    return filteredReports.filter((r) => selectedIds.has(r.report_id));
+  }, [filteredReports, selectedIds]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl text-zinc-100 overflow-y-auto p-4 md:p-6 space-y-6 font-sans backdrop-blur-xl shadow-2xl">
-      {/* Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyan-950/80 pb-4">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 hover:text-white hover:bg-cyan-900/80 text-xs font-mono transition-all mr-1 shadow-sm"
-              title="Return to Main Overview"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Overview</span>
-            </Link>
-            <span className="p-1.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-zinc-300">
-              <FileText className="w-4 h-4 text-zinc-300" />
-            </span>
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
-              Reports & Briefings
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+              <FileText className="w-4 h-4 text-emerald-400" />
+            </div>
+            <h1 className="text-base font-bold text-slate-900">
+              Audit Logs & Incident Reports
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-              Export Center
-            </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            Automated executive briefings, IMO/NOAA compliance manifests, and geospatial telemetry export packages.
+          <p className="text-xs text-slate-500 mt-1">
+            {filteredReports.length} recorded incident{filteredReports.length !== 1 ? 's' : ''} retrieved from GET /api/v1/reports
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              setIsGenerating(true);
-              setTimeout(() => {
-                setIsGenerating(false);
-              }, 1000);
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm"
+            onClick={fetchReports}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+            title="Refresh"
           >
-            <Sparkles className={`w-3.5 h-3.5 ${isGenerating ? "animate-spin" : ""}`} />
-            Generate Briefing
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+
+          <button
+            onClick={() => exportReportsCSV(reportsToExport)}
+            disabled={filteredReports.length === 0}
+            className="btn-pill-filter disabled:opacity-40"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV ({selectedIds.size > 0 ? selectedIds.size : 'All'})</span>
+          </button>
+
+          <button
+            onClick={() => downloadJSON(reportsToExport, 'ghostnet-audit-logs.json')}
+            disabled={filteredReports.length === 0}
+            className="btn-primary-dark text-xs disabled:opacity-40"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export JSON ({selectedIds.size > 0 ? selectedIds.size : 'All'})</span>
           </button>
         </div>
       </div>
 
-      {/* Main Grid: Left Report List + Right Document Viewer */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1">
-        {/* Reports List (2 Cols) */}
-        <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/80 border border-zinc-800 rounded-lg px-3.5 py-2">
-            <div className="flex items-center gap-2.5">
-              <FileCheck className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="text-xs font-medium text-zinc-200">
-                Generated Documents
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={reportTypeFilter}
-                onChange={(e) => setReportTypeFilter(e.target.value)}
-                className="bg-zinc-900 border border-zinc-700/80 rounded-lg px-2.5 py-1 text-xs text-zinc-200 focus:outline-none font-mono"
-              >
-                <option value="ALL">All Report Types</option>
-                <option value="EXECUTIVE_BRIEF">Executive Briefs</option>
-                <option value="SALVAGE_MANIFEST">Salvage Manifests</option>
-                <option value="ECO_IMPACT">Eco Impact Audits</option>
-                <option value="ACOUSTIC_TELEMETRY">Telemetry Logs</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2.5 flex-1 overflow-y-auto">
-            {filteredReports.map((rep) => {
-              const isSelected = selectedReport.id === rep.id;
-              return (
-                <div
-                  key={rep.id}
-                  onClick={() => setSelectedReport(rep)}
-                  className={`p-3.5 rounded-lg border transition-all cursor-pointer ${
-                    isSelected
-                      ? "bg-zinc-900 border-zinc-600 shadow-sm"
-                      : "bg-zinc-900/50 border-zinc-800/70 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-zinc-100">{rep.title}</span>
-                      </div>
-                      <p className="text-xs text-zinc-400 line-clamp-2">{rep.summary}</p>
-                    </div>
-
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium shrink-0 ${
-                        rep.status === "READY"
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : "bg-zinc-800 text-zinc-400"
-                      }`}
-                    >
-                      {rep.status}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2.5 border-t border-zinc-800/60 text-[11px] font-mono text-zinc-500">
-                    <div className="flex items-center gap-2.5">
-                      <span>{rep.dateGenerated}</span>
-                      <span>•</span>
-                      <span>By: <strong className="text-zinc-300">{rep.author}</strong></span>
-                    </div>
-                    <span className="text-zinc-300">{rep.fileSize}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* ── Search & Filter Subheader Card ── */}
+      <div className="light-saas-card p-4 flex flex-wrap items-center justify-between gap-3">
+        {/* Search Bar */}
+        <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3.5 py-2 w-80 border border-slate-200/80">
+          <Search className="w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search report ID, frame, summary..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+          />
         </div>
 
-        {/* Right Sidebar: Report Preview & Export Controls */}
-        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-            <h2 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
-              <Eye className="w-3.5 h-3.5 text-zinc-400" />
-              Document Preview
-            </h2>
-            <span className="text-[10px] font-mono text-zinc-500">{selectedReport.id}</span>
-          </div>
-
-          <div>
-            <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
-              Title
-            </span>
-            <div className="text-sm font-semibold text-zinc-100 mt-0.5">{selectedReport.title}</div>
-            <div className="text-xs font-mono text-zinc-400 mt-1">{selectedReport.type}</div>
-          </div>
-
-          {/* Document Abstract & Meta */}
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3.5 space-y-3 text-xs">
-            <div>
-              <span className="text-[10px] text-zinc-500 block uppercase mb-1 font-mono">Summary</span>
-              <p className="text-zinc-300 leading-relaxed">{selectedReport.summary}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-800 text-zinc-400 font-mono">
-              <div>
-                <span className="text-[10px] text-zinc-500 block">Format</span>
-                <span className="text-zinc-200">{selectedReport.fileSize}</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-zinc-500 block">Checksum</span>
-                <span className="text-emerald-400">SHA-256 VALID</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Export Buttons */}
-          <div className="pt-2 space-y-2 mt-auto">
-            <button className="w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm flex items-center justify-center gap-2">
-              <Download className="w-3.5 h-3.5" />
-              Download Briefing (PDF)
+        {/* Severity Filter Tabs */}
+        <div className="flex items-center gap-1.5">
+          {(['all', 'critical', 'high', 'medium'] as const).map((sev) => (
+            <button
+              key={sev}
+              onClick={() => setSeverityFilter(sev)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
+                severityFilter === sev ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {sev}
             </button>
-            <div className="grid grid-cols-2 gap-2">
-              <button className="py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-medium transition-all flex items-center justify-center gap-1.5">
-                <Printer className="w-3.5 h-3.5" />
-                Print
-              </button>
-              <button className="py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-medium transition-all flex items-center justify-center gap-1.5">
-                <Share2 className="w-3.5 h-3.5" />
-                Share
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
+      </div>
+
+      {/* ── Table Card ── */}
+      <div className="light-saas-card overflow-hidden p-2">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-48 gap-2 text-slate-500">
+            <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+            <span className="text-xs font-semibold">Fetching reports...</span>
+          </div>
+        ) : error ? (
+          <div className="p-8 text-center max-w-md mx-auto space-y-2">
+            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+            <h3 className="text-sm font-bold text-slate-900">API Connection Notice</h3>
+            <p className="text-xs text-slate-500">{error}</p>
+            <button onClick={fetchReports} className="btn-primary-dark text-xs mt-2">
+              Retry Query
+            </button>
+          </div>
+        ) : filteredReports.length === 0 ? (
+          <div className="p-8 text-center max-w-md mx-auto space-y-2 text-slate-400">
+            <FileText className="w-8 h-8 mx-auto text-slate-300" />
+            <h3 className="text-sm font-bold text-slate-700">No Matching Incident Reports</h3>
+            <p className="text-xs">
+              Try adjusting your search criteria or running a detection in the workstation.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                  <th className="py-3 px-4 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.size === filteredReports.length && filteredReports.length > 0}
+                      onChange={toggleSelectAll}
+                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
+                  <th className="py-3 px-4">Report ID</th>
+                  <th className="py-3 px-4">Frame ID</th>
+                  <th className="py-3 px-4">Highest Severity</th>
+                  <th className="py-3 px-4 text-center">Targets</th>
+                  <th className="py-3 px-4">Timestamp (UTC)</th>
+                  <th className="py-3 px-4">AI Summary</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredReports.map((report) => {
+                  const isExpanded = expandedId === report.report_id;
+                  const isSelected = selectedIds.has(report.report_id);
+
+                  return (
+                    <React.Fragment key={report.report_id}>
+                      <tr
+                        onClick={() => setExpandedId(isExpanded ? null : report.report_id)}
+                        className={`hover:bg-slate-50 cursor-pointer transition-colors ${
+                          isSelected ? 'bg-blue-50/40' : ''
+                        }`}
+                      >
+                        <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(report.report_id)}
+                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                        </td>
+                        <td className="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
+                          {isExpanded ? <ChevronDown className="w-4 h-4 text-blue-600" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+                          <span className="font-mono">{report.report_id}</span>
+                        </td>
+                        <td className="py-3 px-4 text-slate-600 font-mono">{report.frame_id}</td>
+                        <td className="py-3 px-4">
+                          <span
+                            className={
+                              report.highest_severity === 'critical'
+                                ? 'pill-badge-red'
+                                : report.highest_severity === 'high'
+                                ? 'pill-badge-amber'
+                                : 'pill-badge-green'
+                            }
+                          >
+                            {report.highest_severity.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-center font-bold text-slate-900 font-mono">
+                          {report.detection_count}
+                        </td>
+                        <td className="py-3 px-4 text-slate-500 font-mono">{formatTs(report.created_at)}</td>
+                        <td className="py-3 px-4 text-slate-600 max-w-xs truncate">{report.summary}</td>
+                        <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => downloadJSON(report, `${report.report_id}.json`)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                            title="Export JSON"
+                          >
+                            <Download className="w-4 h-4" />
+                          </button>
+                        </td>
+                      </tr>
+
+                      {/* Expandable Details Drawer */}
+                      {isExpanded && (
+                        <tr className="bg-slate-50/70 border-y border-slate-200">
+                          <td colSpan={8} className="p-4 space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                  Autonomous Summary
+                                </span>
+                                <p className="text-slate-800 text-xs leading-relaxed">{report.summary}</p>
+                              </div>
+
+                              <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1 text-xs font-mono">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                  Survey Geotag Info
+                                </span>
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Frame Source:</span>
+                                  <span className="text-slate-900 font-bold">{report.frame_id}</span>
+                                </div>
+                                <div className="flex justify-between text-slate-600">
+                                  <span>Severity Level:</span>
+                                  <span className="text-red-600 font-bold">{report.highest_severity}</span>
+                                </div>
+                              </div>
+
+                              <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-2 flex flex-col justify-between">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                                  Actions
+                                </span>
+                                <button
+                                  onClick={() => downloadJSON(report, `${report.report_id}.json`)}
+                                  className="btn-pill-filter text-xs justify-center"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download Anomaly JSON</span>
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

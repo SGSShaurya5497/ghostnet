@@ -1,7 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from 'react';
 import {
   ShieldAlert,
   AlertTriangle,
@@ -11,15 +10,16 @@ import {
   RefreshCw,
   FileCheck,
   Zap,
-  ArrowLeft,
-} from "lucide-react";
+  CheckCircle2,
+  ChevronDown,
+} from 'lucide-react';
 
 interface RiskZone {
   id: string;
   name: string;
   region: string;
   riskScore: number;
-  threatLevel: "CRITICAL" | "HIGH" | "ELEVATED" | "GUARDED";
+  threatLevel: 'CRITICAL' | 'HIGH' | 'ELEVATED' | 'GUARDED';
   mammalCollisionProb: number;
   propellerFoulingRisk: number;
   coralReefProximityKm: number;
@@ -27,189 +27,217 @@ interface RiskZone {
   lastAssessed: string;
 }
 
-const mockRiskZones: RiskZone[] = [
+const INITIAL_RISK_ZONES: RiskZone[] = [
   {
-    id: "RZ-HAWAII-01",
-    name: "Papahānaumokuākea Sanctuary Boundary",
-    region: "North Pacific",
+    id: 'RZ-GOA-01',
+    name: 'Grande Island Reef Marine Sanctuary',
+    region: 'Goa Coastal Shelf',
     riskScore: 92,
-    threatLevel: "CRITICAL",
+    threatLevel: 'CRITICAL',
     mammalCollisionProb: 88,
     propellerFoulingRisk: 94,
     coralReefProximityKm: 1.4,
     activeNetsInZone: 28,
-    lastAssessed: "10 mins ago",
+    lastAssessed: '8 mins ago',
   },
   {
-    id: "RZ-CORAL-04",
-    name: "Torres Strait Navigation Chokepoint",
-    region: "Coral Sea",
+    id: 'RZ-MORM-02',
+    name: 'Mormugao Deep Navigation Channel',
+    region: 'Central Port Corridor',
     riskScore: 84,
-    threatLevel: "CRITICAL",
+    threatLevel: 'CRITICAL',
     mammalCollisionProb: 76,
     propellerFoulingRisk: 89,
     coralReefProximityKm: 0.8,
     activeNetsInZone: 19,
-    lastAssessed: "24 mins ago",
+    lastAssessed: '18 mins ago',
   },
   {
-    id: "RZ-MED-09",
-    name: "Pelagos Marine Mammal Sanctuary",
-    region: "Ligurian Sea",
+    id: 'RZ-AGUADA-03',
+    name: 'Aguada Shoals Trawler Convergence',
+    region: 'North Estuary Corridor',
     riskScore: 71,
-    threatLevel: "HIGH",
+    threatLevel: 'HIGH',
     mammalCollisionProb: 82,
     propellerFoulingRisk: 61,
-    coralReefProximityKm: 8.2,
+    coralReefProximityKm: 3.2,
     activeNetsInZone: 14,
-    lastAssessed: "45 mins ago",
+    lastAssessed: '32 mins ago',
   },
   {
-    id: "RZ-GULF-03",
-    name: "Campeche Deep Bank Drift Corridor",
-    region: "Gulf of Mexico",
+    id: 'RZ-BAGA-04',
+    name: 'Baga Shelf Ridge Drift Corridor',
+    region: 'Open Shelf Slope',
     riskScore: 58,
-    threatLevel: "ELEVATED",
+    threatLevel: 'ELEVATED',
     mammalCollisionProb: 44,
     propellerFoulingRisk: 68,
-    coralReefProximityKm: 14.5,
+    coralReefProximityKm: 12.5,
     activeNetsInZone: 11,
-    lastAssessed: "2 hours ago",
+    lastAssessed: '1 hour ago',
   },
   {
-    id: "RZ-AZOR-07",
-    name: "Mid-Atlantic Hydrothermal Trench",
-    region: "North Atlantic",
+    id: 'RZ-ANJUNA-05',
+    name: 'Anjuna Submerged Rocky Outcrop',
+    region: 'Northern Bank',
     riskScore: 36,
-    threatLevel: "GUARDED",
+    threatLevel: 'GUARDED',
     mammalCollisionProb: 25,
     propellerFoulingRisk: 39,
-    coralReefProximityKm: 42.0,
+    coralReefProximityKm: 24.0,
     activeNetsInZone: 5,
-    lastAssessed: "5 hours ago",
+    lastAssessed: '3 hours ago',
   },
 ];
 
 export default function RiskIntelligencePage() {
-  const [selectedZone, setSelectedZone] = useState<RiskZone>(mockRiskZones[0]);
-  const [threatFilter, setThreatFilter] = useState<string>("ALL");
+  const [zones, setZones] = useState<RiskZone[]>(INITIAL_RISK_ZONES);
+  const [selectedZone, setSelectedZone] = useState<RiskZone>(INITIAL_RISK_ZONES[0]);
+  const [threatFilter, setThreatFilter] = useState<string>('ALL');
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [issuedWarning, setIssuedWarning] = useState(false);
+
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/v1/analytics/risk-summary`)
+      .then((r) => r.json())
+      .catch(() => {});
+  }, []);
+
+  const handleRecalculate = () => {
+    setIsRecalculating(true);
+    setTimeout(() => {
+      setZones((prev) =>
+        prev.map((z) => ({
+          ...z,
+          riskScore: Math.min(99, Math.max(20, z.riskScore + Math.floor((Math.random() - 0.5) * 6))),
+          lastAssessed: 'Just now',
+        }))
+      );
+      setIsRecalculating(false);
+    }, 700);
+  };
+
+  const handleIssueWarning = () => {
+    setIssuedWarning(true);
+    setTimeout(() => setIssuedWarning(false), 4000);
+  };
 
   const filteredZones =
-    threatFilter === "ALL"
-      ? mockRiskZones
-      : mockRiskZones.filter((z) => z.threatLevel === threatFilter);
+    threatFilter === 'ALL'
+      ? zones
+      : zones.filter((z) => z.threatLevel === threatFilter);
+
+  const getThreatBadge = (level: RiskZone['threatLevel']) => {
+    switch (level) {
+      case 'CRITICAL':
+        return 'pill-badge-red';
+      case 'HIGH':
+        return 'pill-badge-amber';
+      case 'ELEVATED':
+        return 'pill-badge-blue';
+      default:
+        return 'pill-badge-green';
+    }
+  };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl text-zinc-100 overflow-y-auto p-4 md:p-6 space-y-6 font-sans backdrop-blur-xl shadow-2xl">
-      {/* Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyan-950/80 pb-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 hover:text-white hover:bg-cyan-900/80 text-xs font-mono transition-all mr-1 shadow-sm"
-              title="Return to Main Overview"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Overview</span>
-            </Link>
-            <span className="p-1.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-zinc-300">
-              <ShieldAlert className="w-4 h-4 text-rose-400" />
-            </span>
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
-              Risk Intelligence Matrix
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <ShieldAlert className="w-4 h-4 text-rose-400" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">
+              Risk Intelligence & Threat Matrix
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-              Threat Engine
+            <span className="text-xs text-slate-400 font-medium">
+              Real-time ecological impact assessment, megafauna entanglement index, and vessel hazard scoring
             </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            Real-time ecological impact assessment, megafauna entanglement index, and vessel propulsion hazard scoring.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => {
-              setIsRecalculating(true);
-              setTimeout(() => setIsRecalculating(false), 900);
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm"
+            onClick={handleRecalculate}
+            disabled={isRecalculating}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-all border border-slate-200/80"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isRecalculating ? "animate-spin" : ""}`} />
-            Recalculate Danger Index
+            <RefreshCw className={`w-3.5 h-3.5 ${isRecalculating ? 'animate-spin' : ''}`} />
+            <span>Recalculate Danger Index</span>
           </button>
+          <div className="pill-badge-red text-xs py-1 px-3">
+            <span>2 Critical Zones</span>
+          </div>
         </div>
       </div>
 
-      {/* Top 4 KPI Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Global Threat Severity</span>
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+      {/* ── Top 4 KPI Metrics ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Global Threat Severity</span>
+            <AlertTriangle className="w-4 h-4 text-rose-500" />
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            87.4 <span className="text-xs font-normal text-zinc-500 font-mono">/ 100</span>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            87.4 <span className="text-xs font-normal text-slate-400">/ 100</span>
           </div>
-          <div className="text-[11px] text-rose-400 mt-2">
-            2 Critical Chokepoint Alerts Active
+          <span className="pill-badge-red text-[10px]">Critical Chokepoint Alerts</span>
+        </div>
+
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Entanglement Risk</span>
+            <Fish className="w-4 h-4 text-blue-500" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            79% <span className="text-xs font-normal text-slate-400">probability</span>
+          </div>
+          <div className="text-[11px] text-slate-500 font-medium">
+            Cetacean & Turtle Migration Path
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Entanglement Risk</span>
-            <Fish className="w-3.5 h-3.5 text-zinc-400" />
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Propulsion Hazard</span>
+            <Ship className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            79% <span className="text-xs font-normal text-zinc-500 font-mono">probability</span>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            91% <span className="text-xs font-normal text-slate-400">propeller risk</span>
           </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">
-            Humpback & Monk Seal Corridor
-          </div>
-        </div>
-
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Propulsion Hazard</span>
-            <Ship className="w-3.5 h-3.5 text-zinc-400" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            91% <span className="text-xs font-normal text-zinc-500 font-mono">propeller risk</span>
-          </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">
+          <div className="text-[11px] text-slate-500 font-medium">
             Commercial shipping lanes impacted
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Eco-System Impact</span>
-            <Zap className="w-3.5 h-3.5 text-zinc-400" />
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Eco-System Impact</span>
+            <Zap className="w-4 h-4 text-emerald-500" />
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            Grade A- <span className="text-xs font-normal text-zinc-500 font-mono">severe</span>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            Grade A- <span className="text-xs font-normal text-slate-400">severe</span>
           </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">
+          <div className="text-[11px] text-slate-500 font-medium">
             0.8km proximity to barrier reefs
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Left Threat Map + Right Risk Dossier */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1">
-        {/* Threat Map (2 Cols) */}
-        <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/80 border border-zinc-800 rounded-lg px-3.5 py-2">
-            <div className="flex items-center gap-2.5">
-              <Compass className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="text-xs font-medium text-zinc-200">
+      {/* ── Main Grid: Left Threat Map + Right Risk Dossier ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Threat Map (8 cols on lg) */}
+        <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Compass className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 Threat Vector Map
               </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700/40">
-                OVERLAY
+              <span className="pill-badge-neutral text-[10px] py-0 px-1.5 font-bold">
+                TACTICAL OVERLAY
               </span>
             </div>
 
@@ -217,7 +245,7 @@ export default function RiskIntelligencePage() {
               <select
                 value={threatFilter}
                 onChange={(e) => setThreatFilter(e.target.value)}
-                className="bg-zinc-900 border border-zinc-700/80 rounded-lg px-2.5 py-1 text-xs text-zinc-200 focus:outline-none font-mono"
+                className="bg-slate-100 border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-800 font-semibold focus:outline-none"
               >
                 <option value="ALL">All Threat Levels</option>
                 <option value="CRITICAL">Critical Only</option>
@@ -229,33 +257,34 @@ export default function RiskIntelligencePage() {
           </div>
 
           {/* Tactical Canvas */}
-          <div className="relative w-full flex-1 min-h-[380px] rounded-lg bg-zinc-950 border border-zinc-800/80 overflow-hidden flex items-center justify-center">
+          <div className="relative w-full h-[400px] rounded-2xl bg-slate-950 overflow-hidden flex items-center justify-center select-none shadow-inner">
+            {/* Grid Lines */}
             <div
               className="absolute inset-0 opacity-15"
               style={{
                 backgroundImage:
-                  "linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)",
-                backgroundSize: "36px 36px",
+                  'linear-gradient(to right, #64748B 1px, transparent 1px), linear-gradient(to bottom, #64748B 1px, transparent 1px)',
+                backgroundSize: '36px 36px',
               }}
             />
 
             {/* Simulated Hazard Polygons */}
             <svg className="absolute inset-0 w-full h-full pointer-events-none">
               <polygon
-                points="120,80 340,60 410,220 180,240"
-                fill="#f43f5e"
-                fillOpacity="0.06"
-                stroke="#f43f5e"
-                strokeWidth="1"
-                strokeDasharray="3,3"
+                points="80,60 280,40 340,190 140,210"
+                fill="#F43F5E"
+                fillOpacity="0.12"
+                stroke="#F43F5E"
+                strokeWidth="1.5"
+                strokeDasharray="4 3"
               />
               <polygon
-                points="480,180 720,160 760,340 520,320"
-                fill="#71717a"
-                fillOpacity="0.08"
-                stroke="#71717a"
-                strokeWidth="1"
-                strokeDasharray="3,3"
+                points="420,160 660,140 700,310 460,290"
+                fill="#F59E0B"
+                fillOpacity="0.1"
+                stroke="#F59E0B"
+                strokeWidth="1.5"
+                strokeDasharray="4 3"
               />
             </svg>
 
@@ -263,11 +292,11 @@ export default function RiskIntelligencePage() {
             {filteredZones.map((zone, idx) => {
               const isSelected = selectedZone.id === zone.id;
               const positions = [
-                { top: "35%", left: "28%" },
-                { top: "60%", left: "68%" },
-                { top: "45%", left: "50%" },
-                { top: "25%", left: "75%" },
-                { top: "70%", left: "30%" },
+                { top: '35%', left: '26%' },
+                { top: '60%', left: '68%' },
+                { top: '48%', left: '46%' },
+                { top: '24%', left: '74%' },
+                { top: '72%', left: '32%' },
               ];
               const pos = positions[idx % positions.length];
 
@@ -276,27 +305,27 @@ export default function RiskIntelligencePage() {
                   key={zone.id}
                   onClick={() => setSelectedZone(zone)}
                   className="absolute cursor-pointer transition-all duration-200 group z-10"
-                  style={{ top: pos.top, left: pos.left, transform: "translate(-50%, -50%)" }}
+                  style={{ top: pos.top, left: pos.left, transform: 'translate(-50%, -50%)' }}
                 >
                   <div
-                    className={`p-2 rounded-lg flex items-center gap-2 border transition-all ${
+                    className={`p-2.5 rounded-xl flex items-center gap-2 border transition-all ${
                       isSelected
-                        ? "bg-zinc-900 border-zinc-500 text-white shadow-md ring-1 ring-zinc-500/50"
-                        : "bg-zinc-900/90 border-zinc-800 text-zinc-300 hover:border-zinc-700"
+                        ? 'bg-slate-900 border-blue-400 text-white shadow-xl scale-105 ring-2 ring-blue-400/40'
+                        : 'bg-slate-900/90 border-slate-700/80 text-slate-200 hover:border-slate-500'
                     }`}
                   >
                     <ShieldAlert
-                      className={`w-3.5 h-3.5 ${
-                        zone.threatLevel === "CRITICAL"
-                          ? "text-rose-400"
-                          : zone.threatLevel === "HIGH"
-                          ? "text-amber-400"
-                          : "text-zinc-400"
+                      className={`w-4 h-4 ${
+                        zone.threatLevel === 'CRITICAL'
+                          ? 'text-rose-400'
+                          : zone.threatLevel === 'HIGH'
+                          ? 'text-amber-400'
+                          : 'text-slate-400'
                       }`}
                     />
-                    <div className="flex flex-col">
-                      <span className="text-[11px] font-medium leading-tight">{zone.id}</span>
-                      <span className="text-[9px] font-mono text-zinc-500">
+                    <div className="flex flex-col text-left">
+                      <span className="text-[11px] font-bold leading-tight">{zone.id}</span>
+                      <span className="text-[9px] font-mono text-slate-400">
                         Score: {zone.riskScore}/100
                       </span>
                     </div>
@@ -307,110 +336,114 @@ export default function RiskIntelligencePage() {
           </div>
 
           {/* Bottom Warning Banner */}
-          <div className="flex items-center justify-between bg-zinc-900/60 border border-zinc-800 rounded-lg p-3 text-xs text-zinc-300">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+          <div className="flex items-center justify-between bg-amber-50/70 border border-amber-200/80 rounded-2xl p-3.5 text-xs text-amber-900">
+            <div className="flex items-center gap-2.5">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
-                <strong>Advisory:</strong> Commercial vessel navigation in Sector 4 is operating under elevated entanglement alert.
+                <strong>Advisory:</strong> Commercial vessel navigation in Sector 4 is operating under elevated entanglement risk.
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right Sidebar: Selected Risk Zone Breakdown */}
-        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-            <h2 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
-              <FileCheck className="w-3.5 h-3.5 text-zinc-400" />
-              Threat Assessment
-            </h2>
-            <span
-              className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
-                selectedZone.threatLevel === "CRITICAL"
-                  ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                  : selectedZone.threatLevel === "HIGH"
-                  ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                  : "bg-zinc-800 text-zinc-400 border border-zinc-700/50"
-              }`}
+        {/* Right Sidebar: Selected Risk Zone Breakdown (4 cols on lg) */}
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <FileCheck className="w-4 h-4 text-slate-400" />
+                Threat Assessment
+              </h2>
+              <span className={`${getThreatBadge(selectedZone.threatLevel)} text-xs font-bold`}>
+                {selectedZone.threatLevel}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider font-mono">
+                Zone Designation
+              </span>
+              <div className="text-sm font-bold text-slate-900 mt-0.5">{selectedZone.name}</div>
+              <div className="text-xs font-mono text-slate-500 mt-0.5">{selectedZone.region}</div>
+            </div>
+
+            {/* Risk Metrics Breakdown */}
+            <div className="space-y-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+              <div>
+                <div className="flex justify-between text-xs mb-1.5 font-medium">
+                  <span className="text-slate-600">Total Danger Index</span>
+                  <span className="text-slate-900 font-bold font-mono">{selectedZone.riskScore} / 100</span>
+                </div>
+                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-rose-500 rounded-full"
+                    style={{ width: `${selectedZone.riskScore}%` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs mb-1.5 font-medium">
+                  <span className="text-slate-600">Entanglement Index</span>
+                  <span className="text-slate-800 font-bold font-mono">{selectedZone.mammalCollisionProb}%</span>
+                </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-600 rounded-full"
+                    style={{ width: `${selectedZone.mammalCollisionProb}%` }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-xs mb-1.5 font-medium">
+                  <span className="text-slate-600">Vessel Propeller Hazard</span>
+                  <span className="text-slate-800 font-bold font-mono">{selectedZone.propellerFoulingRisk}%</span>
+                </div>
+                <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 rounded-full"
+                    style={{ width: `${selectedZone.propellerFoulingRisk}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Details Grid */}
+            <div className="grid grid-cols-2 gap-2.5 p-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs">
+              <div>
+                <span className="text-[10px] text-slate-400 block font-semibold">REEF PROXIMITY</span>
+                <span className="font-bold text-slate-900 font-mono">{selectedZone.coralReefProximityKm} km</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block font-semibold">ACTIVE NETS</span>
+                <span className="font-bold text-slate-900 font-mono">{selectedZone.activeNetsInZone} targets</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block font-semibold">ASSESSED</span>
+                <span className="text-slate-700 font-medium">{selectedZone.lastAssessed}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-400 block font-semibold">STATUS</span>
+                <span className="text-emerald-600 font-bold">MPA PROTECTED</span>
+              </div>
+            </div>
+          </div>
+
+          {issuedWarning ? (
+            <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>NAVTEX Advisory Transmitted to Fleet</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleIssueWarning}
+              className="w-full btn-primary-dark text-xs justify-center"
             >
-              {selectedZone.threatLevel}
-            </span>
-          </div>
-
-          <div>
-            <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
-              Zone Designation
-            </span>
-            <div className="text-base font-semibold text-zinc-100">{selectedZone.name}</div>
-            <div className="text-xs font-mono text-zinc-400 mt-0.5">{selectedZone.region}</div>
-          </div>
-
-          {/* Risk Metrics Breakdown */}
-          <div className="space-y-3 bg-zinc-900/80 border border-zinc-800 rounded-lg p-3.5">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-400">Total Danger Index</span>
-                <span className="text-zinc-100 font-semibold font-mono">{selectedZone.riskScore} / 100</span>
-              </div>
-              <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-zinc-200 rounded-full"
-                  style={{ width: `${selectedZone.riskScore}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-400">Entanglement Index</span>
-                <span className="text-zinc-300 font-mono">{selectedZone.mammalCollisionProb}%</span>
-              </div>
-              <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-zinc-400 rounded-full"
-                  style={{ width: `${selectedZone.mammalCollisionProb}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-zinc-400">Vessel Propeller Hazard</span>
-                <span className="text-zinc-300 font-mono">{selectedZone.propellerFoulingRisk}%</span>
-              </div>
-              <div className="w-full bg-zinc-800 h-1 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-zinc-400 rounded-full"
-                  style={{ width: `${selectedZone.propellerFoulingRisk}%` }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Details Table */}
-          <div className="grid grid-cols-2 gap-2.5 bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 text-xs">
-            <div>
-              <span className="text-[10px] text-zinc-500 block">Reef Proximity</span>
-              <span className="font-semibold text-zinc-200 font-mono">{selectedZone.coralReefProximityKm} km</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-zinc-500 block">Active Nets</span>
-              <span className="font-semibold text-zinc-200 font-mono">{selectedZone.activeNetsInZone} targets</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-zinc-500 block">Assessment Age</span>
-              <span className="text-zinc-400">{selectedZone.lastAssessed}</span>
-            </div>
-            <div>
-              <span className="text-[10px] text-zinc-500 block">Status</span>
-              <span className="text-emerald-400 font-medium">MPA PROTECTED</span>
-            </div>
-          </div>
-
-          <button className="w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm flex items-center justify-center gap-2 mt-auto">
-            <Zap className="w-3.5 h-3.5" />
-            Issue NAVTEX Warning
-          </button>
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              <span>Issue NAVTEX Warning Broadcast</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

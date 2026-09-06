@@ -53,6 +53,7 @@ class Detection(BaseModel):
 
 
 class HealthResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
     status: str = "ok"
     version: str = "0.1.0"
     model_loaded: bool = False
@@ -66,6 +67,7 @@ class UploadResponse(BaseModel):
 
 
 class DetectionResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
     frame_id: str
     detections: List[Detection]
     processing_time_ms: int

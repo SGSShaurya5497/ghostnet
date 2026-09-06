@@ -1,7 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState } from 'react';
 import {
   AlertTriangle,
   Radio,
@@ -13,223 +12,296 @@ import {
   Layers,
   Ship,
   Compass,
-  ArrowLeft,
-} from "lucide-react";
+  Bell,
+  CheckCircle2,
+  ChevronRight,
+  Search,
+} from 'lucide-react';
+
+interface AlertItem {
+  id: string;
+  title: string;
+  source: string;
+  severity: 'critical' | 'high' | 'medium';
+  lat: number;
+  lon: number;
+  depth: number;
+  timestamp: string;
+  status: 'Active' | 'Acknowledged' | 'Resolved';
+  confidence: number;
+}
+
+const INITIAL_ALERTS: AlertItem[] = [
+  {
+    id: 'ALT-1049',
+    title: 'High-Density Ghost Net Snag Detected',
+    source: 'RV-OCEANUS Acoustic Sonar',
+    severity: 'critical',
+    lat: 15.4989,
+    lon: 73.8278,
+    depth: 42.5,
+    timestamp: '2 mins ago',
+    status: 'Active',
+    confidence: 0.94,
+  },
+  {
+    id: 'ALT-1044',
+    title: 'Unregistered Dark Vessel Drift in Marine Reserve',
+    source: 'AIS Radar + Satellite Bathymetry',
+    severity: 'high',
+    lat: 15.512,
+    lon: 73.834,
+    depth: 38.0,
+    timestamp: '14 mins ago',
+    status: 'Active',
+    confidence: 0.88,
+  },
+  {
+    id: 'ALT-1038',
+    title: 'Submerged Trawl Door Entanglement Alert',
+    source: 'AUV-NEPTUNE-02 Swath',
+    severity: 'critical',
+    lat: 15.441,
+    lon: 73.782,
+    depth: 54.2,
+    timestamp: '36 mins ago',
+    status: 'Acknowledged',
+    confidence: 0.91,
+  },
+  {
+    id: 'ALT-1029',
+    title: 'Repeated Polypropylene Line Echo Cluster',
+    source: 'Synthetic Hydrographic Survey',
+    severity: 'medium',
+    lat: 15.534,
+    lon: 73.856,
+    depth: 29.8,
+    timestamp: '1 hour ago',
+    status: 'Resolved',
+    confidence: 0.79,
+  },
+];
 
 export default function AnomalyAlertsPage() {
-  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.85);
-  const [showBoundingBoxes, setShowBoundingBoxes] = useState<boolean>(true);
-  const [showTrajectories, setShowTrajectories] = useState<boolean>(true);
-  const [matchedAis, setMatchedAis] = useState<boolean>(true);
-  const [unmatchedDarkVessels, setUnmatchedDarkVessels] = useState<boolean>(true);
+  const [alerts, setAlerts] = useState<AlertItem[]>(INITIAL_ALERTS);
+  const [selectedAlertId, setSelectedAlertId] = useState<string>(INITIAL_ALERTS[0].id);
+  const [filterSeverity, setFilterSeverity] = useState<'all' | 'critical' | 'high' | 'medium'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const selectedAlert = alerts.find((a) => a.id === selectedAlertId) ?? alerts[0];
+
+  const filteredAlerts = alerts.filter((a) => {
+    const matchesSearch =
+      a.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.source.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSeverity = filterSeverity === 'all' || a.severity === filterSeverity;
+    return matchesSearch && matchesSeverity;
+  });
+
+  const activeCount = alerts.filter((a) => a.status === 'Active').length;
+  const criticalActiveCount = alerts.filter((a) => a.status === 'Active' && (a.severity === 'critical' || a.severity === 'high')).length;
+
+  const acknowledgeAlert = (id: string) => {
+    setAlerts((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, status: a.status === 'Active' ? 'Acknowledged' : 'Resolved' } : a))
+    );
+  };
 
   return (
-    <div className="w-full h-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl flex text-zinc-100 font-sans overflow-hidden backdrop-blur-xl shadow-2xl">
-      {/* Left Panel: Controls */}
-      <div className="w-[300px] h-full bg-[#070e1c]/80 border-r border-cyan-950/80 flex flex-col z-10 shrink-0">
-        <div className="p-3.5 border-b border-cyan-950/80 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 hover:text-white hover:bg-cyan-900/80 text-xs font-mono transition-all shadow-sm"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Overview</span>
-          </Link>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-            <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Controls</span>
-          </h2>
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <Bell className="w-4 h-4 text-red-400" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">
+              Real-time Threat & Anomaly Alert Center
+            </h1>
+            <span className="text-xs text-slate-400 font-medium">
+              Autonomous warning triggers across marine corridors and surveyed reefs
+            </span>
+          </div>
         </div>
 
-        <div className="p-4 flex flex-col gap-5 overflow-y-auto">
-          {/* Target Detection Filter */}
-          <div className="flex flex-col gap-2.5">
-            <h3 className="text-[10px] font-mono uppercase text-zinc-500 font-medium">Confidence & Optical</h3>
-            <div className="flex flex-col gap-3 text-xs">
-              <div>
-                <div className="flex justify-between text-zinc-400 mb-1">
-                  <span>Confidence Threshold</span>
-                  <span className="font-mono text-zinc-200">{Math.round(confidenceThreshold * 100)}%</span>
+        <div className="flex items-center gap-3">
+          {criticalActiveCount > 0 ? (
+            <div className="pill-badge-red text-xs py-1 px-3">
+              <span>{criticalActiveCount} Critical/High Alert{criticalActiveCount !== 1 ? 's' : ''} Active</span>
+            </div>
+          ) : (
+            <div className="pill-badge-green text-xs py-1 px-3">
+              <span>All Clear</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Main View: Alert Feed + Detail (Grid) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Alert List (8 cols on lg) */}
+        <div className="lg:col-span-8 light-saas-card p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3.5 py-2 w-72 border border-slate-200/80">
+              <Search className="w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search alerts, vessels, IDs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {(['all', 'critical', 'high', 'medium'] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilterSeverity(s)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
+                    filterSeverity === s ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {filteredAlerts.map((alert) => {
+              const isSelected = alert.id === selectedAlertId;
+
+              return (
+                <div
+                  key={alert.id}
+                  onClick={() => setSelectedAlertId(alert.id)}
+                  className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center justify-between border ${
+                    isSelected
+                      ? 'bg-blue-50/50 border-blue-300 shadow-md'
+                      : 'bg-white hover:bg-slate-50 border-slate-200/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        alert.severity === 'critical'
+                          ? 'bg-red-50 text-red-600 border border-red-200'
+                          : alert.severity === 'high'
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                          : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                      }`}
+                    >
+                      <AlertTriangle className="w-5 h-5" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold font-mono text-slate-900">{alert.id}</span>
+                        <span className="text-xs font-semibold text-slate-800">{alert.title}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+                        <span>{alert.source}</span>
+                        <span>·</span>
+                        <span>{alert.depth}m Depth</span>
+                        <span>·</span>
+                        <span className="pill-badge-neutral text-[10px] py-0 px-1.5">{alert.status}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-right">
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-black text-slate-900">
+                        {(alert.confidence * 100).toFixed(0)}% Conf
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-medium">{alert.timestamp}</span>
+                    </div>
+
+                    <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="0.99"
-                  step="0.01"
-                  value={confidenceThreshold}
-                  onChange={(e) => setConfidenceThreshold(Number(e.target.value))}
-                  className="w-full accent-zinc-200 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-                />
-              </div>
+              );
+            })}
+          </div>
+        </div>
 
-              <div className="flex justify-between items-center pt-1">
-                <span className="text-zinc-300">Bounding Boxes</span>
-                <button
-                  onClick={() => setShowBoundingBoxes(!showBoundingBoxes)}
-                  className={`w-7 h-4 rounded-full transition-colors relative ${
-                    showBoundingBoxes ? "bg-zinc-200" : "bg-zinc-800"
-                  }`}
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full transition-all absolute top-0.5 ${
-                      showBoundingBoxes ? "bg-zinc-950 right-0.5" : "bg-zinc-500 left-0.5"
-                    }`}
-                  />
-                </button>
+        {/* Right: Selected Alert Inspector (4 cols on lg) */}
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="space-y-0.5">
+                <span className="text-xs font-black font-mono text-slate-900">{selectedAlert.id}</span>
+                <span className="text-xs font-bold text-slate-700 block">{selectedAlert.title}</span>
               </div>
+              <span
+                className={
+                  selectedAlert.severity === 'critical'
+                    ? 'pill-badge-red'
+                    : selectedAlert.severity === 'high'
+                    ? 'pill-badge-amber'
+                    : 'pill-badge-green'
+                }
+              >
+                {selectedAlert.severity.toUpperCase()}
+              </span>
+            </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-300">Acoustic Trajectories</span>
-                <button
-                  onClick={() => setShowTrajectories(!showTrajectories)}
-                  className={`w-7 h-4 rounded-full transition-colors relative ${
-                    showTrajectories ? "bg-zinc-200" : "bg-zinc-800"
-                  }`}
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full transition-all absolute top-0.5 ${
-                      showTrajectories ? "bg-zinc-950 right-0.5" : "bg-zinc-500 left-0.5"
-                    }`}
-                  />
-                </button>
+            {/* Geolocation Card */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5 text-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Anomaly Coordinates
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-slate-600">
+                <div>
+                  <span className="text-[10px] text-slate-400 block">LATITUDE</span>
+                  <span className="font-bold text-slate-900">{selectedAlert.lat}° N</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">LONGITUDE</span>
+                  <span className="font-bold text-slate-900">{selectedAlert.lon}° E</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">DEPTH</span>
+                  <span className="font-bold text-slate-900">{selectedAlert.depth} m</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">CONFIDENCE</span>
+                  <span className="font-bold text-emerald-600">{(selectedAlert.confidence * 100).toFixed(0)}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Status Card */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Workflow Response
+              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">Incident Status:</span>
+                <span className="pill-badge-blue">{selectedAlert.status}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Trigger Source:</span>
+                <span className="font-bold text-slate-900">{selectedAlert.source}</span>
               </div>
             </div>
           </div>
 
-          {/* AIS & RF Section */}
-          <div className="flex flex-col gap-2.5 pt-3 border-t border-zinc-800">
-            <h3 className="text-[10px] font-mono uppercase text-zinc-500 font-medium">AIS & RF Correlation</h3>
-            <div className="flex flex-col gap-3 text-xs">
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-300">Matched AIS Vessels</span>
-                <button
-                  onClick={() => setMatchedAis(!matchedAis)}
-                  className={`w-7 h-4 rounded-full transition-colors relative ${
-                    matchedAis ? "bg-zinc-200" : "bg-zinc-800"
-                  }`}
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full transition-all absolute top-0.5 ${
-                      matchedAis ? "bg-zinc-950 right-0.5" : "bg-zinc-500 left-0.5"
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-rose-400">Dark Vessels / Unmatched</span>
-                <button
-                  onClick={() => setUnmatchedDarkVessels(!unmatchedDarkVessels)}
-                  className={`w-7 h-4 rounded-full transition-colors relative ${
-                    unmatchedDarkVessels ? "bg-rose-500" : "bg-zinc-800"
-                  }`}
-                >
-                  <div
-                    className={`w-3 h-3 rounded-full transition-all absolute top-0.5 ${
-                      unmatchedDarkVessels ? "bg-white right-0.5" : "bg-zinc-500 left-0.5"
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-auto p-4 border-t border-zinc-800/80">
-          <button className="w-full py-2 bg-zinc-100 hover:bg-white text-zinc-950 rounded-lg text-xs font-medium transition-all shadow-sm">
-            Apply Filters
-          </button>
-        </div>
-      </div>
-
-      {/* Main Map Area */}
-      <div className="flex-1 h-full relative bg-zinc-950 flex items-center justify-center overflow-hidden">
-        {/* Subtle grid */}
-        <div
-          className="absolute inset-0 opacity-15"
-          style={{
-            backgroundImage: "radial-gradient(circle at 1px 1px, #71717a 1px, transparent 0)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-
-        {/* Trajectories */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none">
-          <path
-            d="M100 800 Q 300 500 500 400 T 900 200"
-            fill="none"
-            stroke="#a1a1aa"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-            opacity="0.5"
-          />
-          <path
-            d="M400 900 Q 600 700 700 500 T 900 400"
-            fill="none"
-            stroke="#f43f5e"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-            opacity="0.8"
-          />
-          {/* Dark Vessel Alert Marker */}
-          <g>
-            <rect
-              x="680"
-              y="480"
-              width="170"
-              height="24"
-              rx="4"
-              fill="#18181b"
-              stroke="#f43f5e"
-              strokeWidth="1"
-            />
-            <text x="690" y="496" fill="#f43f5e" fontSize="10" fontFamily="monospace" fontWeight="500">
-              DARK VESSEL SUSPECTED
-            </text>
-          </g>
-        </svg>
-
-        {/* Minimal Coordinates Overlay */}
-        <div className="absolute top-4 left-4 bg-zinc-900/90 border border-zinc-800 rounded-lg px-3 py-1.5 text-[11px] font-mono text-zinc-400">
-          SURVEILLANCE SECTOR: 34°49.2&apos; N, 142°11.3&apos; W
-        </div>
-      </div>
-
-      {/* Right Panel: Vessel / Target Dossier */}
-      <div className="w-[300px] h-full bg-zinc-900/60 border-l border-zinc-800/80 flex flex-col z-10">
-        <div className="p-4 border-b border-zinc-800/80">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-300">
-            Target Details: Unmatched
-          </h2>
-        </div>
-
-        <div className="p-4 flex flex-col gap-4 overflow-y-auto">
-          <div className="w-full h-32 bg-zinc-950 rounded-lg flex items-center justify-center border border-zinc-800">
-            <span className="text-zinc-500 text-xs font-mono">OPTICAL CAPTURE</span>
-          </div>
-
-          <div className="flex flex-col gap-2 text-xs font-mono bg-zinc-900/80 border border-zinc-800 rounded-lg p-3">
-            <h3 className="text-[10px] text-zinc-500 mb-1 font-bold">STATUS & SPECS</h3>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">MMSI:</span>
-              <span className="text-zinc-200">N/A</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">IMO:</span>
-              <span className="text-zinc-200">UNKNOWN</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">STATUS:</span>
-              <span className="text-rose-400 font-bold">DARK VESSEL</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-zinc-400">CONFIDENCE:</span>
-              <span className="text-zinc-100">92%</span>
-            </div>
-          </div>
-
-          <button className="w-full mt-auto py-2 bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium rounded-lg transition-all shadow-sm">
-            Generate Report
+          <button
+            onClick={() => acknowledgeAlert(selectedAlert.id)}
+            className="w-full btn-primary-dark text-xs justify-center"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>
+              {selectedAlert.status === 'Active'
+                ? 'Acknowledge Alert'
+                : selectedAlert.status === 'Acknowledged'
+                ? 'Mark as Resolved'
+                : 'Reopen Alert'}
+            </span>
           </button>
         </div>
       </div>

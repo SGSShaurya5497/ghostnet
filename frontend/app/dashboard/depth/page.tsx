@@ -1,7 +1,6 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState } from 'react';
 import {
   Layers,
   Waves,
@@ -13,8 +12,8 @@ import {
   Crosshair,
   Volume2,
   Maximize2,
-  ArrowLeft,
-} from "lucide-react";
+  CheckCircle2,
+} from 'lucide-react';
 
 interface DepthLayer {
   id: string;
@@ -22,59 +21,61 @@ interface DepthLayer {
   depthRange: string;
   acousticReflectance: number;
   debrisCount: number;
-  entanglementRisk: "CRITICAL" | "MODERATE" | "LOW";
+  entanglementRisk: 'CRITICAL' | 'MODERATE' | 'LOW';
   color: string;
   enabled: boolean;
 }
 
-const initialLayers: DepthLayer[] = [
+const INITIAL_LAYERS: DepthLayer[] = [
   {
-    id: "epipelagic",
-    name: "Epipelagic (Sunlight Zone)",
-    depthRange: "0m – 200m",
+    id: 'epipelagic',
+    name: 'Epipelagic (Sunlight Zone)',
+    depthRange: '0m – 200m',
     acousticReflectance: -18,
     debrisCount: 64,
-    entanglementRisk: "CRITICAL",
-    color: "#e4e4e7",
+    entanglementRisk: 'CRITICAL',
+    color: '#0284c7',
     enabled: true,
   },
   {
-    id: "mesopelagic",
-    name: "Mesopelagic (Twilight Zone)",
-    depthRange: "200m – 1,000m",
+    id: 'mesopelagic',
+    name: 'Mesopelagic (Twilight Zone)',
+    depthRange: '200m – 1,000m',
     acousticReflectance: -32,
     debrisCount: 29,
-    entanglementRisk: "MODERATE",
-    color: "#a1a1aa",
+    entanglementRisk: 'MODERATE',
+    color: '#0369a1',
     enabled: true,
   },
   {
-    id: "bathypelagic",
-    name: "Bathypelagic (Midnight Zone)",
-    depthRange: "1,000m – 4,000m",
+    id: 'bathypelagic',
+    name: 'Bathypelagic (Midnight Zone)',
+    depthRange: '1,000m – 4,000m',
     acousticReflectance: -54,
     debrisCount: 12,
-    entanglementRisk: "LOW",
-    color: "#71717a",
+    entanglementRisk: 'LOW',
+    color: '#075985',
     enabled: true,
   },
   {
-    id: "abyssopelagic",
-    name: "Abyssal Plain & Seabed",
-    depthRange: "4,000m – 6,000m+",
+    id: 'abyssopelagic',
+    name: 'Abyssal Plain & Benthic Floor',
+    depthRange: '4,000m – 6,000m+',
     acousticReflectance: -72,
     debrisCount: 4,
-    entanglementRisk: "LOW",
-    color: "#52525b",
+    entanglementRisk: 'LOW',
+    color: '#0c4a6e',
     enabled: false,
   },
 ];
 
 export default function DepthAnalysisPage() {
-  const [layers, setLayers] = useState<DepthLayer[]>(initialLayers);
+  const [layers, setLayers] = useState<DepthLayer[]>(INITIAL_LAYERS);
   const [selectedDepth, setSelectedDepth] = useState<number>(142);
   const [sonarGain, setSonarGain] = useState<number>(75);
-  const [bathymetryResolution, setBathymetryResolution] = useState<"0.5m" | "1.0m" | "5.0m">("0.5m");
+  const [bathymetryResolution, setBathymetryResolution] = useState<'0.5m' | '1.0m' | '5.0m'>('0.5m');
+  const [calibrated, setCalibrated] = useState(false);
+  const [exported, setExported] = useState(false);
 
   const toggleLayer = (id: string) => {
     setLayers((prev) =>
@@ -82,131 +83,148 @@ export default function DepthAnalysisPage() {
     );
   };
 
+  const handleExport = () => {
+    setExported(true);
+    const content = `X,Y,Z,Backscatter_dB,Classification\n15.4989,73.8278,-118,-18.4,GHOST_NET\n15.5120,73.8340,-92,-24.1,ROPE_CLUSTER\n15.4410,73.7820,-142,-31.8,SEABED_DEBRIS`;
+    const blob = new Blob([content], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bathymetry-pointcloud-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setTimeout(() => setExported(false), 2500);
+  };
+
+  const handleCalibrate = () => {
+    setCalibrated(true);
+    setTimeout(() => setCalibrated(false), 3000);
+  };
+
+  const activeLayersCount = layers.filter((l) => l.enabled).length;
+  const totalDebrisInActive = layers.filter((l) => l.enabled).reduce((sum, l) => sum + l.debrisCount, 0);
+
   return (
-    <div className="flex flex-col h-full w-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl text-zinc-100 overflow-y-auto p-4 md:p-6 space-y-6 font-sans backdrop-blur-xl shadow-2xl">
-      {/* Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyan-950/80 pb-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 hover:text-white hover:bg-cyan-900/80 text-xs font-mono transition-all mr-1 shadow-sm"
-              title="Return to Main Overview"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Overview</span>
-            </Link>
-            <span className="p-1.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-zinc-300">
-              <Layers className="w-4 h-4 text-zinc-300" />
-            </span>
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
-              Depth & Bathymetry Analysis
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <Layers className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">
+              Depth & Subsea Bathymetry Analysis
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-              EM-304 Multibeam
+            <span className="text-xs text-slate-400 font-medium">
+              Multibeam acoustic backscatter, thermocline gradients, and subsea water column slicing
             </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            Multibeam acoustic backscatter, thermocline gradients, and subsea water column slicing.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-400 font-mono">
-            <Activity className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Kongsberg EM 304 (30 kHz)</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-slate-100 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-700 font-mono">
+            <Activity className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="font-semibold">EM 304 Multibeam (30 kHz)</span>
           </div>
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm">
-            <Download className="w-3.5 h-3.5" />
-            Export Pointcloud
+          <button
+            onClick={handleExport}
+            className="btn-primary-dark text-xs"
+          >
+            {exported ? (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Exported Pointcloud</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5" />
+                <span>Export Pointcloud</span>
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Top 4 KPI Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Current Sounding Depth</span>
-            <ArrowDown className="w-3.5 h-3.5 text-zinc-400" />
+      {/* ── Top 4 KPI Metrics ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Sounding Depth</span>
+            <ArrowDown className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            {selectedDepth} <span className="text-xs font-normal text-zinc-500 font-mono">meters</span>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            {selectedDepth} <span className="text-xs font-normal text-slate-400">meters</span>
           </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">
-            Seabed Clearance: <span className="text-emerald-400">+68.4 m</span>
-          </div>
-        </div>
-
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Thermocline Boundary</span>
-            <Waves className="w-3.5 h-3.5 text-zinc-400" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            84.2 <span className="text-xs font-normal text-zinc-500 font-mono">m</span>
-          </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">
-            Temp Gradient: <span className="text-zinc-200">-4.2°C / 100m</span>
+          <div className="text-[11px] text-emerald-600 font-semibold font-mono">
+            Seabed Clearance: +68.4 m
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Submerged Targets</span>
-            <Anchor className="w-3.5 h-3.5 text-zinc-400" />
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Thermocline Gradient</span>
+            <Waves className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            109 <span className="text-xs font-normal text-zinc-500 font-mono">hits</span>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            84.2 <span className="text-xs font-normal text-slate-400">m</span>
           </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">
-            64 targets in 0-200m zone
+          <div className="text-[11px] text-slate-500 font-mono">
+            Temp Gradient: -4.2°C / 100m
           </div>
         </div>
 
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Sonar Swath Width</span>
-            <Crosshair className="w-3.5 h-3.5 text-zinc-400" />
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Active Depth Targets</span>
+            <Anchor className="w-4 h-4 text-indigo-500" />
           </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            640 <span className="text-xs font-normal text-zinc-500 font-mono">meters</span>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            {totalDebrisInActive} <span className="text-xs font-normal text-slate-400">hits</span>
           </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">
-            Ping Rate: 12 Hz | 432 Beams
+          <div className="text-[11px] text-slate-500 font-mono">
+            In {activeLayersCount} monitored layers
+          </div>
+        </div>
+
+        <div className="light-saas-card p-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <span>Acoustic Swath Width</span>
+            <Crosshair className="w-4 h-4 text-emerald-500" />
+          </div>
+          <div className="text-2xl font-black text-slate-900 font-mono">
+            640 <span className="text-xs font-normal text-slate-400">meters</span>
+          </div>
+          <div className="text-[11px] text-slate-500 font-mono">
+            Ping Rate: 12 Hz · 432 Beams
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Left Echogram Profile + Right Strata Layers */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1">
-        {/* Visualizer Canvas (2 Cols) */}
-        <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex items-center justify-between bg-zinc-900/80 border border-zinc-800 rounded-lg px-3.5 py-2">
-            <div className="flex items-center gap-2.5">
-              <Crosshair className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="text-xs font-medium text-zinc-200">
-                Backscatter Echogram
+      {/* ── Main Grid: Left Echogram + Right Strata Layers ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Echogram Profile (8 cols on lg) */}
+        <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Crosshair className="w-4 h-4 text-slate-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Backscatter Echogram Water Column
               </span>
-              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700/40">
+              <span className="pill-badge-neutral text-[10px] py-0 px-1.5 font-bold">
                 LIVE SWATH
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <button className="p-1.5 rounded-md bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 transition-all border border-zinc-700/40">
-                <Volume2 className="w-3.5 h-3.5" />
-              </button>
-              <button className="p-1.5 rounded-md bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 transition-all border border-zinc-700/40">
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-slate-500">GAIN: {sonarGain}%</span>
             </div>
           </div>
 
-          {/* Interactive Canvas */}
-          <div className="relative w-full flex-1 min-h-[380px] rounded-lg bg-zinc-950 border border-zinc-800/80 overflow-hidden flex flex-col justify-between p-6">
+          {/* Interactive Echogram Canvas */}
+          <div className="relative w-full h-[380px] rounded-2xl bg-slate-950 overflow-hidden flex flex-col justify-between p-6 shadow-inner select-none">
             {/* Depth Markers Left Axis */}
-            <div className="absolute left-3 top-4 bottom-4 flex flex-col justify-between text-[10px] font-mono text-zinc-600 border-r border-zinc-800 pr-2 pointer-events-none">
+            <div className="absolute left-3 top-4 bottom-4 flex flex-col justify-between text-[10px] font-mono text-slate-500 border-r border-slate-800 pr-2 pointer-events-none">
               <span>0m</span>
               <span>-50m</span>
               <span>-100m</span>
@@ -216,14 +234,14 @@ export default function DepthAnalysisPage() {
 
             {/* Depth Slicing Plane Line */}
             <div
-              className="absolute left-16 right-4 border-t border-dashed border-zinc-400 flex items-center justify-between text-[10px] font-mono text-zinc-300 pointer-events-none z-10"
+              className="absolute left-16 right-4 border-t-2 border-dashed border-sky-400 flex items-center justify-between text-[10px] font-mono text-sky-200 pointer-events-none z-10"
               style={{ top: `${(selectedDepth / 220) * 100}%` }}
             >
-              <span className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
+              <span className="bg-slate-900 px-2 py-0.5 rounded-md border border-sky-500/50 shadow-md">
                 Slice: {selectedDepth}m
               </span>
-              <span className="bg-zinc-900 px-2 py-0.5 rounded border border-zinc-700">
-                Lock Active
+              <span className="bg-slate-900 px-2 py-0.5 rounded-md border border-sky-500/50 shadow-md">
+                Water Column Lock
               </span>
             </div>
 
@@ -231,42 +249,42 @@ export default function DepthAnalysisPage() {
             <div className="w-full h-full ml-12 relative flex items-center justify-center">
               <svg className="absolute inset-0 w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 800 400">
                 <defs>
-                  <linearGradient id="seabedGradMinimal" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#27272a" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="#18181b" stopOpacity="0.95" />
+                  <linearGradient id="seabedGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="#0369A1" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#0F172A" stopOpacity="0.95" />
                   </linearGradient>
                 </defs>
                 <path
                   d="M0,280 Q150,220 300,290 T600,240 T800,320 L800,400 L0,400 Z"
-                  fill="url(#seabedGradMinimal)"
-                  stroke="#52525b"
-                  strokeWidth="1.5"
+                  fill="url(#seabedGrad)"
+                  stroke="#38BDF8"
+                  strokeWidth="2"
                 />
 
                 {/* Submerged Targets */}
                 <g className="cursor-pointer">
-                  <circle cx="280" cy="180" r="10" fill="#f43f5e" fillOpacity="0.2" className="animate-pulse" />
-                  <circle cx="280" cy="180" r="4" fill="#f43f5e" stroke="#ffffff" strokeWidth="1" />
-                  <text x="296" y="184" fill="#e4e4e7" fontSize="10" fontFamily="monospace" fontWeight="600">
-                    GN-BATHY-84 (118m)
+                  <circle cx="280" cy="180" r="10" fill="#EF4444" fillOpacity="0.3" className="animate-ping" />
+                  <circle cx="280" cy="180" r="5" fill="#EF4444" stroke="#ffffff" strokeWidth="1.5" />
+                  <text x="296" y="184" fill="#F87171" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                    GN-BATHY-84 (-118m)
                   </text>
                 </g>
 
                 <g className="cursor-pointer">
-                  <circle cx="520" cy="140" r="8" fill="#e4e4e7" fillOpacity="0.2" />
-                  <circle cx="520" cy="140" r="4" fill="#e4e4e7" stroke="#09090b" strokeWidth="1" />
-                  <text x="534" y="144" fill="#a1a1aa" fontSize="10" fontFamily="monospace">
-                    GN-BATHY-92 (92m)
+                  <circle cx="520" cy="140" r="8" fill="#F59E0B" fillOpacity="0.3" />
+                  <circle cx="520" cy="140" r="4" fill="#F59E0B" stroke="#ffffff" strokeWidth="1" />
+                  <text x="534" y="144" fill="#FCD34D" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                    GN-BATHY-92 (-92m)
                   </text>
                 </g>
               </svg>
             </div>
 
-            {/* Depth Slider */}
-            <div className="z-20 bg-zinc-900/90 border border-zinc-800 rounded-lg p-3 backdrop-blur-sm">
-              <div className="flex justify-between items-center text-xs text-zinc-300 mb-1.5 font-mono">
-                <span>Slice Water Column Depth</span>
-                <span className="text-zinc-100 font-semibold">{selectedDepth} m</span>
+            {/* Bottom Slicing Slider inside Canvas */}
+            <div className="z-20 bg-slate-900/90 border border-slate-800 rounded-xl p-3 backdrop-blur-md">
+              <div className="flex justify-between items-center text-xs text-slate-300 mb-1.5 font-mono">
+                <span>Interactive Sounding Slice Plane</span>
+                <span className="text-sky-400 font-bold">{selectedDepth} meters</span>
               </div>
               <input
                 type="range"
@@ -274,17 +292,17 @@ export default function DepthAnalysisPage() {
                 max="200"
                 value={selectedDepth}
                 onChange={(e) => setSelectedDepth(Number(e.target.value))}
-                className="w-full accent-zinc-200 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                className="w-full accent-blue-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
               />
             </div>
           </div>
 
-          {/* Sonar Controls Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-3">
+          {/* Sonar Tuning Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
             <div>
-              <div className="flex justify-between text-[11px] text-zinc-400 mb-1">
-                <span className="font-medium">Sonar Acoustic Gain</span>
-                <span className="text-zinc-200 font-mono">{sonarGain}%</span>
+              <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                <span>Acoustic Gain Sensitivity</span>
+                <span className="font-mono text-slate-900 font-bold">{sonarGain}%</span>
               </div>
               <input
                 type="range"
@@ -292,21 +310,21 @@ export default function DepthAnalysisPage() {
                 max="100"
                 value={sonarGain}
                 onChange={(e) => setSonarGain(Number(e.target.value))}
-                className="w-full accent-zinc-200 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
               />
             </div>
 
             <div>
-              <label className="text-[11px] text-zinc-400 block mb-1 font-medium">Grid Resolution</label>
+              <label className="text-xs font-semibold text-slate-700 block mb-1.5">Bathymetry Grid Resolution</label>
               <div className="flex gap-2">
-                {(["0.5m", "1.0m", "5.0m"] as const).map((res) => (
+                {(['0.5m', '1.0m', '5.0m'] as const).map((res) => (
                   <button
                     key={res}
                     onClick={() => setBathymetryResolution(res)}
-                    className={`flex-1 py-1 rounded-lg text-xs font-mono transition-all border ${
+                    className={`flex-1 py-1.5 rounded-xl text-xs font-mono font-bold transition-all border ${
                       bathymetryResolution === res
-                        ? "bg-zinc-800 border-zinc-600 text-zinc-100 font-medium"
-                        : "bg-zinc-900 border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                        ? 'bg-slate-900 border-slate-900 text-white shadow-sm'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     {res} Grid
@@ -317,70 +335,84 @@ export default function DepthAnalysisPage() {
           </div>
         </div>
 
-        {/* Right Sidebar: Depth Strata Layers */}
-        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-            <h2 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-3.5 h-3.5 text-zinc-400" />
-              Depth Strata
-            </h2>
-            <span className="text-[10px] font-mono text-zinc-500">4 ZONES</span>
-          </div>
+        {/* Right Sidebar: Depth Strata Layers (4 cols on lg) */}
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                <Layers className="w-4 h-4 text-slate-400" />
+                Depth Strata Layers
+              </h2>
+              <span className="pill-badge-neutral text-[10px] py-0 px-1.5 font-mono font-bold">
+                4 ZONES
+              </span>
+            </div>
 
-          <div className="space-y-2.5 flex-1 overflow-y-auto">
-            {layers.map((layer) => (
-              <div
-                key={layer.id}
-                onClick={() => toggleLayer(layer.id)}
-                className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                  layer.enabled
-                    ? "bg-zinc-900/80 border-zinc-700/80 shadow-sm"
-                    : "bg-zinc-950/60 border-zinc-850 opacity-40"
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-zinc-200">{layer.name}</span>
-                  <span
-                    className={`text-[9px] px-1.5 py-0.5 rounded font-mono font-medium ${
-                      layer.entanglementRisk === "CRITICAL"
-                        ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                        : layer.entanglementRisk === "MODERATE"
-                        ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                        : "bg-zinc-800 text-zinc-400 border border-zinc-700/50"
-                    }`}
-                  >
-                    {layer.entanglementRisk}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mt-2 text-[11px] font-mono text-zinc-400">
-                  <div>
-                    <span className="text-[10px] text-zinc-500 block">Range</span>
-                    <span className="text-zinc-300">{layer.depthRange}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-zinc-500 block">Backscatter</span>
-                    <span className="text-zinc-300">{layer.acousticReflectance} dB</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-zinc-500 block">Debris</span>
-                    <span className="text-zinc-200 font-semibold">{layer.debrisCount} targets</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-zinc-500 block">Status</span>
-                    <span className={layer.enabled ? "text-emerald-400" : "text-zinc-500"}>
-                      {layer.enabled ? "ACTIVE" : "MUTED"}
+            <div className="space-y-3 flex-1 overflow-y-auto max-h-[420px]">
+              {layers.map((layer) => (
+                <div
+                  key={layer.id}
+                  onClick={() => toggleLayer(layer.id)}
+                  className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
+                    layer.enabled
+                      ? 'bg-white border-blue-200 shadow-sm ring-1 ring-blue-100'
+                      : 'bg-slate-50 border-slate-200/80 opacity-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">{layer.name}</span>
+                    <span
+                      className={
+                        layer.entanglementRisk === 'CRITICAL'
+                          ? 'pill-badge-red text-[10px]'
+                          : layer.entanglementRisk === 'MODERATE'
+                          ? 'pill-badge-amber text-[10px]'
+                          : 'pill-badge-green text-[10px]'
+                      }
+                    >
+                      {layer.entanglementRisk}
                     </span>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-2 mt-2.5 text-xs font-mono">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">RANGE</span>
+                      <span className="text-slate-700 font-semibold">{layer.depthRange}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">BACKSCATTER</span>
+                      <span className="text-slate-700 font-semibold">{layer.acousticReflectance} dB</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">DEBRIS COUNT</span>
+                      <span className="text-slate-900 font-bold">{layer.debrisCount} targets</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">MONITOR STATE</span>
+                      <span className={layer.enabled ? 'text-emerald-600 font-bold' : 'text-slate-400'}>
+                        {layer.enabled ? 'ACTIVE' : 'MUTED'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <button className="w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm flex items-center justify-center gap-2 mt-auto">
-            <ShieldAlert className="w-3.5 h-3.5" />
-            Calibrate Submersible Sonar
-          </button>
+          {calibrated ? (
+            <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Transducer Acoustic Calibration Complete</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleCalibrate}
+              className="w-full btn-primary-dark text-xs justify-center"
+            >
+              <ShieldAlert className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Calibrate Submersible Sonar</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -70,8 +70,10 @@ export interface ReportListResponse {
 
 export interface HotspotCluster {
   cluster_id: string;
-  center_lat: number;
-  center_lon: number;
+  name: string;
+  lat: number;
+  lon: number;
+  depth_m: number;
   detection_count: number;
   risk_level: SeverityLevel;
   estimated_debris_m2: number;
@@ -80,6 +82,33 @@ export interface HotspotCluster {
 export interface HotspotResponse {
   clusters: HotspotCluster[];
   total_hotspots: number;
+}
+
+export interface FleetUnit {
+  id: string;
+  name: string;
+  type: string;
+  status: string;
+  lat: number;
+  lon: number;
+  heading: number;
+  speed_knots: number;
+  battery_pct: number;
+  depth_m: number;
+  swath_coverage_km2: number;
+  sonar_freq_khz: number;
+}
+
+export interface CleanupMission {
+  mission_id: string;
+  target_id: string;
+  target_label: string;
+  stage: string;
+  assigned_vessel: string;
+  priority: string;
+  est_mass_kg: number;
+  lat: number;
+  lon: number;
 }
 
 export interface HealthResponse {
@@ -180,6 +209,22 @@ export const ghostnetApi = {
       cache: 'no-store',
     });
     return handleResponse<HotspotResponse>(res);
+  },
+
+  /** Fetch active fleet units */
+  async getFleet(): Promise<FleetUnit[]> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/analytics/fleet`, {
+      cache: 'no-store',
+    });
+    return handleResponse<FleetUnit[]>(res);
+  },
+
+  /** Fetch active cleanup missions */
+  async getCleanupMissions(): Promise<CleanupMission[]> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/analytics/cleanup`, {
+      cache: 'no-store',
+    });
+    return handleResponse<CleanupMission[]>(res);
   },
 
   /** Fetch risk summary overview */

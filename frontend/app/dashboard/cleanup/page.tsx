@@ -1,373 +1,254 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState, useEffect } from 'react';
+import { ghostnetApi, type CleanupMission } from '@/lib/api';
 import {
-  Trash2,
   CheckCircle2,
   Clock,
-  Send,
-  ArrowUpDown,
+  Navigation,
   Ship,
   Sparkles,
   Download,
-  TrendingDown,
-  Navigation,
-  ArrowLeft,
-} from "lucide-react";
+  Search,
+  Plus,
+  ArrowRight,
+  RefreshCw,
+  Layers,
+} from 'lucide-react';
 
-interface CleanupTarget {
-  id: string;
-  targetName: string;
-  coordinates: string;
-  debrisType: "DRIFT_GILLNET" | "TRAWL_FRAGMENT" | "FAD_DEBRIS" | "LONGLINE_BUNDLE";
-  estimatedMassKg: number;
-  priorityScore: number;
-  urgency: "CRITICAL" | "HIGH" | "MEDIUM" | "SCHEDULED";
-  assignedVessel: string | null;
-  salvageWindowHrs: number;
-  status: "PENDING_DISPATCH" | "IN_TRANSIT" | "RECOVERY_ACTIVE" | "COMPLETED";
-}
-
-const mockTargets: CleanupTarget[] = [
+const INITIAL_MISSIONS: CleanupMission[] = [
   {
-    id: "CLN-8401",
-    targetName: "Polypropylene Gillnet Mesh #18",
-    coordinates: "34°49.2' N, 142°11.3' W",
-    debrisType: "DRIFT_GILLNET",
-    estimatedMassKg: 1420,
-    priorityScore: 96,
-    urgency: "CRITICAL",
-    assignedVessel: "RV Ocean Sentinel (SV-01)",
-    salvageWindowHrs: 6.5,
-    status: "RECOVERY_ACTIVE",
+    mission_id: 'MSN-2041',
+    target_id: 'GNET-8821',
+    target_label: 'Synthetic Gillnet Cluster',
+    stage: 'Dispatched',
+    assigned_vessel: 'RV-OCEANUS',
+    priority: 'Critical',
+    est_mass_kg: 340,
+    lat: 15.4989,
+    lon: 73.8278,
   },
   {
-    id: "CLN-8402",
-    targetName: "Monofilament Trawl Snag Alpha",
-    coordinates: "34°38.6' N, 142°05.8' W",
-    debrisType: "TRAWL_FRAGMENT",
-    estimatedMassKg: 980,
-    priorityScore: 89,
-    urgency: "CRITICAL",
-    assignedVessel: null,
-    salvageWindowHrs: 12.0,
-    status: "PENDING_DISPATCH",
+    mission_id: 'MSN-2039',
+    target_id: 'GNET-8815',
+    target_label: 'Snagged Trawl Net on Reef',
+    stage: 'In Recovery',
+    assigned_vessel: 'ROV-TRITON-X',
+    priority: 'Critical',
+    est_mass_kg: 620,
+    lat: 15.441,
+    lon: 73.782,
   },
   {
-    id: "CLN-8403",
-    targetName: "Anchored Fish Aggregating Device",
-    coordinates: "34°22.1' N, 141°58.2' W",
-    debrisType: "FAD_DEBRIS",
-    estimatedMassKg: 650,
-    priorityScore: 78,
-    urgency: "HIGH",
-    assignedVessel: "USV Nautilus-4",
-    salvageWindowHrs: 24.0,
-    status: "IN_TRANSIT",
+    mission_id: 'MSN-2035',
+    target_id: 'GNET-8819',
+    target_label: 'Abandoned Polypropylene Line',
+    stage: 'Identified',
+    assigned_vessel: 'AUV-NEPTUNE-02',
+    priority: 'High',
+    est_mass_kg: 180,
+    lat: 15.512,
+    lon: 73.834,
   },
   {
-    id: "CLN-8404",
-    targetName: "Commercial Tuna Longline Cluster",
-    coordinates: "34°15.4' N, 141°42.9' W",
-    debrisType: "LONGLINE_BUNDLE",
-    estimatedMassKg: 420,
-    priorityScore: 65,
-    urgency: "MEDIUM",
-    assignedVessel: null,
-    salvageWindowHrs: 48.0,
-    status: "PENDING_DISPATCH",
-  },
-  {
-    id: "CLN-8405",
-    targetName: "Submerged Polyethylene Trawl Wing",
-    coordinates: "33°58.2' N, 141°30.0' W",
-    debrisType: "TRAWL_FRAGMENT",
-    estimatedMassKg: 810,
-    priorityScore: 54,
-    urgency: "SCHEDULED",
-    assignedVessel: null,
-    salvageWindowHrs: 72.0,
-    status: "PENDING_DISPATCH",
+    mission_id: 'MSN-2028',
+    target_id: 'GNET-8809',
+    target_label: 'Submerged Crab Trap Cage',
+    stage: 'Cleared',
+    assigned_vessel: 'RV-OCEANUS',
+    priority: 'Medium',
+    est_mass_kg: 95,
+    lat: 15.534,
+    lon: 73.856,
   },
 ];
 
-export default function CleanupPriorityPage() {
-  const [targets, setTargets] = useState<CleanupTarget[]>(mockTargets);
-  const [selectedTarget, setSelectedTarget] = useState<CleanupTarget>(mockTargets[0]);
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [isOptimizing, setIsOptimizing] = useState(false);
+const STAGES = ['Identified', 'Dispatched', 'In Recovery', 'Cleared'] as const;
 
-  const filtered =
-    statusFilter === "ALL"
-      ? targets
-      : targets.filter((t) => t.status === statusFilter);
+export default function CleanupMissionsPage() {
+  const [missions, setMissions] = useState<CleanupMission[]>(INITIAL_MISSIONS);
+  const [loading, setLoading] = useState(false);
 
-  const handleDispatch = (id: string) => {
-    setTargets((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: "IN_TRANSIT",
-              assignedVessel: "RV Ocean Sentinel (SV-01)",
-            }
-          : t
-      )
-    );
-    setSelectedTarget((prev) =>
-      prev.id === id
-        ? {
-            ...prev,
-            status: "IN_TRANSIT",
-            assignedVessel: "RV Ocean Sentinel (SV-01)",
-          }
-        : prev
+  const loadMissions = () => {
+    setLoading(true);
+    ghostnetApi
+      .getCleanupMissions()
+      .then((data) => {
+        if (data && data.length > 0) setMissions(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadMissions();
+  }, []);
+
+  const moveMission = (missionId: string, direction: 'next' | 'prev') => {
+    setMissions((prev) =>
+      prev.map((m) => {
+        if (m.mission_id !== missionId) return m;
+        const currIdx = STAGES.indexOf(m.stage as any);
+        if (direction === 'next' && currIdx < STAGES.length - 1) {
+          return { ...m, stage: STAGES[currIdx + 1] };
+        }
+        if (direction === 'prev' && currIdx > 0) {
+          return { ...m, stage: STAGES[currIdx - 1] };
+        }
+        return m;
+      })
     );
   };
 
+  const totalMass = missions.reduce((acc, m) => acc + m.est_mass_kg, 0);
+
   return (
-    <div className="flex flex-col h-full w-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl text-zinc-100 overflow-y-auto p-4 md:p-6 space-y-6 font-sans backdrop-blur-xl shadow-2xl">
-      {/* Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyan-950/80 pb-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 hover:text-white hover:bg-cyan-900/80 text-xs font-mono transition-all mr-1 shadow-sm"
-              title="Return to Main Overview"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Overview</span>
-            </Link>
-            <span className="p-1.5 rounded-md bg-zinc-800 border border-zinc-700/60 text-zinc-300">
-              <Trash2 className="w-4 h-4 text-emerald-400" />
-            </span>
-            <h1 className="text-xl font-semibold tracking-tight text-zinc-100">
-              Cleanup Priority & Salvage Queue
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">
+              Marine Debris Cleanup & Salvage Operations
             </h1>
-            <span className="px-2 py-0.5 rounded-full text-[11px] font-mono bg-zinc-800 text-zinc-400 border border-zinc-700/50">
-              Dispatch Ops
+            <span className="text-xs text-slate-400 font-medium">
+              Autonomous task dispatching and recovery workflow pipeline
             </span>
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            Autonomous salvage priority ranking, vessel dispatch scheduling, and net extraction telemetry.
-          </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold flex items-center gap-2">
+            <span className="text-slate-500">TARGET MASS:</span>
+            <span className="text-slate-900 font-bold font-mono">{(totalMass / 1000).toFixed(2)} t</span>
+          </div>
           <button
-            onClick={() => {
-              setIsOptimizing(true);
-              setTimeout(() => setIsOptimizing(false), 850);
-            }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm"
+            onClick={loadMissions}
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+            title="Refresh"
           >
-            <Sparkles className={`w-3.5 h-3.5 ${isOptimizing ? "animate-spin" : ""}`} />
-            Optimize Queue
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* Top 4 KPI Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Total Salvage Queue</span>
-            <Trash2 className="w-3.5 h-3.5 text-zinc-400" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            4,280 <span className="text-xs font-normal text-zinc-500 font-mono">kg</span>
-          </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">5 High-Priority Target Clusters</div>
-        </div>
+      {/* ── Kanban Board Stages (Grid of 4 Columns) ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {STAGES.map((stage) => {
+          const stageMissions = missions.filter((m) => m.stage === stage);
 
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Active Recovery Fleet</span>
-            <Ship className="w-3.5 h-3.5 text-zinc-400" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            2 <span className="text-xs font-normal text-zinc-500 font-mono">units deployed</span>
-          </div>
-          <div className="text-[11px] text-zinc-400 mt-2 font-mono">RV Sentinel + USV Nautilus</div>
-        </div>
-
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Avg. Salvage Window</span>
-            <Clock className="w-3.5 h-3.5 text-zinc-400" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">
-            18.4 <span className="text-xs font-normal text-zinc-500 font-mono">hours remaining</span>
-          </div>
-          <div className="text-[11px] text-amber-400 mt-2 font-mono">Prior to trench exit</div>
-        </div>
-
-        <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-          <div className="flex justify-between items-start">
-            <span className="text-xs font-medium text-zinc-400">Projected Extraction Cost</span>
-            <TrendingDown className="w-3.5 h-3.5 text-zinc-400" />
-          </div>
-          <div className="text-2xl font-bold tracking-tight text-zinc-100 mt-2">$14,200</div>
-          <div className="text-[11px] text-emerald-400 mt-2 font-mono">-38% via AI route optimization</div>
-        </div>
-      </div>
-
-      {/* Main Grid: Left Priority Queue Table + Right Target Dispatch Dossier */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 flex-1">
-        {/* Priority Table (2 Cols) */}
-        <div className="lg:col-span-2 bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/80 border border-zinc-800 rounded-lg px-3.5 py-2">
-            <div className="flex items-center gap-2.5">
-              <ArrowUpDown className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="text-xs font-medium text-zinc-200">
-                Ranked Salvage Queue
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-zinc-900 border border-zinc-700/80 rounded-lg px-2.5 py-1 text-xs text-zinc-200 focus:outline-none font-mono"
-              >
-                <option value="ALL">All Statuses</option>
-                <option value="PENDING_DISPATCH">Pending Dispatch</option>
-                <option value="IN_TRANSIT">In Transit</option>
-                <option value="RECOVERY_ACTIVE">Active Recovery</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Target List */}
-          <div className="space-y-2 flex-1 overflow-y-auto">
-            {filtered.map((item) => {
-              const isSelected = selectedTarget.id === item.id;
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => setSelectedTarget(item)}
-                  className={`p-3.5 rounded-lg border transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-                    isSelected
-                      ? "bg-zinc-900 border-zinc-600 shadow-sm"
-                      : "bg-zinc-900/50 border-zinc-800/70 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center font-mono text-xs font-bold text-zinc-200 shrink-0">
-                      {item.priorityScore}
-                    </div>
-
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-zinc-100">{item.targetName}</span>
-                        <span className="text-[10px] font-mono text-zinc-500">({item.id})</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] text-zinc-400 font-mono mt-1">
-                        <span>Mass: <strong className="text-zinc-200">{item.estimatedMassKg} kg</strong></span>
-                        <span>•</span>
-                        <span>Window: <strong className="text-zinc-200">{item.salvageWindowHrs}h</strong></span>
-                        <span>•</span>
-                        <span>{item.coordinates}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 self-end md:self-center">
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
-                        item.status === "RECOVERY_ACTIVE"
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                          : item.status === "IN_TRANSIT"
-                          ? "bg-zinc-800 text-zinc-300 border border-zinc-700"
-                          : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
-                      }`}
-                    >
-                      {item.status.replace("_", " ")}
+          return (
+            <div key={stage} className="light-saas-card p-5 flex flex-col justify-between min-h-[500px] space-y-4">
+              <div className="space-y-3">
+                {/* Column Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      {stage}
+                    </span>
+                    <span className="pill-badge-neutral text-[10px] py-0 px-1.5 font-bold">
+                      {stageMissions.length}
                     </span>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Right Sidebar: Selected Dispatch Dossier */}
-        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-xl p-4 flex flex-col space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
-            <h2 className="text-xs font-semibold text-zinc-300 uppercase tracking-wider flex items-center gap-2">
-              <Navigation className="w-3.5 h-3.5 text-zinc-400" />
-              Extraction Details
-            </h2>
-            <span className="text-[10px] font-mono text-zinc-500">{selectedTarget.id}</span>
-          </div>
+                {/* Mission Cards inside Stage */}
+                <div className="space-y-3">
+                  {stageMissions.map((m) => (
+                    <div
+                      key={m.mission_id}
+                      className="p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all space-y-3 group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold font-mono text-slate-900">{m.mission_id}</span>
+                        <span
+                          className={
+                            m.priority === 'Critical'
+                              ? 'pill-badge-red text-[10px]'
+                              : m.priority === 'High'
+                              ? 'pill-badge-amber text-[10px]'
+                              : 'pill-badge-green text-[10px]'
+                          }
+                        >
+                          {m.priority}
+                        </span>
+                      </div>
 
-          <div>
-            <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono">
-              Target Designation
-            </span>
-            <div className="text-base font-semibold text-zinc-100">{selectedTarget.targetName}</div>
-            <div className="text-xs font-mono text-zinc-400 mt-0.5">{selectedTarget.debrisType}</div>
-          </div>
+                      <div className="space-y-1">
+                        <span className="text-xs font-bold text-slate-800 block">{m.target_label}</span>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                          <span>{m.assigned_vessel}</span>
+                          <span>·</span>
+                          <span>{m.est_mass_kg} kg</span>
+                        </div>
+                      </div>
 
-          {/* Salvage Scoring Breakdown */}
-          <div className="space-y-3 bg-zinc-900/80 border border-zinc-800 rounded-lg p-3.5">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-zinc-400">Priority Score</span>
-              <span className="text-zinc-100 font-semibold font-mono">{selectedTarget.priorityScore} / 100</span>
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-200 text-[11px] font-mono text-slate-500">
+                        <span>{m.lat.toFixed(3)}°N</span>
+                        {/* Stage transition buttons */}
+                        <div className="flex items-center gap-1">
+                          {stage !== 'Identified' && (
+                            <button
+                              onClick={() => moveMission(m.mission_id, 'prev')}
+                              className="px-2 py-0.5 rounded bg-white border border-slate-200 hover:bg-slate-50 text-[10px] font-bold"
+                            >
+                              ←
+                            </button>
+                          )}
+                          {stage !== 'Cleared' && (
+                            <button
+                              onClick={() => moveMission(m.mission_id, 'next')}
+                              className="px-2 py-0.5 rounded bg-slate-900 text-white hover:bg-slate-800 text-[10px] font-bold"
+                            >
+                              →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {stageMissions.length === 0 && (
+                    <div className="py-12 text-center text-xs text-slate-400 font-medium border-2 border-dashed border-slate-100 rounded-2xl">
+                      No missions in {stage}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {stage === 'Identified' && (
+                <button
+                  onClick={() => {
+                    const newId = `MSN-${Math.floor(2000 + Math.random() * 900)}`;
+                    setMissions((prev) => [
+                      ...prev,
+                      {
+                        mission_id: newId,
+                        target_id: 'GNET-AUTO',
+                        target_label: 'Newly Detected Monofilament',
+                        stage: 'Identified',
+                        assigned_vessel: 'RV-OCEANUS',
+                        priority: 'High',
+                        est_mass_kg: 210,
+                        lat: 15.524,
+                        lon: 73.842,
+                      },
+                    ]);
+                  }}
+                  className="w-full py-2.5 rounded-xl border border-dashed border-slate-300 hover:border-slate-900 text-slate-600 hover:text-slate-900 text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Mission Task</span>
+                </button>
+              )}
             </div>
-            <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-zinc-200 rounded-full"
-                style={{ width: `${selectedTarget.priorityScore}%` }}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5 pt-2 text-xs font-mono">
-              <div>
-                <span className="text-[10px] text-zinc-500 block">Mass Estimate</span>
-                <span className="text-zinc-200 font-semibold">{selectedTarget.estimatedMassKg} kg</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-zinc-500 block">Salvage Window</span>
-                <span className="text-zinc-200 font-semibold">{selectedTarget.salvageWindowHrs}h</span>
-              </div>
-              <div className="col-span-2">
-                <span className="text-[10px] text-zinc-500 block">Assigned Unit</span>
-                <span className="text-zinc-300">
-                  {selectedTarget.assignedVessel || "Unassigned"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-zinc-900/80 border border-zinc-800 rounded-lg p-3 text-xs font-mono">
-            <span className="text-[10px] text-zinc-500 uppercase block mb-1">GPS Lock</span>
-            <span className="text-zinc-300">{selectedTarget.coordinates}</span>
-          </div>
-
-          <div className="pt-2 space-y-2 mt-auto">
-            {selectedTarget.status === "PENDING_DISPATCH" ? (
-              <button
-                onClick={() => handleDispatch(selectedTarget.id)}
-                className="w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-medium transition-all shadow-sm flex items-center justify-center gap-2"
-              >
-                <Send className="w-3.5 h-3.5" />
-                Dispatch Salvage Vessel
-              </button>
-            ) : (
-              <div className="w-full py-2.5 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs font-medium flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                Mission Tasked ({selectedTarget.status})
-              </div>
-            )}
-            <button className="w-full py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-medium transition-all flex items-center justify-center gap-2">
-              <Download className="w-3.5 h-3.5" />
-              Export Manifest
-            </button>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );

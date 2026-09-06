@@ -1,640 +1,298 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useState } from 'react';
 import {
-  ShieldAlert,
-  Radio,
-  Eye,
-  Activity,
-  Maximize2,
-  Minimize2,
-  TrendingUp,
+  Map,
   Compass,
-  AlertTriangle,
   Layers,
   Search,
-  Bell,
-  Settings,
-  User,
-  Sliders,
-  Sparkles,
-  ChevronDown,
-  X,
+  Filter,
+  Download,
   Crosshair,
-  Wifi,
-  Lock,
+  ChevronDown,
   ArrowUpRight,
-  RefreshCw,
-  ArrowLeft,
-} from "lucide-react";
+  ShieldAlert,
+  Ship,
+  Navigation,
+  Sparkles,
+  Maximize2,
+  ZoomIn,
+  ZoomOut,
+  CheckCircle2,
+} from 'lucide-react';
 
-interface ThreatCard {
+interface ClusterPin {
   id: string;
-  category: string;
-  subCode: string;
-  score: string;
-  metricLabel: string;
-  metricValue: string;
-  trend: string;
-  trendPositive: boolean;
-  severity: "CRITICAL" | "HIGH" | "MEDIUM" | "STABLE";
-  iconType: "shield" | "radar" | "vessel" | "sonar" | "reef" | "drone";
+  name: string;
+  lat: number;
+  lon: number;
+  depth: number;
+  targets: number;
+  severity: 'critical' | 'high' | 'medium';
+  area_m2: number;
 }
 
-const mockThreatFeed: ThreatCard[] = [
+const SURVEY_CLUSTERS: ClusterPin[] = [
   {
-    id: "TH-01",
-    category: "URBAN / GYRE CORRIDOR",
-    subCode: "073",
-    score: "7.007",
-    metricLabel: "Drift Velocity",
-    metricValue: "865.9 NM/24h",
-    trend: "+4.3%",
-    trendPositive: false,
-    severity: "CRITICAL",
-    iconType: "shield",
+    id: 'CL-01',
+    name: 'Grande Island Reef Snag Zone',
+    lat: 15.4989,
+    lon: 73.8278,
+    depth: 42.5,
+    targets: 8,
+    severity: 'critical',
+    area_m2: 340,
   },
   {
-    id: "TH-02",
-    category: "SUBMERGED GHOST NET CLUSTER",
-    subCode: "002",
-    score: "740.32",
-    metricLabel: "Acoustic Mass",
-    metricValue: "4.00 m³/hit",
-    trend: "3.13%",
-    trendPositive: false,
-    severity: "CRITICAL",
-    iconType: "sonar",
+    id: 'CL-02',
+    name: 'Mormugao Deep Shipping Channel',
+    lat: 15.412,
+    lon: 73.791,
+    depth: 58.0,
+    targets: 5,
+    severity: 'high',
+    area_m2: 190,
   },
   {
-    id: "TH-03",
-    category: "DARK VESSEL RADAR SIGNATURE",
-    subCode: "041",
-    score: "1.2",
-    metricLabel: "Unmatched Track",
-    metricValue: "+42.409 lat",
-    trend: "+0.8%",
-    trendPositive: false,
-    severity: "HIGH",
-    iconType: "vessel",
-  },
-  {
-    id: "TH-04",
-    category: "DEEP TRENCH THERMOCLINE",
-    subCode: "002",
-    score: "214.8-7",
-    metricLabel: "Backscatter",
-    metricValue: "-18.4 dB",
-    trend: "0.5%",
-    trendPositive: true,
-    severity: "MEDIUM",
-    iconType: "radar",
-  },
-  {
-    id: "TH-05",
-    category: "CORAL REEF MPA THREAT INDEX",
-    subCode: "022",
-    score: "21136.3",
-    metricLabel: "Proximity",
-    metricValue: "0.8 km",
-    trend: "+4.5%",
-    trendPositive: false,
-    severity: "CRITICAL",
-    iconType: "reef",
-  },
-  {
-    id: "TH-06",
-    category: "FLEET RECOVERY DISPATCH",
-    subCode: "047",
-    score: "234.497",
-    metricLabel: "Active Units",
-    metricValue: "4 Tasked",
-    trend: "0.8%",
-    trendPositive: true,
-    severity: "STABLE",
-    iconType: "drone",
+    id: 'CL-03',
+    name: 'Aguada Shoal Trawl Clump',
+    lat: 15.553,
+    lon: 73.864,
+    depth: 31.2,
+    targets: 3,
+    severity: 'medium',
+    area_m2: 85,
   },
 ];
 
-export default function GlobalStrategicMapPage() {
-  const [selectedThreat, setSelectedThreat] = useState<ThreatCard>(mockThreatFeed[0]);
-  const [activeRegion, setActiveRegion] = useState<"GLOBAL" | "AMERICAS" | "EURASIA" | "ASIA_PACIFIC">("GLOBAL");
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+export default function HydrographicMapPage() {
+  const [selectedClusterId, setSelectedClusterId] = useState<string>(SURVEY_CLUSTERS[0].id);
+  const [layerMode, setLayerMode] = useState<'bathymetry' | 'debris' | 'corridors'>('debris');
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [dispatchedClusterId, setDispatchedClusterId] = useState<string | null>(null);
+
+  const selectedCluster = SURVEY_CLUSTERS.find((c) => c.id === selectedClusterId) ?? SURVEY_CLUSTERS[0];
+
+  const handleRouteVessel = () => {
+    setDispatchedClusterId(selectedClusterId);
+    setTimeout(() => setDispatchedClusterId(null), 3000);
+  };
 
   return (
-    <div className="w-full h-full bg-[#081226]/90 border border-cyan-900/40 rounded-2xl text-zinc-100 flex flex-col font-sans overflow-hidden select-none backdrop-blur-xl shadow-2xl">
-      {/* Top Strategic Global Bar */}
-      <header className="h-12 bg-[#0a1428]/90 border-b border-cyan-950/80 px-4 flex items-center justify-between z-30 shrink-0">
-        <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 hover:text-white hover:bg-cyan-900/80 text-xs font-mono transition-all mr-1 shadow-sm"
-            title="Return to Main Overview"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Overview</span>
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-rose-500/20 border border-rose-500/50 flex items-center justify-center">
-              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-black tracking-widest uppercase text-white">
-                  GLOBAL EYE INTELLIGENCE
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400">
-                  SYSTEM KEY: <strong className="text-zinc-200">SPYK_33:65:18</strong>
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="hidden md:flex items-center gap-2 pl-4 border-l border-zinc-800 text-[10px] font-mono text-zinc-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>DEEPWATCH: 00:00:00 (SYNCED)</span>
-          </div>
-        </div>
-
-        {/* Top Right Controls & Profile */}
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] font-mono text-zinc-300">
-            <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-            <span>WGS-84 ORBITAL</span>
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <Map className="w-4 h-4 text-emerald-400" />
           </div>
-
-          <div className="flex items-center gap-1 text-zinc-400">
-            <button
-              onClick={() => {
-                setIsRefreshing(true);
-                setTimeout(() => setIsRefreshing(false), 700);
-              }}
-              className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-300 transition-colors"
-              title="Refresh Stream"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-            </button>
-            <button className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-300 transition-colors">
-              <Bell className="w-3.5 h-3.5" />
-            </button>
-            <button className="p-1.5 rounded-md hover:bg-zinc-800 text-zinc-300 transition-colors">
-              <Settings className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 pl-2 border-l border-zinc-800">
-            <div className="w-6 h-6 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-[10px] font-bold text-zinc-200">
-              TA
-            </div>
-            <div className="hidden lg:flex flex-col text-[10px] leading-tight">
-              <span className="font-semibold text-zinc-200">T. ARMSTRONG</span>
-              <span className="text-zinc-500 font-mono">TACTICAL OPS</span>
-            </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">
+              Hydrographic Survey & Geospatial Map
+            </h1>
+            <span className="text-xs text-slate-400 font-medium">
+              Georeferenced acoustic debris clusters and bathymetric swath corridors
+            </span>
           </div>
         </div>
-      </header>
 
-      {/* Main Map Body Container */}
-      <div className="flex-1 relative flex overflow-hidden">
-        {/* Central Map Canvas */}
-        <div className="flex-1 relative bg-[#070c17] flex items-center justify-center overflow-hidden">
-          {/* Detailed Topographic Satellite Shaded World Map SVG */}
-          <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-            <svg
-              className="w-full h-full object-cover transition-transform duration-500"
-              viewBox="0 0 1600 900"
-              preserveAspectRatio="xMidYMid slice"
-              style={{ transform: `scale(${zoomLevel})` }}
-            >
-              <defs>
-                {/* Ocean Background Gradient */}
-                <radialGradient id="oceanGlow" cx="50%" cy="50%" r="70%">
-                  <stop offset="0%" stopColor="#0b1326" />
-                  <stop offset="60%" stopColor="#070c17" />
-                  <stop offset="100%" stopColor="#04070e" />
-                </radialGradient>
+        {/* Action Controls */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            {(['debris', 'bathymetry', 'corridors'] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLayerMode(l)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
+                  layerMode === l ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {l} Layer
+              </button>
+            ))}
+          </div>
 
-                {/* Heatmap Region Gradients */}
-                <radialGradient id="northAmericaHeat" cx="40%" cy="40%" r="60%">
-                  <stop offset="0%" stopColor="#f97316" stopOpacity="0.85" />
-                  <stop offset="50%" stopColor="#ea580c" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#c2410c" stopOpacity="0" />
-                </radialGradient>
+          <button className="btn-pill-filter">
+            <span>All Sectors</span>
+            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          </button>
+        </div>
+      </div>
 
-                <radialGradient id="eurasiaHeat" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%" stopColor="#d97706" stopOpacity="0.75" />
-                  <stop offset="60%" stopColor="#b45309" stopOpacity="0.35" />
-                  <stop offset="100%" stopColor="#78350f" stopOpacity="0" />
-                </radialGradient>
+      {/* ── Main Map Viewport & Telemetry Sidebar (Grid) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Map Canvas (8 cols on lg) */}
+        <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-slate-100">
+            <span>SECTOR: GOA CONTINENTAL SHELF (IN-WEST)</span>
+            <span className="pill-badge-green text-[10px]">GPS FIX: 12 SATELLITES</span>
+          </div>
 
-                <radialGradient id="eastAsiaHeat" cx="50%" cy="50%" r="60%">
-                  <stop offset="0%" stopColor="#ef4444" stopOpacity="0.9" />
-                  <stop offset="50%" stopColor="#dc2626" stopOpacity="0.55" />
-                  <stop offset="100%" stopColor="#991b1b" stopOpacity="0" />
-                </radialGradient>
-
-                {/* Land Texture Patterns */}
-                <linearGradient id="landTopoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#2c372f" />
-                  <stop offset="50%" stopColor="#1e2722" />
-                  <stop offset="100%" stopColor="#131a17" />
-                </linearGradient>
-
-                <linearGradient id="desertTopoGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#574c3a" />
-                  <stop offset="100%" stopColor="#30281b" />
-                </linearGradient>
-              </defs>
-
-              {/* Base Ocean Background */}
-              <rect width="1600" height="900" fill="url(#oceanGlow)" />
-
-              {/* Latitude/Longitude Coordinate Grid Lines */}
-              <g stroke="#1a2638" strokeWidth="0.75" strokeDasharray="4,6" opacity="0.4">
-                <line x1="0" y1="225" x2="1600" y2="225" />
-                <line x1="0" y1="450" x2="1600" y2="450" />
-                <line x1="0" y1="675" x2="1600" y2="675" />
-                <line x1="400" y1="0" x2="400" y2="900" />
-                <line x1="800" y1="0" x2="800" y2="900" />
-                <line x1="1200" y1="0" x2="1200" y2="900" />
-              </g>
-
-              {/* Continents Outline Topography */}
-              {/* NORTH AMERICA */}
-              <g>
-                <path
-                  d="M160,140 Q220,110 320,130 Q420,110 460,180 Q480,240 460,320 Q440,380 380,420 Q320,440 280,380 Q220,360 180,280 Q140,220 160,140 Z"
-                  fill="url(#landTopoGrad)"
-                  stroke="#3f4f45"
-                  strokeWidth="1"
-                />
-                {/* North America Orange Heat Overlay */}
-                <path
-                  d="M220,220 Q340,180 430,240 Q450,330 380,390 Q280,410 240,320 Z"
-                  fill="url(#northAmericaHeat)"
-                />
-              </g>
-
-              {/* GREENLAND */}
-              <path
-                d="M520,90 Q600,70 660,110 Q650,180 580,200 Q510,180 520,90 Z"
-                fill="#d1d5db"
-                opacity="0.8"
-                stroke="#9ca3af"
-                strokeWidth="1"
-              />
-
-              {/* SOUTH AMERICA */}
-              <path
-                d="M360,460 Q440,440 480,520 Q520,600 480,720 Q440,820 400,840 Q380,780 370,680 Q340,580 360,460 Z"
-                fill="url(#landTopoGrad)"
-                stroke="#3f4f45"
-                strokeWidth="1"
-              />
-
-              {/* EUROPE */}
-              <g>
-                <path
-                  d="M720,180 Q820,150 880,180 Q900,240 840,280 Q780,300 740,260 Q700,240 720,180 Z"
-                  fill="url(#landTopoGrad)"
-                  stroke="#4b5d52"
-                  strokeWidth="1"
-                />
-              </g>
-
-              {/* AFRICA */}
-              <path
-                d="M710,320 Q840,300 900,380 Q940,480 900,620 Q840,720 780,720 Q720,640 700,520 Q680,420 710,320 Z"
-                fill="url(#desertTopoGrad)"
-                stroke="#63553f"
-                strokeWidth="1"
-              />
-
-              {/* EURASIA / RUSSIA (Copper/Amber Zone) */}
-              <g>
-                <path
-                  d="M860,120 Q1100,90 1340,140 Q1380,240 1260,300 Q1060,280 920,240 Q840,180 860,120 Z"
-                  fill="url(#landTopoGrad)"
-                  stroke="#4b5d52"
-                  strokeWidth="1"
-                />
-                <path
-                  d="M900,140 Q1120,110 1320,160 Q1300,250 1140,270 Q980,250 900,180 Z"
-                  fill="url(#eurasiaHeat)"
-                />
-              </g>
-
-              {/* EAST ASIA / CHINA (Crimson Heat Overlay) */}
-              <g>
-                <path
-                  d="M1080,280 Q1240,260 1320,340 Q1300,440 1200,460 Q1100,440 1060,360 Z"
-                  fill="url(#landTopoGrad)"
-                  stroke="#4b5d52"
-                  strokeWidth="1"
-                />
-                <path
-                  d="M1100,290 Q1220,270 1300,330 Q1280,420 1180,440 Q1100,410 1100,290 Z"
-                  fill="url(#eastAsiaHeat)"
-                />
-              </g>
-
-              {/* AUSTRALIA */}
-              <path
-                d="M1240,580 Q1380,560 1440,640 Q1420,740 1320,760 Q1220,720 1240,580 Z"
-                fill="url(#desertTopoGrad)"
-                stroke="#63553f"
-                strokeWidth="1"
-              />
-
-              {/* Target Alert Tactical Markers (North America Heat Nodes) */}
-              {[
-                { x: 300, y: 260, label: "NA-01" },
-                { x: 340, y: 290, label: "NA-02" },
-                { x: 380, y: 270, label: "NA-03" },
-                { x: 320, y: 340, label: "NA-04" },
-                { x: 360, y: 350, label: "NA-05" },
-                { x: 410, y: 320, label: "NA-06" },
-              ].map((pin) => (
-                <g key={pin.label} className="cursor-pointer">
-                  <circle cx={pin.x} cy={pin.y} r="8" fill="#f97316" fillOpacity="0.4" className="animate-ping" />
-                  <circle cx={pin.x} cy={pin.y} r="4" fill="#ffedd5" stroke="#ea580c" strokeWidth="1.5" />
-                  <path
-                    d={`M${pin.x},${pin.y - 10} L${pin.x + 8},${pin.y - 4} L${pin.x - 8},${pin.y - 4} Z`}
-                    fill="#f97316"
-                    opacity="0.8"
-                  />
-                </g>
-              ))}
-
-              {/* Europe Tactical Shields & Pins */}
-              <g className="cursor-pointer">
-                <circle cx="780" cy="220" r="10" fill="#f43f5e" fillOpacity="0.3" className="animate-pulse" />
-                <rect x="774" y="214" width="12" height="12" rx="2" fill="#e11d48" stroke="#ffffff" strokeWidth="1" />
-                <path d="M780,217 L780,223 M777,220 L783,220" stroke="#ffffff" strokeWidth="1" />
-              </g>
-
-              <g className="cursor-pointer">
-                <circle cx="820" cy="250" r="8" fill="#f43f5e" fillOpacity="0.3" />
-                <rect x="816" y="246" width="8" height="8" rx="1.5" fill="#e11d48" stroke="#ffffff" strokeWidth="0.8" />
-              </g>
-
-              {/* Ocean Drift Vector Streamlines */}
-              <path
-                d="M480,380 Q620,320 760,440 T1040,400"
-                fill="none"
-                stroke="#38bdf8"
-                strokeWidth="1"
-                strokeDasharray="3,5"
-                opacity="0.4"
-              />
-              <path
-                d="M500,600 Q700,540 900,680 T1200,620"
-                fill="none"
-                stroke="#64748b"
-                strokeWidth="1"
-                strokeDasharray="4,6"
-                opacity="0.3"
-              />
+          {/* Interactive Simulated Hydrographic Canvas */}
+          <div className="h-[440px] w-full rounded-2xl bg-slate-950 relative overflow-hidden shadow-inner flex items-center justify-center select-none">
+            {/* Bathymetry depth contours (vector curved lines) */}
+            <svg viewBox="0 0 800 440" className="absolute inset-0 w-full h-full opacity-40">
+              <path d="M 0 100 Q 200 150 400 120 T 800 180" fill="none" stroke="#0284C7" strokeWidth="1.5" strokeDasharray="6 4" />
+              <path d="M 0 200 Q 250 240 500 210 T 800 290" fill="none" stroke="#0284C7" strokeWidth="2" />
+              <path d="M 0 300 Q 300 320 600 280 T 800 380" fill="none" stroke="#0369A1" strokeWidth="2.5" />
+              <text x="720" y="170" fill="#38BDF8" fontSize="11" fontFamily="monospace">-20m</text>
+              <text x="720" y="280" fill="#38BDF8" fontSize="11" fontFamily="monospace">-40m</text>
+              <text x="720" y="370" fill="#38BDF8" fontSize="11" fontFamily="monospace">-60m</text>
             </svg>
-          </div>
 
-          {/* TOP-LEFT HUD OVERLAY: Threat Identification Card */}
-          <div className="absolute top-4 left-4 z-20 w-[240px] bg-[#0c1424]/90 border border-zinc-700/80 rounded-xl p-3.5 backdrop-blur-md shadow-2xl space-y-2.5">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold">
-                TOTAL THREAT COVERAGE
+            {/* Grid overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none opacity-20"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to right, #475569 1px, transparent 1px), linear-gradient(to bottom, #475569 1px, transparent 1px)',
+                backgroundSize: '50px 50px',
+              }}
+            />
+
+            {/* Survey Vessel Icon */}
+            <div className="absolute top-1/3 left-1/4 flex flex-col items-center gap-1 z-20">
+              <div className="w-8 h-8 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-white shadow-lg animate-pulse">
+                <Ship className="w-4 h-4" />
+              </div>
+              <span className="px-2 py-0.5 rounded bg-slate-900/90 text-white text-[10px] font-bold font-mono shadow-md">
+                RV-OCEANUS (4.2 kt)
               </span>
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/40 flex items-center justify-center text-rose-400 shrink-0">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="text-2xl font-black tracking-tight text-white font-mono">
-                  41.73%
-                </div>
-                <div className="text-[9px] font-mono text-zinc-400">GLOBAL SENSOR INDEX</div>
-              </div>
-            </div>
+            {/* Debris Cluster Pins on Map */}
+            {SURVEY_CLUSTERS.map((cluster, idx) => {
+              const isSelected = cluster.id === selectedClusterId;
+              const positions = [
+                { top: '48%', left: '45%' },
+                { top: '72%', left: '62%' },
+                { top: '25%', left: '75%' },
+              ];
+              const pos = positions[idx] || { top: '50%', left: '50%' };
 
-            <div className="space-y-1.5 pt-1 text-[10px] font-mono">
-              <div className="flex justify-between items-center text-zinc-300">
-                <span className="text-zinc-400 flex items-center gap-1">
-                  <Activity className="w-3 h-3 text-orange-400" />
-                  THREAT SCORE:
-                </span>
-                <strong className="text-orange-400">6.424</strong>
-              </div>
-              <div className="flex justify-between items-center text-zinc-300">
-                <span className="text-zinc-400 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3 text-rose-400" />
-                  ACTIVE DRIFT:
-                </span>
-                <strong className="text-zinc-100">1.32%</strong>
-              </div>
-              <div className="flex justify-between items-center text-zinc-300">
-                <span className="text-zinc-400 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 text-amber-400" />
-                  PROXIMITY CRIT:
-                </span>
-                <strong className="text-amber-400">8.0%</strong>
-              </div>
-            </div>
-          </div>
-
-          {/* TOP-RIGHT MAP HUD OVERLAY: Sector Selector */}
-          <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-[#0c1424]/90 border border-zinc-700/80 rounded-lg px-3 py-1.5 backdrop-blur-md shadow-lg text-[11px] font-mono text-zinc-300">
-            <span className="text-zinc-400">SECTOR FOCUS:</span>
-            <span className="text-white font-bold">PACIFIC / ATLANTIC</span>
-            <span className="text-zinc-600">|</span>
-            <span className="text-emerald-400 font-semibold">DUAL-SWATH</span>
-          </div>
-
-          {/* BOTTOM-LEFT HUD OVERLAY: Acoustic Frequency Curve Graph */}
-          <div className="absolute bottom-4 left-4 z-20 w-[240px] bg-[#0c1424]/90 border border-zinc-700/80 rounded-xl p-3.5 backdrop-blur-md shadow-2xl space-y-2">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5 text-[9px] font-mono text-zinc-400">
-              <span className="font-bold uppercase tracking-wider text-zinc-300">ACOUSTIC BACKSCATTER</span>
-              <span>20 - 120 kHz</span>
-            </div>
-
-            {/* Simulated Line Graph with Peak */}
-            <div className="h-16 relative flex items-end">
-              <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 200 60">
-                <defs>
-                  <linearGradient id="curveGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.4" />
-                    <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M0,50 Q40,48 60,10 Q80,45 140,48 T200,52 L200,60 L0,60 Z"
-                  fill="url(#curveGrad)"
-                />
-                <path
-                  d="M0,50 Q40,48 60,10 Q80,45 140,48 T200,52"
-                  fill="none"
-                  stroke="#f43f5e"
-                  strokeWidth="2"
-                />
-                <circle cx="60" cy="10" r="3" fill="#ffffff" stroke="#f43f5e" strokeWidth="1.5" />
-              </svg>
-            </div>
-
-            {/* Telemetry numbers grid */}
-            <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[8px] font-mono text-zinc-400 pt-1 border-t border-zinc-800/80">
-              <div>P1: <strong className="text-zinc-200">11.7%</strong></div>
-              <div>DEV: <strong className="text-orange-400">82.2 H00</strong></div>
-              <div>SWATH: <strong className="text-zinc-200">28.1 NM</strong></div>
-              <div>CORR: <strong className="text-emerald-400">8.09%</strong></div>
-            </div>
-          </div>
-
-          {/* BOTTOM STATUS BAR ON MAP */}
-          <div className="absolute bottom-4 right-4 z-20 flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-[#0c1424]/90 border border-zinc-700/80 rounded-lg px-3 py-1.5 backdrop-blur-md text-[10px] font-mono text-zinc-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>REAL-TIME SENSOR ENCRYPTION ACTIVE</span>
-            </div>
-
-            {/* Zoom Controls */}
-            <div className="flex items-center bg-[#0c1424]/90 border border-zinc-700/80 rounded-lg overflow-hidden backdrop-blur-md text-xs font-mono">
-              <button
-                onClick={() => setZoomLevel((z) => Math.max(z - 0.2, 0.8))}
-                className="px-2.5 py-1 hover:bg-zinc-800 text-zinc-300 transition-colors"
-              >
-                -
-              </button>
-              <span className="px-2 text-[10px] text-zinc-400 border-x border-zinc-800">
-                {Math.round(zoomLevel * 100)}%
-              </span>
-              <button
-                onClick={() => setZoomLevel((z) => Math.min(z + 0.2, 2.0))}
-                className="px-2.5 py-1 hover:bg-zinc-800 text-zinc-300 transition-colors"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT THREAT INTELLIGENCE FEED SIDEBAR */}
-        {rightPanelOpen ? (
-          <aside className="w-[340px] h-full bg-[#0a1120] border-l border-zinc-800/80 flex flex-col z-20 shrink-0 shadow-2xl">
-            {/* Sidebar Header */}
-            <div className="p-3.5 border-b border-zinc-800 flex items-center justify-between bg-[#080d19]">
-              <div className="flex items-center gap-2">
-                <Crosshair className="w-4 h-4 text-rose-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-200">
-                  CURRENT FEED
-                </span>
-                <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                  {mockThreatFeed.length}
-                </span>
-              </div>
-              <button
-                onClick={() => setRightPanelOpen(false)}
-                className="p-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Tactical Threat Cards Stack */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-              {mockThreatFeed.map((threat) => {
-                const isSelected = selectedThreat.id === threat.id;
-                return (
+              return (
+                <div
+                  key={cluster.id}
+                  onClick={() => setSelectedClusterId(cluster.id)}
+                  style={pos}
+                  className="absolute cursor-pointer flex flex-col items-center gap-1 z-20 group"
+                >
                   <div
-                    key={threat.id}
-                    onClick={() => setSelectedThreat(threat)}
-                    className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                      isSelected
-                        ? "bg-[#0f172a] border-zinc-500/80 shadow-md ring-1 ring-zinc-500/40"
-                        : "bg-[#070d18] border-zinc-800/80 hover:border-zinc-700"
+                    className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-xl transition-transform group-hover:scale-110 ${
+                      cluster.severity === 'critical'
+                        ? 'bg-red-500 text-white ring-4 ring-red-500/30'
+                        : cluster.severity === 'high'
+                        ? 'bg-amber-500 text-white ring-4 ring-amber-500/30'
+                        : 'bg-emerald-500 text-white ring-4 ring-emerald-500/30'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className={`w-6 h-6 rounded flex items-center justify-center font-mono text-[10px] font-bold ${
-                            threat.severity === "CRITICAL"
-                              ? "bg-rose-500/20 text-rose-400 border border-rose-500/40"
-                              : threat.severity === "HIGH"
-                              ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                              : "bg-zinc-800 text-zinc-300 border border-zinc-700"
-                          }`}
-                        >
-                          {threat.subCode}
-                        </div>
-                        <div>
-                          <div className="text-[11px] font-bold text-zinc-200 leading-tight">
-                            {threat.category}
-                          </div>
-                          <div className="text-[9px] font-mono text-zinc-500">{threat.id}</div>
-                        </div>
-                      </div>
-
-                      <span
-                        className={`text-[10px] font-mono font-bold ${
-                          threat.trendPositive ? "text-emerald-400" : "text-rose-400"
-                        }`}
-                      >
-                        {threat.trend}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-800/80 text-[10px] font-mono">
-                      <div>
-                        <span className="text-zinc-500 block text-[9px]">SCORE</span>
-                        <span className="font-bold text-zinc-200">{threat.score}</span>
-                      </div>
-                      <div>
-                        <span className="text-zinc-500 block text-[9px]">{threat.metricLabel.toUpperCase()}</span>
-                        <span className="font-semibold text-zinc-300">{threat.metricValue}</span>
-                      </div>
-                    </div>
+                    {cluster.targets}
                   </div>
-                );
-              })}
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold shadow-md transition-all ${
+                      isSelected ? 'bg-white text-slate-900 ring-2 ring-blue-500' : 'bg-slate-900/80 text-slate-300'
+                    }`}
+                  >
+                    {cluster.name.split(' ')[0]}
+                  </span>
+                </div>
+              );
+            })}
+
+            {/* Map HUD Overlay */}
+            <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-xl bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-mono border border-slate-700/50 flex items-center gap-3">
+              <span>LAT: 15.4989° N</span>
+              <span>·</span>
+              <span>LON: 73.8278° E</span>
+              <span>·</span>
+              <span>DATUM: WGS-84</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+            <span>Covered Swath Area: 14.8 km²</span>
+            <span>Bathymetric Gradient: 1.4° Slope</span>
+          </div>
+        </div>
+
+        {/* Right Telemetry & Cluster Inspector (4 cols on lg) */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="light-saas-card p-6 space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                CLUSTER TELEMETRY
+              </span>
+              <span
+                className={
+                  selectedCluster.severity === 'critical'
+                    ? 'pill-badge-red'
+                    : selectedCluster.severity === 'high'
+                    ? 'pill-badge-amber'
+                    : 'pill-badge-green'
+                }
+              >
+                {selectedCluster.severity.toUpperCase()}
+              </span>
             </div>
 
-            {/* Bottom Summary Telemetry Matrix */}
-            <div className="p-3.5 border-t border-zinc-800 bg-[#080d19] space-y-2 text-[10px] font-mono">
-              <div className="grid grid-cols-2 gap-2 text-zinc-400">
-                <div className="flex justify-between">
-                  <span>HIGH DISCOVERY:</span>
-                  <strong className="text-emerald-400">+18.712%</strong>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-900">{selectedCluster.name}</h3>
+              <span className="text-xs text-slate-400 font-mono">{selectedCluster.id} · {selectedCluster.targets} Target Returns</span>
+            </div>
+
+            {/* Cluster Stats Grid */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5 text-xs font-mono">
+              <div className="grid grid-cols-2 gap-2 text-slate-600">
+                <div>
+                  <span className="text-[10px] text-slate-400 block">LATITUDE</span>
+                  <span className="font-bold text-slate-900">{selectedCluster.lat}° N</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>POWER BUFFER:</span>
-                  <strong className="text-zinc-200">2.207 V</strong>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">LONGITUDE</span>
+                  <span className="font-bold text-slate-900">{selectedCluster.lon}° E</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>RADAR ISO:</span>
-                  <strong className="text-rose-400">-4.18%</strong>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">DEPTH</span>
+                  <span className="font-bold text-slate-900">{selectedCluster.depth} m</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>ACOUSTIC GAIN:</span>
-                  <strong className="text-zinc-200">45.6 dB</strong>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">EST. DEBRIS AREA</span>
+                  <span className="font-bold text-slate-900">{selectedCluster.area_m2} m²</span>
                 </div>
               </div>
             </div>
-          </aside>
-        ) : (
-          <button
-            onClick={() => setRightPanelOpen(true)}
-            className="absolute top-4 right-4 z-20 p-2 rounded-lg bg-[#0c1424]/90 border border-zinc-700/80 text-zinc-300 hover:text-white shadow-xl backdrop-blur-md"
-            title="Open Threat Feed"
-          >
-            <Crosshair className="w-4 h-4 text-rose-400" />
-          </button>
-        )}
+
+            {/* Assigned Survey Fleet */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Assigned Survey Fleet
+              </span>
+              <div className="flex justify-between text-slate-600">
+                <span>Primary Vessel:</span>
+                <span className="font-bold text-slate-900">RV-OCEANUS</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Support AUV:</span>
+                <span className="font-bold text-slate-900">AUV-NEPTUNE-02</span>
+              </div>
+            </div>
+
+            {dispatchedClusterId === selectedClusterId ? (
+              <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <span>RV-OCEANUS Routed to {selectedCluster.name.split(' ')[0]}</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleRouteVessel}
+                className="w-full btn-primary-dark text-xs justify-center"
+              >
+                <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Route Survey Vessel to Cluster</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

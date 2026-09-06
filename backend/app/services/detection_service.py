@@ -7,6 +7,8 @@ import numpy as np
 
 from app.core.preprocessing import load_image_from_bytes, apply_sonar_enhancement
 from app.models.inference import model_manager
+from app.services.confidence_filter import confidence_filter
+from app.services.geotagging import geotagging_engine
 from app.schemas.detection import (
     BoundingBox,
     Detection,
@@ -91,11 +93,12 @@ class DetectionService:
     ) -> DetectionResponse:
         start_time = time.time()
         
-        # Apply preprocessing
-        enhanced = apply_sonar_enhancement(image)
+        # 1. Apply Acoustic Speckle Noise Suppression & Contrast Enhancement
+        speckle_filtered = confidence_filter.suppress_speckle_noise(image)
+        enhanced = apply_sonar_enhancement(speckle_filtered)
         h, w, _ = enhanced.shape
 
-        # Run YOLO inference
+        # 2. Run YOLO Inference
         results = model_manager.predict(enhanced, conf=conf_threshold)
 
         detections: List[Detection] = []
@@ -115,13 +118,47 @@ class DetectionService:
                 x_max = max(x_min + 1, min(w, x_max))
                 y_max = max(y_min + 1, min(h, y_max))
 
-                conf = float(box.conf[0].cpu().numpy())
+                raw_conf = float(box.conf[0].cpu().numpy())
                 
-                # Estimate area proxy based on bounding box size and sonar range
-                box_area_ratio = ((x_max - x_min) * (y_max - y_min)) / (w * h)
-                estimated_area_m2 = round(box_area_ratio * (meta.range_m ** 2) * 0.1, 2)
-                
-                severity = self.calculate_severity(conf, estimated_area_m2)
+                # 3. Calibrate confidence with acoustic shadow verification and rock cluster filter
+                calibrated_conf = confidence_filter.calibrate_confidence(
+                    raw_confidence=raw_conf,
+                    image_rgb=enhanced,
+                    bbox=(x_min, y_min, x_max, y_max)
+                )
+
+                bbox_obj = BoundingBox(
+                    x_min=x_min,
+                    y_min=y_min,
+                    x_max=x_max,
+                    y_max=y_max
+                )
+
+                # 4. Compute physical real-world dimensions (length, width, area m²)
+                dimensions = geotagging_engine.compute_bounding_dimensions_m(
+                    bbox=bbox_obj,
+                    image_width_px=w,
+                    image_height_px=h,
+                    range_m=meta.range_m
+                )
+                estimated_area_m2 = dimensions["area_m2"]
+
+                # 5. Geodetic Projection from vessel GPS ping + heading + slant-to-ground range
+                if geo is not None:
+                    hazard_geo = geotagging_engine.project_pixel_to_gps(
+                        vessel_lat=geo.lat,
+                        vessel_lon=geo.lon,
+                        heading_deg=184.2,  # Default or surveyed vessel heading
+                        vessel_depth_m=geo.depth_m or 42.5,
+                        bbox=bbox_obj,
+                        image_width_px=w,
+                        image_height_px=h,
+                        range_m=meta.range_m
+                    )
+                else:
+                    hazard_geo = None
+
+                severity = self.calculate_severity(calibrated_conf, estimated_area_m2)
                 det_id = f"det_{uuid.uuid4().hex[:14]}"
 
                 detections.append(
@@ -129,14 +166,9 @@ class DetectionService:
                         id=det_id,
                         frame_id=frame_id,
                         label=DetectionLabel.GHOST_NET,
-                        confidence=round(conf, 3),
-                        bbox=BoundingBox(
-                            x_min=x_min,
-                            y_min=y_min,
-                            x_max=x_max,
-                            y_max=y_max
-                        ),
-                        geo=geo,
+                        confidence=calibrated_conf,
+                        bbox=bbox_obj,
+                        geo=hazard_geo,
                         sonar_meta=meta,
                         severity=severity,
                         area_m2=estimated_area_m2,

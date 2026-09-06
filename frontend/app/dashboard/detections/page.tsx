@@ -1,114 +1,337 @@
 'use client';
 
-import { useState } from 'react';
-import Panel from '@/components/ui/Panel';
-import MapContainer from '@/components/ui/MapContainer';
-import TargetDetailDrawer from '@/components/dashboard/TargetDetailDrawer';
-import SeverityBadge from '@/components/ui/SeverityBadge';
-import { MOCK_TARGETS } from '@/lib/mockData';
+import React, { useState } from 'react';
+import {
+  Target,
+  Crosshair,
+  MapPin,
+  Clock,
+  Layers,
+  Search,
+  Download,
+  CheckCircle2,
+  AlertTriangle,
+  ChevronRight,
+  Sparkles,
+  Activity,
+  ArrowUpRight,
+} from 'lucide-react';
 
-export default function DetectionCenter() {
-  const [selectedTargetId, setSelectedTargetId] = useState<string | null>(MOCK_TARGETS[0].id);
+interface LiveTarget {
+  id: string;
+  label: string;
+  confidence: number;
+  severity: 'critical' | 'high' | 'medium';
+  lat: number;
+  lon: number;
+  depth: number;
+  area_m2: number;
+  vessel: string;
+  timestamp: string;
+  status: 'Unassigned' | 'Mission Dispatched' | 'Cleared';
+}
 
-  const selectedTarget = MOCK_TARGETS.find(t => t.id === selectedTargetId) || null;
+const INITIAL_TARGETS: LiveTarget[] = [
+  {
+    id: 'GNET-8821',
+    label: 'Synthetic Gillnet Cluster',
+    confidence: 0.94,
+    severity: 'critical',
+    lat: 15.4989,
+    lon: 73.8278,
+    depth: 42.5,
+    area_m2: 18.4,
+    vessel: 'RV-OCEANUS',
+    timestamp: 'Just now',
+    status: 'Mission Dispatched',
+  },
+  {
+    id: 'GNET-8819',
+    label: 'Abandoned Polypropylene Rope',
+    confidence: 0.88,
+    severity: 'high',
+    lat: 15.512,
+    lon: 73.834,
+    depth: 38.0,
+    area_m2: 8.2,
+    vessel: 'AUV-NEPTUNE-02',
+    timestamp: '4m ago',
+    status: 'Unassigned',
+  },
+  {
+    id: 'GNET-8815',
+    label: 'Snagged Trawl Net on Reef',
+    confidence: 0.91,
+    severity: 'critical',
+    lat: 15.441,
+    lon: 73.782,
+    depth: 54.2,
+    area_m2: 26.5,
+    vessel: 'RV-OCEANUS',
+    timestamp: '12m ago',
+    status: 'Mission Dispatched',
+  },
+  {
+    id: 'GNET-8809',
+    label: 'Submerged Crab Trap Cage',
+    confidence: 0.79,
+    severity: 'medium',
+    lat: 15.534,
+    lon: 73.856,
+    depth: 29.8,
+    area_m2: 4.1,
+    vessel: 'AUV-NEPTUNE-01',
+    timestamp: '28m ago',
+    status: 'Cleared',
+  },
+  {
+    id: 'GNET-8798',
+    label: 'Heavy Monofilament Webbing',
+    confidence: 0.85,
+    severity: 'high',
+    lat: 15.482,
+    lon: 73.811,
+    depth: 46.0,
+    area_m2: 12.0,
+    vessel: 'RV-OCEANUS',
+    timestamp: '45m ago',
+    status: 'Unassigned',
+  },
+];
+
+const STATUS_CYCLE: LiveTarget['status'][] = ['Unassigned', 'Mission Dispatched', 'Cleared'];
+
+export default function LiveDetectionsFeedPage() {
+  const [targets, setTargets] = useState<LiveTarget[]>(INITIAL_TARGETS);
+  const [selectedTargetId, setSelectedTargetId] = useState<string>(INITIAL_TARGETS[0].id);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterSeverity, setFilterSeverity] = useState<'all' | 'critical' | 'high' | 'medium'>('all');
+
+  const selectedTarget = targets.find((t) => t.id === selectedTargetId) ?? targets[0];
+
+  const filteredTargets = targets.filter((t) => {
+    const matchesSearch =
+      t.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      t.vessel.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSeverity = filterSeverity === 'all' || t.severity === filterSeverity;
+    return matchesSearch && matchesSeverity;
+  });
+
+  const cycleStatus = (id: string) => {
+    setTargets((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        const currIdx = STATUS_CYCLE.indexOf(t.status);
+        const nextIdx = (currIdx + 1) % STATUS_CYCLE.length;
+        return { ...t, status: STATUS_CYCLE[nextIdx] };
+      })
+    );
+  };
 
   return (
-    <div className="w-full h-full relative flex">
-      {/* Background Map - Heatmap Style (Screenshot 4 Reference) */}
-      <div className="absolute inset-0 z-0 bg-[#0d1017]">
-         <MapContainer showGrid={false} className="opacity-60">
-            {/* Fake Heatmap Overlay */}
-            <div className="absolute top-1/4 left-1/4 w-[40%] h-[50%] bg-orange-600/20 blur-[80px] rounded-full pointer-events-none"></div>
-            <div className="absolute top-1/3 left-1/2 w-[30%] h-[40%] bg-red-600/20 blur-[100px] rounded-full pointer-events-none"></div>
-         </MapContainer>
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white">
+            <Target className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">
+              Live Acoustic Target Detections
+            </h1>
+            <span className="text-xs text-slate-400 font-medium">
+              Real-time classified marine debris returns across surveyed corridors
+            </span>
+          </div>
+        </div>
+
+        {/* Quick KPI stats */}
+        <div className="flex items-center gap-3">
+          <div className="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold flex items-center gap-2">
+            <span className="text-slate-500">TOTAL MASS:</span>
+            <span className="text-slate-900 font-bold">42.6 t</span>
+          </div>
+          <div className="pill-badge-red text-xs py-1 px-3">
+            <span>2 Critical Snags Active</span>
+          </div>
+        </div>
       </div>
 
-      {/* Floating Top Left KPI (Threat Tonnage style) */}
-      <Panel className="absolute top-6 left-6 w-64 z-10 bg-[#0a0f18]/80 backdrop-blur-md border border-red-500/20 rounded-md" noPadding>
-         <div className="p-3 border-b border-red-500/10">
-           <h3 className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Total Detection Mass</h3>
-         </div>
-         <div className="p-4 flex items-end gap-3">
-           <div className="w-8 h-8 rounded bg-red-500/10 flex items-center justify-center border border-red-500/20">
-             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-           </div>
-           <div className="flex flex-col">
-             <span className="text-3xl font-bold text-white">41.7 t</span>
-             <span className="text-[9px] text-slate-500 uppercase tracking-wider font-mono">Estimated Debris</span>
-           </div>
-         </div>
-      </Panel>
-
-      {/* Floating Bottom Left Chart */}
-      <Panel className="absolute bottom-6 left-6 w-[320px] h-48 z-10 bg-[#0a0f18]/80 backdrop-blur-md rounded-md" noPadding>
-         <div className="p-4 flex flex-col h-full">
-            <h3 className="text-[10px] text-slate-400 uppercase tracking-widest font-mono mb-2">Detection Trend</h3>
-            <div className="flex-1 relative flex items-end w-full border-b border-l border-white/10 pb-1 pl-1">
-               {/* Fake Area Chart */}
-               <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-                  <path d="M0 100 L0 80 Q20 40 40 70 T70 30 T100 50 L100 100 Z" fill="rgba(239,68,68,0.2)" />
-                  <path d="M0 80 Q20 40 40 70 T70 30 T100 50" fill="none" stroke="#ef4444" strokeWidth="2" />
-               </svg>
+      {/* ── Main View: Target Feed + Inspector (Grid) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left: Searchable Target List (8 cols on lg) */}
+        <div className="lg:col-span-8 light-saas-card p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3.5 py-2 w-72 border border-slate-200/80">
+              <Search className="w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search target ID, label, vessel..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+              />
             </div>
-            <div className="flex justify-between mt-2 text-[9px] font-mono text-slate-500">
-               <span>00:00</span>
-               <span>06:00</span>
-               <span>12:00</span>
-               <span>18:00</span>
-            </div>
-         </div>
-      </Panel>
 
-      {/* Target Detail Drawer OR Dense Target List depending on selection */}
-      <div className="absolute right-0 top-0 h-full flex z-40">
-        
-        {/* Dense Threat List (Screenshot 4 Reference) */}
-        <Panel className="w-72 h-full bg-[#0d141e]/95 border-l border-white/5 rounded-none shadow-2xl transition-transform" noPadding>
-          <div className="p-4 border-b border-white/5 bg-[#121b29]">
-            <h3 className="text-xs font-bold text-white tracking-widest uppercase flex items-center justify-between">
-              Active Detections
-              <span className="text-[9px] font-mono bg-red-500/20 text-red-400 px-2 py-0.5 rounded">{MOCK_TARGETS.length} Total</span>
-            </h3>
+            <div className="flex items-center gap-1.5">
+              {(['all', 'critical', 'high', 'medium'] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFilterSeverity(s)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
+                    filterSeverity === s ? 'bg-slate-900 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto">
-            {MOCK_TARGETS.map(t => (
-              <div 
-                key={t.id} 
-                onClick={() => setSelectedTargetId(t.id)}
-                className={`p-3 flex items-start gap-3 border-b border-white/5 cursor-pointer hover:bg-white/5 transition-colors ${selectedTargetId === t.id ? 'bg-white/5 border-l-2 border-l-teal-500' : 'border-l-2 border-l-transparent'}`}
-              >
-                <div className={`w-8 h-8 rounded border flex items-center justify-center shrink-0 mt-0.5 ${t.status === 'Critical' ? 'bg-red-500/10 border-red-500/30' : t.status === 'Moderate' ? 'bg-orange-500/10 border-orange-500/30' : 'bg-teal-500/10 border-teal-500/30'}`}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.status === 'Critical' ? '#ef4444' : t.status === 'Moderate' ? '#f97316' : '#2dd4bf'} strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+
+          {/* List Cards */}
+          <div className="space-y-3">
+            {filteredTargets.map((target) => {
+              const isSelected = target.id === selectedTargetId;
+
+              return (
+                <div
+                  key={target.id}
+                  onClick={() => setSelectedTargetId(target.id)}
+                  className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center justify-between border ${
+                    isSelected
+                      ? 'bg-blue-50/50 border-blue-300 shadow-md'
+                      : 'bg-white hover:bg-slate-50 border-slate-200/80'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        target.severity === 'critical'
+                          ? 'bg-red-50 text-red-600 border border-red-200'
+                          : target.severity === 'high'
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                          : 'bg-blue-50 text-blue-600 border border-blue-200'
+                      }`}
+                    >
+                      <Crosshair className="w-5 h-5" />
+                    </div>
+
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold font-mono text-slate-900">{target.id}</span>
+                        <span className="text-xs font-semibold text-slate-700">{target.label}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+                        <span>{target.vessel}</span>
+                        <span>·</span>
+                        <span>{target.depth}m Depth</span>
+                        <span>·</span>
+                        <span>{target.area_m2} m² Area</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-right">
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-black text-slate-900">
+                        {(target.confidence * 100).toFixed(0)}% Conf
+                      </div>
+                      <span className="text-[11px] text-slate-400 font-medium">{target.timestamp}</span>
+                    </div>
+
+                    <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1 w-full">
-                  <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-bold text-slate-200">{t.type}</span>
-                    <span className="text-[9px] font-mono text-slate-500">{t.timestamp.split(' ')[0]}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-[10px] font-mono">
-                    <span className="text-slate-400">{t.code}</span>
-                    <span className={t.status === 'Critical' ? 'text-red-400' : t.status === 'Moderate' ? 'text-orange-400' : 'text-teal-400'}>{(t.confidence * 100).toFixed(1)}%</span>
-                  </div>
-                  <div className="text-[9px] text-slate-500 font-mono mt-1">
-                    {t.lat} / {t.lon}
-                  </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right: Selected Target Inspector (4 cols on lg) */}
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="space-y-0.5">
+                <span className="text-xs font-black font-mono text-slate-900">{selectedTarget.id}</span>
+                <span className="text-xs font-bold text-slate-700 block">{selectedTarget.label}</span>
+              </div>
+              <span
+                className={
+                  selectedTarget.severity === 'critical'
+                    ? 'pill-badge-red'
+                    : selectedTarget.severity === 'high'
+                    ? 'pill-badge-amber'
+                    : 'pill-badge-green'
+                }
+              >
+                {selectedTarget.severity.toUpperCase()}
+              </span>
+            </div>
+
+            {/* Geolocation Card */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5 text-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Target Geolocation
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-slate-600">
+                <div>
+                  <span className="text-[10px] text-slate-400 block">LATITUDE</span>
+                  <span className="font-bold text-slate-900">{selectedTarget.lat}° N</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">LONGITUDE</span>
+                  <span className="font-bold text-slate-900">{selectedTarget.lon}° E</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">DEPTH</span>
+                  <span className="font-bold text-slate-900">{selectedTarget.depth} m</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block">FOOTPRINT</span>
+                  <span className="font-bold text-slate-900">{selectedTarget.area_m2} m²</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </Panel>
+            </div>
 
-        {/* The Detail Drawer expanding from the list */}
-        {selectedTargetId && (
-          <div className="w-80 h-full relative shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
-             <TargetDetailDrawer 
-                target={selectedTarget} 
-                onClose={() => setSelectedTargetId(null)} 
-             />
+            {/* Mission Dispatch Status */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Recovery Mission
+              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 font-medium">Status:</span>
+                <span className="pill-badge-blue">{selectedTarget.status}</span>
+              </div>
+              <div className="flex justify-between text-slate-600">
+                <span>Assigned Unit:</span>
+                <span className="font-bold text-slate-900">{selectedTarget.vessel}</span>
+              </div>
+            </div>
           </div>
-        )}
+
+          <button
+            onClick={() => cycleStatus(selectedTarget.id)}
+            className={`w-full text-xs justify-center ${
+              selectedTarget.status === 'Cleared'
+                ? 'btn-pill-filter'
+                : 'btn-primary-dark'
+            }`}
+          >
+            <CheckCircle2 className={`w-3.5 h-3.5 ${
+              selectedTarget.status === 'Cleared' ? 'text-emerald-600' : 'text-emerald-400'
+            }`} />
+            <span>{
+              selectedTarget.status === 'Unassigned'
+                ? 'Dispatch Cleanup Mission'
+                : selectedTarget.status === 'Mission Dispatched'
+                ? 'Mark as Cleared'
+                : 'Reopen Mission'
+            }</span>
+          </button>
+        </div>
       </div>
-
     </div>
   );
 }
