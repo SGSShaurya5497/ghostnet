@@ -214,11 +214,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className={`w-2 h-2 rounded-full ${
                 modelLoaded === true
                   ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse'
-                  : 'bg-amber-400'
+                  : modelLoaded === false
+                  ? 'bg-slate-400'
+                  : 'bg-amber-400 animate-pulse'
               }`}
             />
             <span className="text-slate-700 font-semibold text-[11px]">
-              {modelLoaded === true ? `YOLO-v8 (${backendLatency ?? 12}ms)` : 'Connecting...'}
+              {modelLoaded === true
+                ? `YOLO-v8 (${backendLatency ?? 12}ms)`
+                : modelLoaded === false
+                ? 'Offline (Demo Mode)'
+                : 'Connecting...'}
             </span>
           </div>
 

@@ -129,15 +129,15 @@ export default function HydrographicMapPage() {
           </div>
 
           {/* Interactive Simulated Hydrographic Canvas */}
-          <div className="h-[440px] w-full rounded-2xl bg-slate-950 relative overflow-hidden shadow-inner flex items-center justify-center select-none">
+          <div className="h-[370px] w-full rounded-2xl bg-slate-950 relative overflow-hidden shadow-inner flex items-center justify-center select-none">
             {/* Bathymetry depth contours (vector curved lines) */}
-            <svg viewBox="0 0 800 440" className="absolute inset-0 w-full h-full opacity-40">
-              <path d="M 0 100 Q 200 150 400 120 T 800 180" fill="none" stroke="#0284C7" strokeWidth="1.5" strokeDasharray="6 4" />
-              <path d="M 0 200 Q 250 240 500 210 T 800 290" fill="none" stroke="#0284C7" strokeWidth="2" />
-              <path d="M 0 300 Q 300 320 600 280 T 800 380" fill="none" stroke="#0369A1" strokeWidth="2.5" />
-              <text x="720" y="170" fill="#38BDF8" fontSize="11" fontFamily="monospace">-20m</text>
-              <text x="720" y="280" fill="#38BDF8" fontSize="11" fontFamily="monospace">-40m</text>
-              <text x="720" y="370" fill="#38BDF8" fontSize="11" fontFamily="monospace">-60m</text>
+            <svg viewBox="0 0 800 370" className="absolute inset-0 w-full h-full opacity-40">
+              <path d="M 0 80 Q 200 130 400 100 T 800 150" fill="none" stroke="#0284C7" strokeWidth="1.5" strokeDasharray="6 4" />
+              <path d="M 0 170 Q 250 210 500 180 T 800 250" fill="none" stroke="#0284C7" strokeWidth="2" />
+              <path d="M 0 260 Q 300 280 600 240 T 800 330" fill="none" stroke="#0369A1" strokeWidth="2.5" />
+              <text x="720" y="140" fill="#38BDF8" fontSize="11" fontFamily="monospace">-20m</text>
+              <text x="720" y="240" fill="#38BDF8" fontSize="11" fontFamily="monospace">-40m</text>
+              <text x="720" y="320" fill="#38BDF8" fontSize="11" fontFamily="monospace">-60m</text>
             </svg>
 
             {/* Grid overlay */}
@@ -165,7 +165,7 @@ export default function HydrographicMapPage() {
               const isSelected = cluster.id === selectedClusterId;
               const positions = [
                 { top: '48%', left: '45%' },
-                { top: '72%', left: '62%' },
+                { top: '70%', left: '62%' },
                 { top: '25%', left: '75%' },
               ];
               const pos = positions[idx] || { top: '50%', left: '50%' };
@@ -209,15 +209,15 @@ export default function HydrographicMapPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
+          <div className="flex items-center justify-between text-xs text-slate-500 font-medium pt-1">
             <span>Covered Swath Area: 14.8 km²</span>
             <span>Bathymetric Gradient: 1.4° Slope</span>
           </div>
         </div>
 
         {/* Right Telemetry & Cluster Inspector (4 cols on lg) */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="light-saas-card p-6 space-y-5">
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between h-full space-y-4">
+          <div className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 CLUSTER TELEMETRY
@@ -276,22 +276,22 @@ export default function HydrographicMapPage() {
                 <span className="font-bold text-slate-900">AUV-NEPTUNE-02</span>
               </div>
             </div>
-
-            {dispatchedClusterId === selectedClusterId ? (
-              <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                <span>RV-OCEANUS Routed to {selectedCluster.name.split(' ')[0]}</span>
-              </div>
-            ) : (
-              <button
-                onClick={handleRouteVessel}
-                className="w-full btn-primary-dark text-xs justify-center"
-              >
-                <Navigation className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Route Survey Vessel to Cluster</span>
-              </button>
-            )}
           </div>
+
+          {dispatchedClusterId === selectedClusterId ? (
+            <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              <span>RV-OCEANUS Routed to {selectedCluster.name.split(' ')[0]}</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleRouteVessel}
+              className="w-full btn-primary-dark text-xs justify-center"
+            >
+              <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Route Survey Vessel to Cluster</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

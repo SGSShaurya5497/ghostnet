@@ -166,7 +166,7 @@ export default function SonarConsolePage() {
       </div>
 
       {/* ── Main Waterfall Display + Settings (Grid) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Waterfall Viewport (8 cols on lg) */}
         <div className="lg:col-span-8 light-saas-card p-6 space-y-4">
           <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-slate-100">
@@ -208,8 +208,8 @@ export default function SonarConsolePage() {
         </div>
 
         {/* Transducer Settings Sidebar (4 cols on lg) */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="light-saas-card p-6 space-y-5">
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between h-full">
+          <div className="space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 TRANSDUCER CONTROLS
@@ -231,6 +231,7 @@ export default function SonarConsolePage() {
                 max="100"
                 value={gain}
                 onChange={(e) => setGain(parseInt(e.target.value))}
+                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
               />
             </div>
 
@@ -270,6 +271,7 @@ export default function SonarConsolePage() {
                 step="10"
                 value={swathWidth}
                 onChange={(e) => setSwathWidth(parseInt(e.target.value))}
+                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
               />
             </div>
 
@@ -290,6 +292,40 @@ export default function SonarConsolePage() {
                 <span>Transducer Heading:</span>
                 <span className="font-bold text-slate-900">184.2° SSW</span>
               </div>
+            </div>
+          </div>
+
+          {/* Towfish Motion Compensation Readout */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 text-xs mt-4">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+              Towfish Motion Compensation
+            </span>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <span className="text-[10px] text-slate-400 block mb-0.5">HEAVE</span>
+                <span className="font-bold text-slate-900 font-mono text-sm">0.12 m</span>
+                <div className="h-1 rounded-full bg-slate-200 mt-1.5 overflow-hidden">
+                  <div className="h-full w-[12%] bg-emerald-500 rounded-full" />
+                </div>
+              </div>
+              <div className="text-center">
+                <span className="text-[10px] text-slate-400 block mb-0.5">PITCH</span>
+                <span className="font-bold text-slate-900 font-mono text-sm">1.4°</span>
+                <div className="h-1 rounded-full bg-slate-200 mt-1.5 overflow-hidden">
+                  <div className="h-full w-[14%] bg-blue-500 rounded-full" />
+                </div>
+              </div>
+              <div className="text-center">
+                <span className="text-[10px] text-slate-400 block mb-0.5">ROLL</span>
+                <span className="font-bold text-slate-900 font-mono text-sm">0.8°</span>
+                <div className="h-1 rounded-full bg-slate-200 mt-1.5 overflow-hidden">
+                  <div className="h-full w-[8%] bg-blue-500 rounded-full" />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-between text-slate-500 pt-0.5 border-t border-slate-100">
+              <span>Compensation Active:</span>
+              <span className="font-bold text-emerald-600">IMU-6DOF</span>
             </div>
           </div>
         </div>

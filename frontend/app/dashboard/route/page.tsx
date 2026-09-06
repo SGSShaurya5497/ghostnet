@@ -218,7 +218,7 @@ ${waypoints
       </div>
 
       {/* ── Main Grid: Left Trajectory Canvas + Right Waypoint List ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Route Visualizer (8 cols on lg) */}
         <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -246,7 +246,7 @@ ${waypoints
           </div>
 
           {/* Canvas */}
-          <div className="relative w-full h-[400px] rounded-2xl bg-slate-950 overflow-hidden flex items-center justify-center select-none shadow-inner">
+          <div className="relative w-full h-[360px] rounded-2xl bg-slate-950 overflow-hidden flex items-center justify-center select-none shadow-inner">
             <div
               className="absolute inset-0 opacity-15"
               style={{
@@ -259,7 +259,7 @@ ${waypoints
             <svg className="absolute inset-0 w-full h-full">
               {/* Lawnmower Survey Swath Lines */}
               <path
-                d="M100,120 L240,120 L240,160 L100,160 L100,200 L240,200 L240,240 L100,240"
+                d="M100,100 L240,100 L240,140 L100,140 L100,180 L240,180 L240,220 L100,220"
                 fill="none"
                 stroke="#64748B"
                 strokeWidth="1.5"
@@ -269,7 +269,7 @@ ${waypoints
 
               {/* Waypoint Interconnect Line */}
               <path
-                d="M120,320 L280,180 L460,110 L620,240 L700,310"
+                d="M120,290 L280,160 L460,95 L620,215 L700,280"
                 fill="none"
                 stroke="#38BDF8"
                 strokeWidth="2.5"
@@ -278,7 +278,7 @@ ${waypoints
 
               {/* Sonar Swath Coverage Envelope */}
               <polygon
-                points="110,330 270,170 450,100 630,230 710,300 690,320 610,250 470,120 290,190 130,310"
+                points="110,300 270,150 450,85 630,205 710,270 690,290 610,225 470,105 290,170 130,280"
                 fill="#38BDF8"
                 fillOpacity="0.08"
               />
@@ -286,11 +286,11 @@ ${waypoints
               {/* Waypoint Pins */}
               {waypoints.map((wp, i) => {
                 const coords = [
-                  { x: 120, y: 320 },
-                  { x: 280, y: 180 },
-                  { x: 460, y: 110 },
-                  { x: 620, y: 240 },
-                  { x: 700, y: 310 },
+                  { x: 120, y: 290 },
+                  { x: 280, y: 160 },
+                  { x: 460, y: 95 },
+                  { x: 620, y: 215 },
+                  { x: 700, y: 280 },
                 ];
                 const c = coords[i % coords.length];
                 const isSelected = selectedWp.id === wp.id;
@@ -350,7 +350,7 @@ ${waypoints
         </div>
 
         {/* Right Sidebar: Selected Waypoint Dossier (4 cols on lg) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5">
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5 h-full">
           <div className="space-y-4">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
@@ -362,7 +362,7 @@ ${waypoints
               </span>
             </div>
 
-            <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
+            <div className="space-y-2 max-h-[270px] overflow-y-auto p-1 pr-1.5">
               {waypoints.map((wp) => {
                 const isSelected = selectedWp.id === wp.id;
 

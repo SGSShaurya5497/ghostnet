@@ -634,12 +634,11 @@ export default function AIWorkstationPage() {
       </div>
 
       {/* ── 3-Pane Workstation Layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* ── Left Ingest & Samples Sidebar (4 cols on lg) ── */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* File Upload Box */}
-          <div className="light-saas-card p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="lg:col-span-4 light-saas-card p-5 flex flex-col justify-between space-y-3.5 h-full">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 INGEST SONAR RASTER
               </span>
@@ -655,16 +654,16 @@ export default function AIWorkstationPage() {
                 e.preventDefault();
                 if (e.dataTransfer.files?.[0]) handleFileChange(e.dataTransfer.files[0]);
               }}
-              className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-6 flex flex-col items-center justify-center text-center gap-2.5 cursor-pointer bg-slate-50/50 hover:bg-blue-50/20 transition-all group"
+              className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-2xl p-4 flex flex-col items-center justify-center text-center gap-2 cursor-pointer bg-slate-50/50 hover:bg-blue-50/20 transition-all group"
             >
-              <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-600 group-hover:border-blue-200 shadow-sm transition-all">
-                <UploadCloud className="w-6 h-6" />
+              <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-blue-600 group-hover:border-blue-200 shadow-xs transition-all">
+                <UploadCloud className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-xs font-bold text-slate-800 block">
+                <span className="text-xs font-bold text-slate-800 block truncate max-w-[220px]">
                   {uploadedFile ? uploadedFile.name : 'Upload Sonar Image'}
                 </span>
-                <span className="text-[11px] text-slate-400 block mt-0.5">
+                <span className="text-[10px] text-slate-400 block mt-0.5">
                   Drag & drop PNG, JPG, or TIFF
                 </span>
               </div>
@@ -680,58 +679,58 @@ export default function AIWorkstationPage() {
             </div>
 
             {/* Preloaded Survey Scans */}
-            <div className="space-y-2 pt-2">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                 Preloaded Survey Scans
               </span>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {SAMPLE_SONAR_SCANS.map((sample) => (
                   <button
                     key={sample.id}
                     onClick={() => loadSampleScan(sample)}
-                    className="w-full text-left p-3 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all group"
+                    className="w-full text-left px-3 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all group"
                   >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate">
                         {sample.name}
                       </span>
-                      <span className="pill-badge-neutral text-[10px] py-0 px-1.5 font-mono">
+                      <span className="pill-badge-neutral text-[10px] py-0 px-1.5 font-mono shrink-0 ml-2">
                         {sample.khz} kHz
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-500 truncate">
+                    <p className="text-[10px] text-slate-500 truncate mt-0.5">
                       {sample.description}
                     </p>
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* Run AI Detection Button */}
-            <button
-              id="workstation-detect-btn"
-              onClick={runDetection}
-              disabled={isProcessing || (!uploadedFile && !imageBlobUrl)}
-              className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md mt-2"
-            >
-              {isProcessing ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>{pipelineStage || 'Running Inference...'}</span>
-                </>
-              ) : (
-                <>
-                  <Scan className="w-4 h-4 text-emerald-400" />
-                  <span>Run AI Detection</span>
-                </>
-              )}
-            </button>
           </div>
+
+          {/* Run AI Detection Button */}
+          <button
+            id="workstation-detect-btn"
+            onClick={runDetection}
+            disabled={isProcessing || (!uploadedFile && !imageBlobUrl)}
+            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md mt-1"
+          >
+            {isProcessing ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span>{pipelineStage || 'Running Inference...'}</span>
+              </>
+            ) : (
+              <>
+                <Scan className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Run AI Detection</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* ── Center Sonar Viewport Canvas (5 cols on lg) ── */}
-        <div className="lg:col-span-5 light-saas-card p-6 flex flex-col justify-between relative overflow-hidden">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="lg:col-span-5 light-saas-card p-5 flex flex-col justify-between relative overflow-hidden h-full">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
               ACOUSTIC RASTER VIEWPORT
             </span>
@@ -743,30 +742,34 @@ export default function AIWorkstationPage() {
           {/* Viewport Canvas Frame */}
           <div
             ref={containerRef}
-            className="flex-1 min-h-[380px] bg-slate-950 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 select-none my-4 shadow-inner"
+            className="flex-1 min-h-[360px] h-[360px] bg-slate-950 rounded-2xl relative overflow-hidden flex items-center justify-center p-3 select-none my-3 shadow-inner"
           >
             {showGrid && (
               <div
                 className="absolute inset-0 pointer-events-none opacity-20"
                 style={{
                   backgroundImage:
-                    'linear-gradient(to right, #475569 1px, transparent 1px), linear-gradient(to bottom, #475569 1px, transparent 1px)',
-                  backgroundSize: '40px 40px',
+                    'linear-gradient(to right, #64748B 1px, transparent 1px), linear-gradient(to bottom, #64748B 1px, transparent 1px)',
+                  backgroundSize: '24px 24px',
                 }}
               />
             )}
 
             {imageBlobUrl ? (
               <div
-                className="relative transition-transform duration-150"
-                style={{ transform: `scale(${zoomLevel})` }}
+                className="relative cursor-crosshair transition-transform duration-100 origin-center"
+                style={{
+                  transform: `scale(${zoomLevel})`,
+                  transformOrigin: 'center center',
+                }}
               >
+                {/* Sonar Raster Image */}
                 <img
                   ref={imgRef}
                   src={imageBlobUrl}
-                  alt="Sonar Scan"
+                  alt="Side-Scan Sonar Raster"
+                  className="max-h-[340px] w-auto object-contain rounded-lg block select-none pointer-events-none"
                   onLoad={updateDimensions}
-                  className="max-h-[340px] object-contain rounded-lg shadow-xl"
                 />
 
                 {/* Bounding Box Overlays */}
@@ -847,9 +850,9 @@ export default function AIWorkstationPage() {
         </div>
 
         {/* ── Right Inspector Panel (3 cols on lg) ── */}
-        <div className="lg:col-span-3 light-saas-card p-6 flex flex-col justify-between space-y-4">
+        <div className="lg:col-span-3 light-saas-card p-5 flex flex-col justify-between space-y-4 h-full">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
                 TARGET INSPECTOR
               </span>
@@ -945,8 +948,30 @@ export default function AIWorkstationPage() {
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-xs text-slate-400">
-                Click a bounding box to inspect telemetry
+              <div className="py-6 flex flex-col items-center justify-center text-center space-y-3">
+                <div className="w-11 h-11 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+                  <Crosshair className="w-5 h-5 text-slate-400" />
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">Telemetry Standby</span>
+                  <span className="text-[11px] text-slate-500 max-w-[210px] block mt-1 leading-relaxed">
+                    Click any detected bounding box on the raster to inspect verified coordinates, acoustic signature, and dimensions.
+                  </span>
+                </div>
+                <div className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-100 text-left space-y-1.5 text-[11px]">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Resolution:</span>
+                    <strong className="font-mono text-slate-800">0.05 m/px</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Slant Corrected:</span>
+                    <strong className="text-emerald-600">Active</strong>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Detection Model:</span>
+                    <strong className="text-slate-800">YOLOv8-Marine</strong>
+                  </div>
+                </div>
               </div>
             )}
           </div>

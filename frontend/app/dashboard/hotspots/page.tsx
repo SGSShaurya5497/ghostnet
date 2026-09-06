@@ -240,7 +240,7 @@ export default function HotspotDetectionPage() {
           </div>
 
           {/* Map Canvas */}
-          <div className="relative w-full min-h-[380px] rounded-2xl bg-slate-950 overflow-hidden flex items-center justify-center shadow-inner">
+          <div className="relative w-full h-[330px] rounded-2xl bg-slate-950 overflow-hidden flex items-center justify-center shadow-inner">
             {/* Dot matrix grid */}
             <div
               className="absolute inset-0 opacity-15"
@@ -263,16 +263,16 @@ export default function HotspotDetectionPage() {
             {/* Cluster pins */}
             {filteredClusters.map((cluster) => {
               const isSelected = selectedCluster.id === cluster.id;
-              const isDispatched = dispatchedId === cluster.id;
-              const top = `${Math.min(Math.max((45 - cluster.lat) * 2.2, 10), 85)}%`;
-              const left = `${Math.min(Math.max((cluster.lng + 180) / 3.6, 10), 88)}%`;
+              const topVal = Math.min(Math.max((45 - cluster.lat) * 2.2, 22), 75);
+              const leftVal = Math.min(Math.max((cluster.lng + 180) / 3.6, 18), 82);
+              const isNearTop = topVal < 32;
 
               return (
                 <div
                   key={cluster.id}
                   onClick={() => setSelectedCluster(cluster)}
                   className="absolute cursor-pointer transition-all duration-200 group z-20"
-                  style={{ top, left, transform: 'translate(-50%, -50%)' }}
+                  style={{ top: `${topVal}%`, left: `${leftVal}%`, transform: 'translate(-50%, -50%)' }}
                 >
                   {/* Aura ring */}
                   <div
@@ -284,8 +284,8 @@ export default function HotspotDetectionPage() {
                         : 'bg-slate-500/10 border border-slate-500/30'
                     }`}
                     style={{
-                      width: `${Math.max(cluster.density * 1.2, 50)}px`,
-                      height: `${Math.max(cluster.density * 1.2, 50)}px`,
+                      width: `${Math.max(cluster.density * 1.1, 46)}px`,
+                      height: `${Math.max(cluster.density * 1.1, 46)}px`,
                     }}
                   />
                   {/* Center dot */}
@@ -302,9 +302,11 @@ export default function HotspotDetectionPage() {
                   >
                     {cluster.detectedNets}
                   </div>
-                  {/* Label */}
+                  {/* Label - conditionally placed below pin if near top to avoid clipping */}
                   <div
-                    className={`absolute left-1/2 -translate-x-1/2 -top-7 whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold shadow-md transition-all ${
+                    className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-[10px] font-bold shadow-md transition-all ${
+                      isNearTop ? 'top-8' : '-top-7'
+                    } ${
                       isSelected
                         ? 'bg-white text-slate-900 ring-2 ring-blue-400 opacity-100'
                         : 'bg-slate-900/80 text-slate-300 opacity-0 group-hover:opacity-100'
@@ -364,7 +366,7 @@ export default function HotspotDetectionPage() {
                 type="range" min="20" max="90"
                 value={filterMinDensity}
                 onChange={(e) => setFilterMinDensity(Number(e.target.value))}
-                className="w-full"
+                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
               />
             </div>
 
@@ -377,14 +379,14 @@ export default function HotspotDetectionPage() {
                 type="range" min="5" max="30"
                 value={heatKernel}
                 onChange={(e) => setHeatKernel(Number(e.target.value))}
-                className="w-full"
+                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
               />
             </div>
           </div>
         </div>
 
         {/* Right: Cluster Dossier (4 cols) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col space-y-5">
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between h-full space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700">
               <MapPin className="w-4 h-4 text-slate-500" />
