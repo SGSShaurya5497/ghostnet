@@ -42,24 +42,24 @@ class CleanupMission(BaseModel):
 @router.get("/overview")
 async def get_analytics_overview() -> Dict[str, Any]:
     return {
-        "total_detections": 16432,
-        "total_mass_tonnage": 41.7,
-        "verified_resolution_pct": 96.4,
+        "total_detections": 1573,
+        "total_mass_tonnage": 4.8,
+        "verified_resolution_pct": 94.2,
         "active_swath_area_km2": 14.8,
         "channels": [
-            {"name": "Ghost Nets", "count": 5762, "trend": "+1.8%", "mass_kg": 24150},
-            {"name": "Synthetic Ropes", "count": 6843, "trend": "-2.8%", "mass_kg": 11200},
-            {"name": "Traps & Cages", "count": 2123, "trend": "-2.8%", "mass_kg": 4850},
-            {"name": "Trawl Doors & Metal", "count": 1704, "trend": "+0.4%", "mass_kg": 1500},
+            {"name": "Ghost Nets", "count": 582, "trend": "+4.2%", "mass_kg": 2640},
+            {"name": "Synthetic Ropes", "count": 624, "trend": "-1.8%", "mass_kg": 1350},
+            {"name": "Traps & Cages", "count": 218, "trend": "+0.5%", "mass_kg": 580},
+            {"name": "Trawl Doors & Metal", "count": 149, "trend": "-2.1%", "mass_kg": 230},
         ],
         "monthly_trends": [
-            {"month": "Jan", "actual": 12000, "target": 11000},
-            {"month": "Feb", "actual": 14000, "target": 13000},
-            {"month": "Mar", "actual": 13000, "target": 15000},
-            {"month": "Apr", "actual": 20000, "target": 22000},
-            {"month": "May", "actual": 18000, "target": 19000},
-            {"month": "Jun", "actual": 16000, "target": 17000},
-            {"month": "Jul", "actual": 15000, "target": 16000},
+            {"month": "Jan", "actual": 142, "target": 130},
+            {"month": "Feb", "actual": 186, "target": 160},
+            {"month": "Mar", "actual": 215, "target": 200},
+            {"month": "Apr", "actual": 320, "target": 280},
+            {"month": "May", "actual": 275, "target": 260},
+            {"month": "Jun", "actual": 190, "target": 180},
+            {"month": "Jul", "actual": 245, "target": 220},
         ]
     }
 
@@ -156,54 +156,77 @@ async def get_fleet_telemetry() -> List[Dict[str, Any]]:
         }
     ]
 
+CLEANUP_MISSIONS_STORE: List[Dict[str, Any]] = [
+    {
+        "mission_id": "MSN-2041",
+        "target_id": "GNET-8821",
+        "target_label": "Synthetic Gillnet Cluster",
+        "stage": "Dispatched",
+        "assigned_vessel": "RV-OCEANUS",
+        "priority": "Critical",
+        "est_mass_kg": 340,
+        "lat": 11.560889,
+        "lon": 79.800671
+    },
+    {
+        "mission_id": "MSN-2039",
+        "target_id": "GNET-8815",
+        "target_label": "Snagged Trawl Net on Reef",
+        "stage": "In Recovery",
+        "assigned_vessel": "ROV-TRITON-X",
+        "priority": "Critical",
+        "est_mass_kg": 620,
+        "lat": 13.325614,
+        "lon": 80.410923
+    },
+    {
+        "mission_id": "MSN-2035",
+        "target_id": "GNET-8819",
+        "target_label": "Abandoned Polypropylene Line",
+        "stage": "Identified",
+        "assigned_vessel": "AUV-NEPTUNE-02",
+        "priority": "High",
+        "est_mass_kg": 180,
+        "lat": 11.856251,
+        "lon": 79.880480
+    },
+    {
+        "mission_id": "MSN-2028",
+        "target_id": "GNET-8809",
+        "target_label": "Submerged Crab Trap Cage",
+        "stage": "Cleared",
+        "assigned_vessel": "RV-OCEANUS",
+        "priority": "Medium",
+        "est_mass_kg": 95,
+        "lat": 17.633693,
+        "lon": 83.328583
+    }
+]
+
 @router.get("/cleanup")
 async def get_cleanup_missions() -> List[Dict[str, Any]]:
-    return [
-        {
-            "mission_id": "MSN-2041",
-            "target_id": "GNET-8821",
-            "target_label": "Synthetic Gillnet Cluster",
-            "stage": "Dispatched",
-            "assigned_vessel": "RV-OCEANUS",
-            "priority": "Critical",
-            "est_mass_kg": 340,
-            "lat": 15.4989,
-            "lon": 73.8278
-        },
-        {
-            "mission_id": "MSN-2039",
-            "target_id": "GNET-8815",
-            "target_label": "Snagged Trawl Net on Reef",
-            "stage": "In Recovery",
-            "assigned_vessel": "ROV-TRITON-X",
-            "priority": "Critical",
-            "est_mass_kg": 620,
-            "lat": 15.4410,
-            "lon": 73.7820
-        },
-        {
-            "mission_id": "MSN-2035",
-            "target_id": "GNET-8819",
-            "target_label": "Abandoned Polypropylene Line",
-            "stage": "Identified",
-            "assigned_vessel": "AUV-NEPTUNE-02",
-            "priority": "High",
-            "est_mass_kg": 180,
-            "lat": 15.5120,
-            "lon": 73.8340
-        },
-        {
-            "mission_id": "MSN-2028",
-            "target_id": "GNET-8809",
-            "target_label": "Submerged Crab Trap Cage",
-            "stage": "Cleared",
-            "assigned_vessel": "RV-OCEANUS",
-            "priority": "Medium",
-            "est_mass_kg": 95,
-            "lat": 15.5340,
-            "lon": 73.8560
-        }
-    ]
+    return CLEANUP_MISSIONS_STORE
+
+@router.post("/cleanup")
+async def create_cleanup_mission(mission: Dict[str, Any]) -> Dict[str, Any]:
+    global CLEANUP_MISSIONS_STORE
+    # Check if target already exists and update
+    for idx, m in enumerate(CLEANUP_MISSIONS_STORE):
+        if m.get("target_id") == mission.get("target_id"):
+            CLEANUP_MISSIONS_STORE[idx] = mission
+            return {"status": "updated", "mission": mission}
+    CLEANUP_MISSIONS_STORE.insert(0, mission)
+    return {"status": "created", "mission": mission}
+
+@router.put("/cleanup/{mission_id}/stage")
+async def update_mission_stage(mission_id: str, stage_update: Dict[str, str]) -> Dict[str, Any]:
+    global CLEANUP_MISSIONS_STORE
+    new_stage = stage_update.get("stage")
+    for idx, m in enumerate(CLEANUP_MISSIONS_STORE):
+        if m.get("mission_id") == mission_id:
+            CLEANUP_MISSIONS_STORE[idx]["stage"] = new_stage
+            return {"status": "updated", "mission": CLEANUP_MISSIONS_STORE[idx]}
+    return {"status": "not_found"}
 
 @router.get("/risk-summary")
 async def get_risk_summary() -> Dict[str, Any]:

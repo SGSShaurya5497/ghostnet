@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Target,
   Crosshair,
@@ -15,7 +16,12 @@ import {
   Sparkles,
   Activity,
   ArrowUpRight,
+  Map,
+  Plus,
+  ArrowRight,
 } from 'lucide-react';
+
+import { ghostnetApi } from '@/lib/api';
 
 interface LiveTarget {
   id: string;
@@ -27,7 +33,6 @@ interface LiveTarget {
   depth: number;
   area_m2: number;
   vessel: string;
-  timestamp: string;
   status: 'Unassigned' | 'Mission Dispatched' | 'Cleared';
 }
 
@@ -37,12 +42,11 @@ const INITIAL_TARGETS: LiveTarget[] = [
     label: 'Synthetic Gillnet Cluster',
     confidence: 0.94,
     severity: 'critical',
-    lat: 15.4989,
-    lon: 73.8278,
+    lat: 11.560889,
+    lon: 79.800671,
     depth: 42.5,
     area_m2: 18.4,
     vessel: 'RV-OCEANUS',
-    timestamp: 'Just now',
     status: 'Mission Dispatched',
   },
   {
@@ -50,12 +54,11 @@ const INITIAL_TARGETS: LiveTarget[] = [
     label: 'Abandoned Polypropylene Rope',
     confidence: 0.88,
     severity: 'high',
-    lat: 15.512,
-    lon: 73.834,
+    lat: 11.856251,
+    lon: 79.880480,
     depth: 38.0,
     area_m2: 8.2,
     vessel: 'AUV-NEPTUNE-02',
-    timestamp: '4m ago',
     status: 'Unassigned',
   },
   {
@@ -63,12 +66,11 @@ const INITIAL_TARGETS: LiveTarget[] = [
     label: 'Snagged Trawl Net on Reef',
     confidence: 0.91,
     severity: 'critical',
-    lat: 15.441,
-    lon: 73.782,
+    lat: 13.325614,
+    lon: 80.410923,
     depth: 54.2,
     area_m2: 26.5,
     vessel: 'RV-OCEANUS',
-    timestamp: '12m ago',
     status: 'Mission Dispatched',
   },
   {
@@ -76,12 +78,11 @@ const INITIAL_TARGETS: LiveTarget[] = [
     label: 'Submerged Crab Trap Cage',
     confidence: 0.79,
     severity: 'medium',
-    lat: 15.534,
-    lon: 73.856,
+    lat: 17.633693,
+    lon: 83.328583,
     depth: 29.8,
     area_m2: 4.1,
     vessel: 'AUV-NEPTUNE-01',
-    timestamp: '28m ago',
     status: 'Cleared',
   },
   {
@@ -89,12 +90,11 @@ const INITIAL_TARGETS: LiveTarget[] = [
     label: 'Heavy Monofilament Webbing',
     confidence: 0.85,
     severity: 'high',
-    lat: 15.482,
-    lon: 73.811,
+    lat: 20.835254,
+    lon: 87.057524,
     depth: 46.0,
     area_m2: 12.0,
     vessel: 'RV-OCEANUS',
-    timestamp: '45m ago',
     status: 'Unassigned',
   },
 ];
@@ -102,6 +102,7 @@ const INITIAL_TARGETS: LiveTarget[] = [
 const STATUS_CYCLE: LiveTarget['status'][] = ['Unassigned', 'Mission Dispatched', 'Cleared'];
 
 export default function LiveDetectionsFeedPage() {
+  const router = useRouter();
   const [targets, setTargets] = useState<LiveTarget[]>(INITIAL_TARGETS);
   const [selectedTargetId, setSelectedTargetId] = useState<string>(INITIAL_TARGETS[0].id);
   const [searchQuery, setSearchQuery] = useState('');
@@ -129,19 +130,63 @@ export default function LiveDetectionsFeedPage() {
     );
   };
 
+  const seeOnMap = (target: LiveTarget) => {
+    try {
+      sessionStorage.setItem('ghostnet_focus_target', target.id);
+    } catch {
+      // ignore
+    }
+    router.push(`/dashboard/map?targetId=${target.id}`);
+  };
+
+  const dispatchToCleanupMission = async (target: LiveTarget) => {
+    const missionPayload = {
+      mission_id: `MSN-${target.id.replace('GNET-', '')}`,
+      target_id: target.id,
+      target_label: target.label,
+      stage: 'Dispatched',
+      assigned_vessel: target.vessel,
+      priority: target.severity === 'critical' ? 'Critical' : target.severity === 'high' ? 'High' : 'Medium',
+      est_mass_kg: Math.round(target.area_m2 * 18.5),
+      lat: target.lat,
+      lon: target.lon,
+    };
+
+    try {
+      sessionStorage.setItem('ghostnet_dispatched_mission', JSON.stringify(missionPayload));
+      localStorage.setItem('ghostnet_latest_mission', JSON.stringify(missionPayload));
+    } catch {
+      // ignore
+    }
+
+    // Call backend API to persist in server memory
+    try {
+      await ghostnetApi.createCleanupMission(missionPayload);
+    } catch {
+      // ignore
+    }
+
+    // Update target status in current list
+    setTargets((prev) =>
+      prev.map((t) => (t.id === target.id ? { ...t, status: 'Mission Dispatched' } : t))
+    );
+
+    router.push('/dashboard/cleanup');
+  };
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
-      {/* ── Top Header Toolbar Card ── */}
-      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans rounded-none">
+      {/* ── Top Header Toolbar Card (0 Curves, Solid Ocean Theme) ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4 rounded-none">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
+          <div className="w-8 h-8 rounded-none bg-[#075A73] flex items-center justify-center text-white shadow-none">
             <Target className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-900">
+            <h1 className="text-base font-bold text-[#0E232B]">
               Live Acoustic Target Detections
             </h1>
-            <span className="text-xs text-slate-400 font-medium">
+            <span className="text-xs text-[#526E78] font-medium">
               Real-time classified marine debris returns across surveyed corridors
             </span>
           </div>
@@ -149,29 +194,29 @@ export default function LiveDetectionsFeedPage() {
 
         {/* Quick KPI stats */}
         <div className="flex items-center gap-3">
-          <div className="px-3.5 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs font-semibold flex items-center gap-2">
-            <span className="text-slate-500">TOTAL MASS:</span>
-            <span className="text-slate-900 font-bold">42.6 t</span>
+          <div className="px-3 py-1.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] text-xs font-semibold flex items-center gap-2">
+            <span className="text-[#526E78]">TOTAL MASS:</span>
+            <span className="text-[#0E232B] font-bold">42.6 t</span>
           </div>
-          <div className="pill-badge-red text-xs py-1 px-3">
+          <div className="pill-badge-red text-xs py-1 px-2.5 rounded-none">
             <span>2 Critical Snags Active</span>
           </div>
         </div>
       </div>
 
       {/* ── Main View: Target Feed + Inspector (Grid) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 rounded-none">
         {/* Left: Searchable Target List (8 cols on lg) */}
-        <div className="lg:col-span-8 light-saas-card p-6 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3.5 py-2 w-72 border border-slate-200/80">
-              <Search className="w-4 h-4 text-slate-400" />
+        <div className="lg:col-span-8 light-saas-card p-6 space-y-4 rounded-none">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#B8C9CC]">
+            <div className="flex items-center gap-2 bg-[#E5EDEE] rounded-none px-3 py-1.5 w-72 border border-[#B8C9CC]">
+              <Search className="w-3.5 h-3.5 text-[#849EAA]" />
               <input
                 type="text"
                 placeholder="Search target ID, label, vessel..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                className="w-full bg-transparent text-xs text-[#0E232B] placeholder-[#849EAA] outline-none font-medium rounded-none"
               />
             </div>
 
@@ -180,8 +225,10 @@ export default function LiveDetectionsFeedPage() {
                 <button
                   key={s}
                   onClick={() => setFilterSeverity(s)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
-                    filterSeverity === s ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  className={`px-3 py-1.5 rounded-none text-xs font-bold capitalize transition-all ${
+                    filterSeverity === s
+                      ? 'bg-[#075A73] text-white shadow-none border border-[#075A73]'
+                      : 'bg-[#E5EDEE] text-[#526E78] hover:bg-[#B8C9CC] border border-[#B8C9CC]'
                   }`}
                 >
                   {s}
@@ -191,7 +238,7 @@ export default function LiveDetectionsFeedPage() {
           </div>
 
           {/* List Cards */}
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {filteredTargets.map((target) => {
               const isSelected = target.id === selectedTargetId;
 
@@ -199,31 +246,31 @@ export default function LiveDetectionsFeedPage() {
                 <div
                   key={target.id}
                   onClick={() => setSelectedTargetId(target.id)}
-                  className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center justify-between border ${
+                  className={`p-3.5 rounded-none cursor-pointer transition-all flex items-center justify-between border ${
                     isSelected
-                      ? 'bg-blue-50/50 border-blue-300 shadow-md'
-                      : 'bg-white hover:bg-slate-50 border-slate-200/80'
+                      ? 'bg-[#E5EDEE] border-[#075A73] shadow-none'
+                      : 'bg-white hover:bg-[#F2F6F7] border-[#B8C9CC]'
                   }`}
                 >
-                  <div className="flex items-center gap-3.5">
+                  <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
+                      className={`w-9 h-9 rounded-none flex items-center justify-center font-bold text-xs ${
                         target.severity === 'critical'
-                          ? 'bg-red-50 text-red-600 border border-red-200'
+                          ? 'bg-red-50 text-red-700 border border-red-200'
                           : target.severity === 'high'
-                          ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                          : 'bg-blue-50 text-blue-600 border border-blue-200'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-[#E5EDEE] text-[#075A73] border border-[#B8C9CC]'
                       }`}
                     >
-                      <Crosshair className="w-5 h-5" />
+                      <Crosshair className="w-4 h-4" />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold font-mono text-slate-900">{target.id}</span>
-                        <span className="text-xs font-semibold text-slate-700">{target.label}</span>
+                        <span className="text-xs font-bold font-mono text-[#0E232B]">{target.id}</span>
+                        <span className="text-xs font-semibold text-[#2A434D]">{target.label}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+                      <div className="flex items-center gap-2.5 text-[11px] text-[#526E78] font-medium">
                         <span>{target.vessel}</span>
                         <span>·</span>
                         <span>{target.depth}m Depth</span>
@@ -233,15 +280,12 @@ export default function LiveDetectionsFeedPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 text-right">
-                    <div className="space-y-0.5">
-                      <div className="text-xs font-black text-slate-900">
-                        {(target.confidence * 100).toFixed(0)}% Conf
-                      </div>
-                      <span className="text-[11px] text-slate-400 font-medium">{target.timestamp}</span>
+                  <div className="flex items-center gap-3.5 text-right">
+                    <div className="px-2 py-0.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] text-xs font-black text-[#0E232B]">
+                      {(target.confidence * 100).toFixed(0)}% Conf
                     </div>
 
-                    <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                    <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-[#075A73]' : 'text-[#849EAA]'}`} />
                   </div>
                 </div>
               );
@@ -250,12 +294,12 @@ export default function LiveDetectionsFeedPage() {
         </div>
 
         {/* Right: Selected Target Inspector (4 cols on lg) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5">
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-4 rounded-none">
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-[#B8C9CC]">
               <div className="space-y-0.5">
-                <span className="text-xs font-black font-mono text-slate-900">{selectedTarget.id}</span>
-                <span className="text-xs font-bold text-slate-700 block">{selectedTarget.label}</span>
+                <span className="text-xs font-black font-mono text-[#0E232B]">{selectedTarget.id}</span>
+                <span className="text-xs font-bold text-[#2A434D] block">{selectedTarget.label}</span>
               </div>
               <span
                 className={
@@ -271,65 +315,90 @@ export default function LiveDetectionsFeedPage() {
             </div>
 
             {/* Geolocation Card */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5 text-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2.5 text-xs">
+              <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
                 Target Geolocation
               </span>
-              <div className="grid grid-cols-2 gap-2 text-slate-600">
+              <div className="grid grid-cols-2 gap-2 text-[#2A434D]">
                 <div>
-                  <span className="text-[10px] text-slate-400 block">LATITUDE</span>
-                  <span className="font-bold text-slate-900">{selectedTarget.lat}° N</span>
+                  <span className="text-[10px] text-[#526E78] block">LATITUDE</span>
+                  <span className="font-bold text-[#0E232B]">{selectedTarget.lat.toFixed(6)}° N</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">LONGITUDE</span>
-                  <span className="font-bold text-slate-900">{selectedTarget.lon}° E</span>
+                  <span className="text-[10px] text-[#526E78] block">LONGITUDE</span>
+                  <span className="font-bold text-[#0E232B]">{selectedTarget.lon.toFixed(6)}° E</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">DEPTH</span>
-                  <span className="font-bold text-slate-900">{selectedTarget.depth} m</span>
+                  <span className="text-[10px] text-[#526E78] block">DEPTH</span>
+                  <span className="font-bold text-[#0E232B]">{selectedTarget.depth} m</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">FOOTPRINT</span>
-                  <span className="font-bold text-slate-900">{selectedTarget.area_m2} m²</span>
+                  <span className="text-[10px] text-[#526E78] block">FOOTPRINT</span>
+                  <span className="font-bold text-[#0E232B]">{selectedTarget.area_m2} m²</span>
                 </div>
               </div>
             </div>
 
             {/* Mission Dispatch Status */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2 text-xs">
+              <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
                 Recovery Mission
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-slate-500 font-medium">Status:</span>
-                <span className="pill-badge-blue">{selectedTarget.status}</span>
+                <span className="text-[#526E78] font-medium">Status:</span>
+                <span className="pill-badge-ocean">{selectedTarget.status}</span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between text-[#2A434D]">
                 <span>Assigned Unit:</span>
-                <span className="font-bold text-slate-900">{selectedTarget.vessel}</span>
+                <span className="font-bold text-[#0E232B]">{selectedTarget.vessel}</span>
               </div>
             </div>
           </div>
 
-          <button
-            onClick={() => cycleStatus(selectedTarget.id)}
-            className={`w-full text-xs justify-center ${
-              selectedTarget.status === 'Cleared'
-                ? 'btn-pill-filter'
-                : 'btn-primary-dark'
-            }`}
-          >
-            <CheckCircle2 className={`w-3.5 h-3.5 ${
-              selectedTarget.status === 'Cleared' ? 'text-emerald-600' : 'text-emerald-400'
-            }`} />
-            <span>{
-              selectedTarget.status === 'Unassigned'
-                ? 'Dispatch Cleanup Mission'
-                : selectedTarget.status === 'Mission Dispatched'
-                ? 'Mark as Cleared'
-                : 'Reopen Mission'
-            }</span>
-          </button>
+          {/* Action Buttons: Status Cycle, See on Map & Add to Cleanup Mission */}
+          <div className="space-y-2 pt-1">
+            <button
+              onClick={() => cycleStatus(selectedTarget.id)}
+              className={`w-full text-xs justify-center rounded-none ${
+                selectedTarget.status === 'Cleared'
+                  ? 'btn-pill-filter'
+                  : 'btn-primary-dark'
+              }`}
+            >
+              <CheckCircle2 className={`w-3.5 h-3.5 ${
+                selectedTarget.status === 'Cleared' ? 'text-emerald-700' : 'text-emerald-300'
+              }`} />
+              <span>{
+                selectedTarget.status === 'Unassigned'
+                  ? 'Dispatch Cleanup Mission'
+                  : selectedTarget.status === 'Mission Dispatched'
+                  ? 'Mark as Cleared'
+                  : 'Reopen Mission'
+              }</span>
+            </button>
+
+            {/* Direct See on Survey Map Action */}
+            <button
+              onClick={() => seeOnMap(selectedTarget)}
+              className="w-full btn-primary justify-center text-xs rounded-none"
+              title="Navigate to this target on the Survey Google Map"
+            >
+              <MapPin className="w-3.5 h-3.5 text-white" />
+              <span>See on Survey Map</span>
+              <ArrowUpRight className="w-3.5 h-3.5 text-white ml-0.5" />
+            </button>
+
+            {/* Add to Cleanup Missions Button */}
+            <button
+              onClick={() => dispatchToCleanupMission(selectedTarget)}
+              className="w-full px-3.5 py-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white text-xs font-bold shadow-none transition-all flex items-center justify-center gap-1.5 border border-[#075A73]"
+              title="Add this location to Cleanup Missions board"
+            >
+              <Plus className="w-3.5 h-3.5 text-white" />
+              <span>Add to Cleanup Missions</span>
+              <ArrowRight className="w-3.5 h-3.5 text-white ml-0.5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

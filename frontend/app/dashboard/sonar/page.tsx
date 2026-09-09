@@ -1,331 +1,830 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
-  Waves,
+  UploadCloud,
   Play,
   Pause,
-  Activity,
-  Sliders,
-  Radio,
-  ChevronDown,
+  RotateCcw,
+  Video,
+  Scan,
+  Download,
+  AlertTriangle,
+  Clock,
   Sparkles,
+  Layers,
+  ArrowRight,
+  Maximize2,
+  FileVideo,
+  ShieldCheck,
+  Target,
+  ChevronRight,
+  Compass,
 } from 'lucide-react';
+import { ghostnetApi, type Detection } from '@/lib/api';
 
-export default function SonarConsolePage() {
-  const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [gain, setGain] = useState<number>(65);
-  const [frequency, setFrequency] = useState<number>(455);
-  const [swathWidth, setSwathWidth] = useState<number>(50);
-  const [colormap, setColormap] = useState<'cyan' | 'emerald' | 'amber' | 'thermal'>('cyan');
-  const [speed, setSpeed] = useState<number>(4.2);
-  const [pingCount, setPingCount] = useState<number>(1420);
+interface CapturedSnag {
+  id: string;
+  timestampSec: number;
+  formattedTime: string;
+  label: string;
+  confidence: number;
+  severity: 'critical' | 'high' | 'medium';
+  area_m2: number;
+  lat: number;
+  lon: number;
+  depth_m: number;
+  thumbnailUrl: string;
+  bbox: { x_min: number; y_min: number; x_max: number; y_max: number };
+}
 
-  const waterfallCanvasRef = useRef<HTMLCanvasElement>(null);
-  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+const PRELOADED_SURVEY_CLIPS = [
+  {
+    id: 'clip-1',
+    name: 'Survey Leg 01: Reef Rim Ghost Net Drift',
+    description: '455 kHz Sonar sweep over Goa continental shelf with synthetic nylon gillnets',
+    durationSec: 36,
+    anomalyTimestamps: [
+      { sec: 6, label: 'ghost_net', confidence: 0.94, severity: 'critical' as const, bbox: { x_min: 220, y_min: 130, x_max: 460, y_max: 320 }, area_m2: 22.4, lat: 15.4989, lon: 73.8278, depth: 42.5 },
+      { sec: 18, label: 'rope', confidence: 0.86, severity: 'high' as const, bbox: { x_min: 340, y_min: 160, x_max: 540, y_max: 290 }, area_m2: 8.7, lat: 15.4994, lon: 73.8282, depth: 43.1 },
+      { sec: 29, label: 'ghost_net', confidence: 0.91, severity: 'critical' as const, bbox: { x_min: 160, y_min: 100, x_max: 420, y_max: 300 }, area_m2: 19.8, lat: 15.4999, lon: 73.8288, depth: 44.0 },
+    ],
+  },
+  {
+    id: 'clip-2',
+    name: 'Survey Leg 02: Deep Shipping Corridor Clump',
+    description: '900 kHz Hi-Res towfish pass identifying heavy trawl doors and entangled rigging',
+    durationSec: 42,
+    anomalyTimestamps: [
+      { sec: 9, label: 'trawl_door', confidence: 0.88, severity: 'high' as const, bbox: { x_min: 280, y_min: 140, x_max: 510, y_max: 310 }, area_m2: 14.2, lat: 15.4120, lon: 73.7910, depth: 58.0 },
+      { sec: 25, label: 'ghost_net', confidence: 0.93, severity: 'critical' as const, bbox: { x_min: 190, y_min: 110, x_max: 450, y_max: 330 }, area_m2: 26.5, lat: 15.4126, lon: 73.7917, depth: 58.6 },
+    ],
+  },
+];
 
-  useEffect(() => {
-    let animationFrameId: number;
-    let scanLine = 0;
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
 
-    const render = () => {
-      if (isPlaying) {
-        setPingCount((prev) => prev + 1);
+function formatLabel(raw: string): string {
+  return raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
-        // 1. Waterfall Canvas
-        const wCanvas = waterfallCanvasRef.current;
-        if (wCanvas) {
-          const ctx = wCanvas.getContext('2d');
-          if (ctx) {
-            const w = wCanvas.width;
-            const h = wCanvas.height;
+export default function SonarVideoAnalysisPage() {
+  const router = useRouter();
 
-            ctx.drawImage(wCanvas, 0, 0, w, h - 2, 0, 2, w, h - 2);
+  // Video State
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('clip-1');
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<number>(0);
+  const [duration, setDuration] = useState<number>(36);
+  const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const [autoPauseOnDetect, setAutoPauseOnDetect] = useState<boolean>(true);
 
-            const imgData = ctx.createImageData(w, 2);
-            for (let x = 0; x < w; x++) {
-              const distFromCenter = Math.abs(x - w / 2) / (w / 2);
-              const nadirZone = distFromCenter < 0.05 ? 0.1 : 1;
-              const noise = Math.random() * (gain / 100);
-              
-              const anomaly = Math.sin((scanLine + x) * 0.04) > 0.85 && distFromCenter > 0.2 && distFromCenter < 0.6 ? 0.9 : 0;
-              const intensity = Math.min(1, (noise * 0.5 + anomaly * 0.8) * nadirZone);
+  // AI Detections & Captures
+  const [activeDetections, setActiveDetections] = useState<any[]>([]);
+  const [capturedSnags, setCapturedSnags] = useState<CapturedSnag[]>([]);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [lastCaptureTime, setLastCaptureTime] = useState<number>(-999);
 
-              let r = 0, g = 0, b = 0;
-              if (colormap === 'cyan') {
-                r = Math.floor(intensity * 20);
-                g = Math.floor(intensity * 180);
-                b = Math.floor(intensity * 240);
-              } else if (colormap === 'emerald') {
-                r = Math.floor(intensity * 30);
-                g = Math.floor(intensity * 230);
-                b = Math.floor(intensity * 160);
-              } else if (colormap === 'amber') {
-                r = Math.floor(intensity * 240);
-                g = Math.floor(intensity * 160);
-                b = Math.floor(intensity * 40);
-              } else {
-                r = Math.floor(intensity * 255);
-                g = Math.floor(intensity * 120);
-                b = Math.floor(intensity * 50);
-              }
+  // References
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const lastInferenceTimeRef = useRef<number>(0);
 
-              for (let y = 0; y < 2; y++) {
-                const idx = (y * w + x) * 4;
-                imgData.data[idx] = r;
-                imgData.data[idx + 1] = g;
-                imgData.data[idx + 2] = b;
-                imgData.data[idx + 3] = 255;
-              }
-            }
-            ctx.putImageData(imgData, 0, 0);
-          }
-        }
+  const currentPreset = PRELOADED_SURVEY_CLIPS.find((c) => c.id === selectedPresetId) ?? PRELOADED_SURVEY_CLIPS[0];
 
-        // 2. Waveform Canvas
-        const wfCanvas = waveformCanvasRef.current;
-        if (wfCanvas) {
-          const ctx = wfCanvas.getContext('2d');
-          if (ctx) {
-            const w = wfCanvas.width;
-            const h = wfCanvas.height;
-            ctx.fillStyle = '#0F172A';
-            ctx.fillRect(0, 0, w, h);
+  // Load Preset Simulation
+  const selectPreset = (clip: typeof PRELOADED_SURVEY_CLIPS[0]) => {
+    setSelectedPresetId(clip.id);
+    setVideoFile(null);
+    if (videoUrl) {
+      URL.revokeObjectURL(videoUrl);
+      setVideoUrl(null);
+    }
+    setCurrentTime(0);
+    setDuration(clip.durationSec);
+    setIsPlaying(false);
+    setActiveDetections([]);
+    setCapturedSnags([]);
+    setLastCaptureTime(-999);
+  };
 
-            ctx.strokeStyle = '#334155';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(0, h / 2);
-            ctx.lineTo(w, h / 2);
-            ctx.stroke();
+  // Handle Custom Video Upload
+  const handleVideoUpload = (file: File) => {
+    if (!file.type.startsWith('video/')) {
+      alert('Please upload a valid video file (.mp4, .webm, .mov, etc.)');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setVideoFile(file);
+    setVideoUrl(url);
+    setSelectedPresetId('custom');
+    setCurrentTime(0);
+    setIsPlaying(false);
+    setActiveDetections([]);
+    setCapturedSnags([]);
+    setLastCaptureTime(-999);
+  };
 
-            ctx.strokeStyle = colormap === 'amber' ? '#F59E0B' : colormap === 'emerald' ? '#10B981' : '#38BDF8';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            for (let x = 0; x < w; x++) {
-              const freqFactor = frequency / 100;
-              const y = h / 2 + Math.sin((x + scanLine * 3) * 0.08 * freqFactor) * (gain * 0.35) * Math.sin(x * 0.02) + (Math.random() - 0.5) * 8;
-              if (x === 0) ctx.moveTo(x, y);
-              else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
-          }
-        }
+  // Capture Snapshot from Video or Canvas
+  const captureCurrentFrameAsDataUrl = (): string => {
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = 640;
+    offCanvas.height = 420;
+    const ctx = offCanvas.getContext('2d');
+    if (!ctx) return '';
 
-        scanLine++;
-      }
-      animationFrameId = requestAnimationFrame(render);
+    if (videoRef.current && videoUrl) {
+      ctx.drawImage(videoRef.current, 0, 0, 640, 420);
+    } else if (canvasRef.current) {
+      ctx.drawImage(canvasRef.current, 0, 0, 640, 420);
+    }
+    return offCanvas.toDataURL('image/jpeg', 0.92);
+  };
+
+  // Trigger Auto-Capture on Net Detection
+  const handleSnagDetected = useCallback((anomaly: any, timestampSec: number) => {
+    // Avoid duplicate captures within 3 seconds of the same snag
+    if (Math.abs(timestampSec - lastCaptureTime) < 3.0) return;
+
+    const snapshot = captureCurrentFrameAsDataUrl();
+    const newSnag: CapturedSnag = {
+      id: `SNAG-${Date.now().toString().slice(-6)}`,
+      timestampSec,
+      formattedTime: formatTime(timestampSec),
+      label: anomaly.label,
+      confidence: anomaly.confidence,
+      severity: anomaly.severity || 'critical',
+      area_m2: anomaly.area_m2 || 18.5,
+      lat: anomaly.lat || 15.4989,
+      lon: anomaly.lon || 73.8278,
+      depth_m: anomaly.depth || 42.5,
+      thumbnailUrl: snapshot,
+      bbox: anomaly.bbox,
     };
 
-    render();
-    return () => cancelAnimationFrame(animationFrameId);
-  }, [isPlaying, gain, frequency, colormap]);
+    setCapturedSnags((prev) => [newSnag, ...prev]);
+    setLastCaptureTime(timestampSec);
+
+    if (autoPauseOnDetect) {
+      setIsPlaying(false);
+      if (videoRef.current) videoRef.current.pause();
+    }
+  }, [lastCaptureTime, autoPauseOnDetect, videoUrl]);
+
+  // Real-Time Frame Inference Engine on Live Video Feed
+  const runLiveInferenceOnFrame = async () => {
+    if (Date.now() - lastInferenceTimeRef.current < 600) return; // limit to ~1.6 FPS for live video
+    lastInferenceTimeRef.current = Date.now();
+
+    const snapshot = captureCurrentFrameAsDataUrl();
+    if (!snapshot) return;
+
+    setIsScanning(true);
+
+    try {
+      // Convert Data URL to Blob for FastAPI YOLO direct inference
+      const res = await fetch(snapshot);
+      const blob = await res.blob();
+      const file = new File([blob], 'video_frame.jpg', { type: 'image/jpeg' });
+
+      const detectRes = await ghostnetApi.detectDirectImage(file, {
+        lat: 15.4989,
+        lon: 73.8278,
+        depth_m: 42.5,
+      });
+
+      if (detectRes && detectRes.detections && detectRes.detections.length > 0) {
+        setActiveDetections(detectRes.detections);
+        const topDet = detectRes.detections[0];
+        if (topDet.confidence >= 0.65) {
+          handleSnagDetected({
+            label: topDet.label,
+            confidence: topDet.confidence,
+            severity: topDet.severity,
+            bbox: topDet.bbox,
+            area_m2: topDet.area_m2 || 18.0,
+            lat: topDet.geo?.lat || 15.4989,
+            lon: topDet.geo?.lon || 73.8278,
+            depth: topDet.geo?.depth_m || 42.5,
+          }, currentTime);
+        }
+      } else {
+        setActiveDetections([]);
+      }
+    } catch {
+      // If backend offline, fall back to preset simulated anomaly timestamps
+      if (selectedPresetId !== 'custom') {
+        const matchingAnomaly = currentPreset.anomalyTimestamps.find(
+          (a) => Math.abs(currentTime - a.sec) <= 1.5
+        );
+        if (matchingAnomaly) {
+          setActiveDetections([matchingAnomaly]);
+          handleSnagDetected(matchingAnomaly, currentTime);
+        } else {
+          setActiveDetections([]);
+        }
+      }
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Capture and Immediately Analyze Frame in AI Workstation
+  const analyzeCurrentFrameInWorkstation = () => {
+    const snapshot = captureCurrentFrameAsDataUrl();
+    if (!snapshot) return;
+
+    try {
+      sessionStorage.setItem('ghostnet_live_snapshot', snapshot);
+      sessionStorage.setItem('ghostnet_snapshot_time', formatTime(currentTime));
+      sessionStorage.setItem('ghostnet_snapshot_source', videoFile ? videoFile.name : currentPreset.name);
+    } catch {
+      // ignore
+    }
+
+    router.push('/dashboard');
+  };
+
+  // Synthetic Seabed Sonar Video Canvas Renderer (when no MP4 is uploaded)
+  // Uses precomputed steady particles and smooth linear forward sweep line to eliminate wobble/up-and-down shaking
+  const particlesRef = useRef<{ x: number; y: number; s: number; alpha: number }[]>([]);
+  useEffect(() => {
+    // Generate fixed particle field once
+    const pts = [];
+    for (let i = 0; i < 400; i++) {
+      pts.push({
+        x: Math.random(),
+        y: Math.random(),
+        s: Math.random() * 1.8 + 0.8,
+        alpha: Math.random() * 0.12 + 0.04,
+      });
+    }
+    particlesRef.current = pts;
+  }, []);
+
+  useEffect(() => {
+    if (videoUrl) return; // User uploaded an actual video
+
+    let animationId: number;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let scanProgress = (currentTime / Math.max(1, duration)) % 1;
+
+    const renderSeabedSimulation = () => {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Deep steady underwater bathymetry background
+      ctx.fillStyle = '#060D1A';
+      ctx.fillRect(0, 0, w, h);
+
+      // Acoustic swath gradient (port & starboard channels)
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, '#0D1B2A');
+      grad.addColorStop(0.46, '#081426');
+      grad.addColorStop(0.5, '#020617'); // Nadir blind zone
+      grad.addColorStop(0.54, '#081426');
+      grad.addColorStop(1, '#0D1B2A');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Steady sediment particles (fixed coordinates, no oscillation)
+      const pts = particlesRef.current;
+      for (let i = 0; i < pts.length; i++) {
+        const pt = pts[i];
+        ctx.fillStyle = `rgba(180, 220, 255, ${pt.alpha})`;
+        ctx.fillRect(pt.x * w, pt.y * h, pt.s, pt.s);
+      }
+
+      // Center Nadir line
+      ctx.strokeStyle = 'rgba(2, 132, 199, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(w / 2, 0);
+      ctx.lineTo(w / 2, h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Range grid lines (horizontal depth slices)
+      ctx.strokeStyle = 'rgba(14, 165, 233, 0.08)';
+      ctx.lineWidth = 1;
+      for (let y = 40; y < h; y += 40) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      // Smooth downward waterfall sweep line
+      const sweepY = ((currentTime / Math.max(1, duration)) * h) % h;
+      const sweepGrad = ctx.createLinearGradient(0, sweepY - 30, 0, sweepY);
+      sweepGrad.addColorStop(0, 'rgba(56, 189, 248, 0)');
+      sweepGrad.addColorStop(1, 'rgba(56, 189, 248, 0.25)');
+      ctx.fillStyle = sweepGrad;
+      ctx.fillRect(0, Math.max(0, sweepY - 30), w, 30);
+
+      ctx.strokeStyle = '#38BDF8';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, sweepY);
+      ctx.lineTo(w, sweepY);
+      ctx.stroke();
+
+      // Render Passing Ghost Net anomaly if within active timestamp
+      const activeAnomaly = currentPreset.anomalyTimestamps.find(
+        (a) => Math.abs(currentTime - a.sec) <= 1.8
+      );
+
+      if (activeAnomaly) {
+        const bx = activeAnomaly.bbox.x_min * (w / 640);
+        const by = activeAnomaly.bbox.y_min * (h / 420);
+        const bw = (activeAnomaly.bbox.x_max - activeAnomaly.bbox.x_min) * (w / 640);
+        const bh = (activeAnomaly.bbox.y_max - activeAnomaly.bbox.y_min) * (h / 420);
+
+        // Acoustic shadow patch behind net
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        ctx.fillRect(bx + bw * 0.4, by + 8, bw * 0.9, bh * 0.95);
+
+        // High-reflectivity netting mesh filaments
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.95)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        for (let x = bx; x < bx + bw; x += 12) {
+          ctx.moveTo(x, by);
+          ctx.lineTo(x + 8, by + bh);
+        }
+        for (let y = by; y < by + bh; y += 12) {
+          ctx.moveTo(bx, y);
+          ctx.lineTo(bx + bw, y + 8);
+        }
+        ctx.stroke();
+
+        // High-intensity acoustic highlight knots
+        ctx.fillStyle = '#E0F2FE';
+        for (let kx = bx; kx < bx + bw; kx += 24) {
+          for (let ky = by; ky < by + bh; ky += 24) {
+            ctx.fillRect(kx, ky, 3, 3);
+          }
+        }
+      }
+
+      // Sonar Header Overlay
+      ctx.fillStyle = 'rgba(6, 13, 26, 0.9)';
+      ctx.fillRect(0, 0, w, 26);
+      ctx.fillStyle = '#38BDF8';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText(`SEABED SSS SCANNER · ${currentPreset.name.toUpperCase()} · 455 kHz`, 12, 17);
+
+      animationId = requestAnimationFrame(renderSeabedSimulation);
+    };
+
+    renderSeabedSimulation();
+    return () => cancelAnimationFrame(animationId);
+  }, [currentTime, currentPreset, videoUrl, duration]);
+
+  // Video Time Progression & Frame AI Trigger
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime((prev) => {
+        const nextTime = prev + 0.25 * playbackRate;
+        if (nextTime >= duration) {
+          setIsPlaying(false);
+          return duration;
+        }
+        return nextTime;
+      });
+
+      // Sample frame and run YOLO inference
+      runLiveInferenceOnFrame();
+    }, 250);
+
+    return () => clearInterval(interval);
+  }, [isPlaying, duration, playbackRate, currentPreset]);
+
+  // Sync custom HTML5 <video> element
+  const togglePlay = () => {
+    if (videoRef.current && videoUrl) {
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+      }
+    } else {
+      if (currentTime >= duration) setCurrentTime(0);
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const seekTo = (sec: number) => {
+    setCurrentTime(sec);
+    if (videoRef.current && videoUrl) {
+      videoRef.current.currentTime = sec;
+    }
+  };
+
+  const downloadJPG = (snag: CapturedSnag) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width || 640;
+      canvas.height = img.height || 480;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Draw original image
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Draw GPS telemetry overlay bar at bottom
+      const barH = 48;
+      ctx.fillStyle = 'rgba(7, 90, 115, 0.92)';
+      ctx.fillRect(0, canvas.height - barH, canvas.width, barH);
+
+      // Top decorative border
+      ctx.strokeStyle = '#B8C9CC';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height - barH);
+      ctx.lineTo(canvas.width, canvas.height - barH);
+      ctx.stroke();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 12px monospace';
+      ctx.fillText(`GEO-LOC: LAT ${snag.lat.toFixed(5)}°N | LON ${snag.lon.toFixed(5)}°E | DEPTH: ${snag.depth_m.toFixed(1)}m`, 14, canvas.height - 28);
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#B8C9CC';
+      ctx.fillText(`SNAG: ${snag.label.toUpperCase()} (${(snag.confidence * 100).toFixed(0)}%) | TIME: ${snag.formattedTime} | DATUM: WGS-84`, 14, canvas.height - 12);
+
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/jpeg', 0.95);
+      a.download = `captured-snag-${snag.id}-${snag.lat.toFixed(4)}N-${snag.lon.toFixed(4)}E.jpg`;
+      a.click();
+    };
+    img.src = snag.thumbnailUrl;
+  };
+
+  const sendToWorkstation = (snag: CapturedSnag) => {
+    try {
+      sessionStorage.setItem('ghostnet_live_snapshot', snag.thumbnailUrl);
+      sessionStorage.setItem('ghostnet_snapshot_time', snag.formattedTime);
+      sessionStorage.setItem('ghostnet_snapshot_source', snag.id);
+    } catch {
+      // ignore
+    }
+    router.push('/dashboard');
+  };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
-      {/* ── Top Header Toolbar Card ── */}
-      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans rounded-none">
+      {/* ── Top Header Toolbar Card (0 Curves, Solid Ocean Theme) ── */}
+      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4 rounded-none">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white shadow-xs">
-            <Waves className="w-4 h-4 text-white" />
+          <div className="w-8 h-8 rounded-none bg-[#075A73] flex items-center justify-center text-white shadow-none">
+            <Video className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-900">
-              Live Hydrographic Waterfall Console
+            <h1 className="text-base font-bold text-[#0E232B]">
+              Seabed Video Scanner & Real-Time AI Detection
             </h1>
-            <span className="text-xs text-slate-400 font-medium">
-              Dual Swath Side-scan Sonar Stream · PING #{pingCount}
+            <span className="text-xs text-[#526E78] font-medium">
+              Upload or scan seabed video · Pause anytime to analyze frames in AI Workstation
             </span>
           </div>
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls & Upload */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            {(['cyan', 'emerald', 'amber', 'thermal'] as const).map((c) => (
-              <button
-                key={c}
-                onClick={() => setColormap(c)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
-                  colormap === c ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(e) => {
+              if (e.target.files?.[0]) handleVideoUpload(e.target.files[0]);
+            }}
+          />
 
           <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="btn-primary text-xs"
+            onClick={() => fileInputRef.current?.click()}
+            className="btn-pill-filter text-xs rounded-none"
+            title="Upload custom underwater seabed survey video"
+          >
+            <UploadCloud className="w-3.5 h-3.5 text-[#075A73]" />
+            <span>{videoFile ? videoFile.name : 'Upload Seabed Video'}</span>
+          </button>
+
+          <button
+            onClick={togglePlay}
+            className="btn-primary text-xs rounded-none"
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{isPlaying ? 'Pause Stream' : 'Resume Ping'}</span>
+            <span>{isPlaying ? 'Pause Video' : 'Scan Video'}</span>
+          </button>
+
+          {/* Dedicated Instant Analyze Frame Button */}
+          <button
+            onClick={analyzeCurrentFrameInWorkstation}
+            className="px-3.5 py-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white text-xs font-bold shadow-none transition-all flex items-center gap-1.5 border border-[#075A73]"
+            title="Analyze the current stopped frame in the AI Workstation"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-white" />
+            <span>Analyze Frame at {formatTime(currentTime)}</span>
           </button>
         </div>
       </div>
 
-      {/* ── Main Waterfall Display + Settings (Grid) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        {/* Waterfall Viewport (8 cols on lg) */}
-        <div className="lg:col-span-8 light-saas-card p-6 space-y-4">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-500 uppercase tracking-wider pb-2 border-b border-slate-100">
-            <span>PORT SWATH [ -{swathWidth}m ]</span>
-            <span className="text-blue-600 font-black">NADIR BLIND ZONE</span>
-            <span>STARBOARD SWATH [ +{swathWidth}m ]</span>
-          </div>
-
-          <div className="h-96 w-full rounded-2xl bg-[#0c1524] border border-slate-700/60 overflow-hidden relative shadow-inner">
-            <canvas
-              ref={waterfallCanvasRef}
-              width={800}
-              height={450}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-mono border border-slate-700/50 shadow-md">
-              {frequency} kHz CHIRP · GAIN {gain}%
+      {/* ── Main 2-Column Layout: Video Display + Captured Targets Sidebar ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch rounded-none">
+        {/* Left Column: Video Viewport + Live Bounding Box + Controls (8 cols on lg) */}
+        <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between space-y-4 rounded-none">
+          <div className="flex items-center justify-between text-xs font-bold text-[#526E78] uppercase tracking-wider pb-2 border-b border-[#B8C9CC]">
+            <div className="flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-none ${isPlaying ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'}`} />
+              <span>{videoFile ? `CUSTOM VIDEO: ${videoFile.name}` : currentPreset.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[#526E78] font-mono">{formatTime(currentTime)} / {formatTime(duration)}</span>
+              {isScanning && <span className="pill-badge-ocean text-[10px] rounded-none">AI Scanning...</span>}
             </div>
           </div>
 
-          {/* Waveform Canvas */}
-          <div className="space-y-2 pt-2">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-              <div className="flex items-center gap-2">
-                <Activity className="w-4 h-4 text-blue-600" />
-                <span>Acoustic Amplitude Waveform</span>
-              </div>
-              <span className="text-slate-400 font-mono text-[11px]">2.4 MSPS Sampling</span>
-            </div>
-            <div className="h-24 w-full rounded-2xl bg-[#0c1524] border border-slate-700/60 overflow-hidden shadow-inner">
+          {/* Video Player / Canvas Frame with Overlaid Bounding Boxes */}
+          <div className="h-[380px] w-full rounded-none bg-[#0E232B] border border-[#075A73] overflow-hidden relative shadow-none flex items-center justify-center select-none">
+            {videoUrl ? (
+              <video
+                ref={videoRef}
+                src={videoUrl}
+                className="w-full h-full object-contain"
+                onTimeUpdate={() => {
+                  if (videoRef.current) setCurrentTime(videoRef.current.currentTime);
+                }}
+                onLoadedMetadata={() => {
+                  if (videoRef.current) setDuration(videoRef.current.duration);
+                }}
+                onEnded={() => setIsPlaying(false)}
+              />
+            ) : (
               <canvas
-                ref={waveformCanvasRef}
+                ref={canvasRef}
                 width={800}
-                height={96}
+                height={480}
                 className="w-full h-full object-cover"
               />
+            )}
+
+            {/* Live Bounding Box Overlay on Video Stream */}
+            {activeDetections.map((det, idx) => {
+              const left = `${(det.bbox.x_min / 640) * 100}%`;
+              const top = `${(det.bbox.y_min / 420) * 100}%`;
+              const width = `${((det.bbox.x_max - det.bbox.x_min) / 640) * 100}%`;
+              const height = `${((det.bbox.y_max - det.bbox.y_min) / 420) * 100}%`;
+
+              return (
+                <div
+                  key={idx}
+                  className="absolute border-2 border-emerald-400 bg-emerald-500/10 pointer-events-none rounded-none transition-all"
+                  style={{ left, top, width, height }}
+                >
+                  <div className="absolute -top-6 left-0 px-2 py-0.5 rounded-none bg-[#075A73] text-white text-[10px] font-bold shadow-none whitespace-nowrap flex items-center gap-1">
+                    <Target className="w-3 h-3" />
+                    <span>{formatLabel(det.label)}</span>
+                    <span>{(det.confidence * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Detection Banner Overlay */}
+            {activeDetections.length > 0 && (
+              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-none bg-red-950/90 backdrop-blur-md text-red-200 text-[11px] font-bold border border-red-700/60 shadow-none flex items-center gap-2">
+                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                <span>GHOST NET DETECTED IN SCAN</span>
+              </div>
+            )}
+
+            {/* When Video is Paused: In-Player Action Overlay */}
+            {!isPlaying && (
+              <div className="absolute inset-0 bg-[#0E232B]/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+                <button
+                  onClick={analyzeCurrentFrameInWorkstation}
+                  className="pointer-events-auto px-5 py-2.5 rounded-none bg-[#075A73] hover:bg-[#054356] hover:scale-105 text-white font-bold text-sm shadow-none border border-white/20 flex items-center gap-2.5 transition-all"
+                >
+                  <Sparkles className="w-4 h-4 text-white" />
+                  <span>Analyze Frame at {formatTime(currentTime)} in AI Workstation</span>
+                  <ArrowRight className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Video Playback & Seek Controls */}
+          <div className="space-y-3 pt-1">
+            {/* Seek Bar */}
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold text-[#0E232B] font-mono w-10">{formatTime(currentTime)}</span>
+              <input
+                type="range"
+                min="0"
+                max={duration}
+                step="0.1"
+                value={currentTime}
+                onChange={(e) => seekTo(parseFloat(e.target.value))}
+                className="flex-1 rounded-none"
+              />
+              <span className="text-xs font-medium text-[#526E78] font-mono w-10 text-right">{formatTime(duration)}</span>
+            </div>
+
+            {/* Playback Settings & Presets */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={togglePlay}
+                  className="p-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white transition-colors"
+                >
+                  {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={() => seekTo(0)}
+                  className="p-2 rounded-none bg-[#E5EDEE] hover:bg-[#B8C9CC] text-[#075A73] transition-colors border border-[#B8C9CC]"
+                  title="Restart Video"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+
+                {/* Speed Toggles */}
+                <div className="flex items-center bg-[#E5EDEE] rounded-none p-1 border border-[#B8C9CC] text-xs font-bold">
+                  {[1, 1.5, 2].map((rate) => (
+                    <button
+                      key={rate}
+                      onClick={() => setPlaybackRate(rate)}
+                      className={`px-2.5 py-1 rounded-none transition-colors ${playbackRate === rate ? 'bg-white text-[#075A73] shadow-none' : 'text-[#526E78]'}`}
+                    >
+                      {rate}x
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={analyzeCurrentFrameInWorkstation}
+                  className="ml-2 px-3 py-1.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] hover:bg-[#B8C9CC] text-[#075A73] text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  title="Send current paused frame to Workstation"
+                >
+                  <Scan className="w-3.5 h-3.5 text-[#075A73]" />
+                  <span>Send Frame to Workstation</span>
+                </button>
+              </div>
+
+              {/* Auto Pause Toggle */}
+              <label className="flex items-center gap-2 text-xs font-semibold text-[#2A434D] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoPauseOnDetect}
+                  onChange={(e) => setAutoPauseOnDetect(e.target.checked)}
+                  className="w-4 h-4 text-[#075A73] rounded-none border-[#B8C9CC] focus:ring-[#075A73]"
+                />
+                <span>Auto-pause on Net Detection</span>
+              </label>
             </div>
           </div>
         </div>
 
-        {/* Transducer Settings Sidebar (4 cols on lg) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between h-full">
-          <div className="space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                TRANSDUCER CONTROLS
-              </span>
-              <button className="p-1.5 rounded-lg bg-slate-100 text-slate-600">
-                <Sliders className="w-3.5 h-3.5" />
-              </button>
+        {/* Right Column: Captured Ghost Nets & Targets Feed (4 cols on lg) */}
+        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between h-full space-y-4 rounded-none">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-3 border-b border-[#B8C9CC]">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-[#0E232B] block">
+                  CAPTURED TARGETS TIMELINE
+                </span>
+                <span className="text-[11px] text-[#526E78]">
+                  {capturedSnags.length} Ghost Net{capturedSnags.length !== 1 ? 's' : ''} auto-captured
+                </span>
+              </div>
+              <span className="pill-badge-red text-[10px] rounded-none">AUTO-LOG</span>
             </div>
 
-            {/* Gain Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-700">Acoustic Gain</span>
-                <span className="font-bold text-blue-600 font-mono">{gain}%</span>
-              </div>
-              <input
-                type="range"
-                min="10"
-                max="100"
-                value={gain}
-                onChange={(e) => setGain(parseInt(e.target.value))}
-                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
+            {/* Timeline List of Captured Targets */}
+            <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+              {capturedSnags.length > 0 ? (
+                capturedSnags.map((snag) => (
+                  <div
+                    key={snag.id}
+                    className="p-3 rounded-none bg-[#E5EDEE]/50 border border-[#B8C9CC] hover:border-[#075A73] transition-all space-y-2 group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-[#0E232B] font-mono">{snag.id}</span>
+                        <span className="text-[10px] px-1.5 py-0.2 rounded-none font-bold bg-[#E5EDEE] text-[#075A73] font-mono border border-[#B8C9CC]">
+                          @{snag.formattedTime}
+                        </span>
+                      </div>
+                      <span className="pill-badge-red text-[10px] uppercase rounded-none">{snag.severity}</span>
+                    </div>
 
-            {/* Frequency Selector */}
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-700 block">CHIRP Transducer Frequency</span>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => setFrequency(455)}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                    frequency === 455 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  455 kHz (Wide)
-                </button>
-                <button
-                  onClick={() => setFrequency(900)}
-                  className={`py-2 rounded-xl text-xs font-bold transition-all ${
-                    frequency === 900 ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  900 kHz (Hi-Res)
-                </button>
-              </div>
-            </div>
+                    {/* Snapshot Preview & Details */}
+                    <div className="flex gap-3 items-center">
+                      <div className="w-20 h-14 rounded-none bg-[#0E232B] overflow-hidden border border-[#B8C9CC] shrink-0 relative">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={snag.thumbnailUrl}
+                          alt="Captured Snag"
+                          className="w-full h-full object-cover rounded-none"
+                        />
+                      </div>
+                      <div className="space-y-0.5 text-[11px] text-[#2A434D] flex-1">
+                        <span className="font-bold text-[#0E232B] block text-xs truncate">{formatLabel(snag.label)}</span>
+                        <div className="flex justify-between text-[#526E78]">
+                          <span>Confidence:</span>
+                          <strong className="text-emerald-700">{(snag.confidence * 100).toFixed(0)}%</strong>
+                        </div>
+                        <div className="flex justify-between text-[#526E78]">
+                          <span>Est. Area:</span>
+                          <strong className="text-[#0E232B]">{snag.area_m2} m²</strong>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* Swath Range Slider */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-xs">
-                <span className="font-semibold text-slate-700">Swath Width</span>
-                <span className="font-bold text-blue-600 font-mono">{swathWidth} meters</span>
-              </div>
-              <input
-                type="range"
-                min="20"
-                max="120"
-                step="10"
-                value={swathWidth}
-                onChange={(e) => setSwathWidth(parseInt(e.target.value))}
-                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* Vessel Telemetry Card */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Vessel Survey Telemetry
-              </span>
-              <div className="flex justify-between text-slate-600">
-                <span>Speed Over Ground:</span>
-                <span className="font-bold text-slate-900">{speed} knots</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Bathymetric Depth:</span>
-                <span className="font-bold text-slate-900">42.8 m</span>
-              </div>
-              <div className="flex justify-between text-slate-600">
-                <span>Transducer Heading:</span>
-                <span className="font-bold text-slate-900">184.2° SSW</span>
-              </div>
+                    {/* Action Buttons for this Captured Target */}
+                    <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-[#B8C9CC] text-[11px]">
+                      <button
+                        onClick={() => seekTo(snag.timestampSec)}
+                        className="py-1 px-2 rounded-none bg-white border border-[#B8C9CC] hover:bg-[#E5EDEE] text-[#0E232B] font-semibold transition-colors flex items-center justify-center gap-1"
+                        title="Seek video to this timestamp"
+                      >
+                        <Clock className="w-3 h-3 text-[#526E78]" />
+                        <span>Seek</span>
+                      </button>
+                      <button
+                        onClick={() => downloadJPG(snag)}
+                        className="py-1 px-2 rounded-none bg-white border border-[#B8C9CC] hover:bg-[#E5EDEE] text-[#0E232B] font-semibold transition-colors flex items-center justify-center gap-1"
+                        title="Download captured JPG frame"
+                      >
+                        <Download className="w-3.5 h-3.5 text-[#526E78]" />
+                        <span>JPG</span>
+                      </button>
+                      <button
+                        onClick={() => sendToWorkstation(snag)}
+                        className="py-1 px-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white font-semibold transition-colors flex items-center justify-center gap-1"
+                        title="Analyze in AI Workstation"
+                      >
+                        <Scan className="w-3.5 h-3.5 text-white" />
+                        <span>Analyze</span>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="py-12 text-center space-y-2 text-[#849EAA]">
+                  <Scan className="w-8 h-8 mx-auto text-[#B8C9CC]" />
+                  <span className="text-xs font-bold text-[#0E232B] block">No Snags Detected Yet</span>
+                  <p className="text-[11px] text-[#526E78] max-w-[200px] mx-auto leading-relaxed">
+                    Play the video scan or pause at any point and click &ldquo;Analyze Frame&rdquo; to send the frame to the AI Workstation.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Towfish Motion Compensation Readout */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 text-xs mt-4">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-              Towfish Motion Compensation
+          {/* Preloaded Demo Clips Selector */}
+          <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2">
+            <span className="text-[10px] font-bold text-[#526E78] uppercase tracking-wider block">
+              Preloaded Survey Video Clips
             </span>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <span className="text-[10px] text-slate-400 block mb-0.5">HEAVE</span>
-                <span className="font-bold text-slate-900 font-mono text-sm">0.12 m</span>
-                <div className="h-1 rounded-full bg-slate-200 mt-1.5 overflow-hidden">
-                  <div className="h-full w-[12%] bg-emerald-500 rounded-full" />
-                </div>
-              </div>
-              <div className="text-center">
-                <span className="text-[10px] text-slate-400 block mb-0.5">PITCH</span>
-                <span className="font-bold text-slate-900 font-mono text-sm">1.4°</span>
-                <div className="h-1 rounded-full bg-slate-200 mt-1.5 overflow-hidden">
-                  <div className="h-full w-[14%] bg-blue-500 rounded-full" />
-                </div>
-              </div>
-              <div className="text-center">
-                <span className="text-[10px] text-slate-400 block mb-0.5">ROLL</span>
-                <span className="font-bold text-slate-900 font-mono text-sm">0.8°</span>
-                <div className="h-1 rounded-full bg-slate-200 mt-1.5 overflow-hidden">
-                  <div className="h-full w-[8%] bg-blue-500 rounded-full" />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-between text-slate-500 pt-0.5 border-t border-slate-100">
-              <span>Compensation Active:</span>
-              <span className="font-bold text-emerald-600">IMU-6DOF</span>
+            <div className="space-y-1.5">
+              {PRELOADED_SURVEY_CLIPS.map((clip) => (
+                <button
+                  key={clip.id}
+                  onClick={() => selectPreset(clip)}
+                  className={`w-full text-left p-2 rounded-none transition-all border ${
+                    selectedPresetId === clip.id
+                      ? 'bg-white border-[#075A73] shadow-none font-semibold'
+                      : 'bg-[#E5EDEE] border-transparent hover:bg-white hover:border-[#B8C9CC]'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#0E232B] truncate">{clip.name}</span>
+                    <span className="text-[10px] font-mono text-[#526E78]">{clip.durationSec}s</span>
+                  </div>
+                  <p className="text-[10px] text-[#526E78] truncate mt-0.5">{clip.description}</p>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -333,3 +832,4 @@ export default function SonarConsolePage() {
     </div>
   );
 }
+

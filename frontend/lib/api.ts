@@ -227,6 +227,26 @@ export const ghostnetApi = {
     return handleResponse<CleanupMission[]>(res);
   },
 
+  /** Create/dispatch a new cleanup mission */
+  async createCleanupMission(mission: CleanupMission): Promise<{ status: string; mission: CleanupMission }> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/analytics/cleanup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(mission),
+    });
+    return handleResponse<{ status: string; mission: CleanupMission }>(res);
+  },
+
+  /** Update cleanup mission stage */
+  async updateCleanupMissionStage(missionId: string, stage: string): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/analytics/cleanup/${encodeURIComponent(missionId)}/stage`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage }),
+    });
+    return handleResponse<any>(res);
+  },
+
   /** Fetch risk summary overview */
   async getRiskSummary(): Promise<Record<string, unknown>> {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/risk-summary`, {
@@ -235,3 +255,4 @@ export const ghostnetApi = {
     return handleResponse<Record<string, unknown>>(res);
   },
 };
+
