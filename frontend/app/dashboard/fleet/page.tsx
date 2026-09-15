@@ -14,6 +14,7 @@ import {
   Search,
   ChevronRight,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 
 const FALLBACK_FLEET: FleetUnit[] = [
@@ -101,78 +102,76 @@ export default function FleetOperationsPage() {
     setTimeout(() => setPingedUnitId(null), 3000);
   };
 
-  const statusBadgeClass = (status: string) => {
-    if (status.toLowerCase().includes('active') || status.toLowerCase().includes('survey')) return 'pill-badge-green';
-    if (status.toLowerCase().includes('ping') || status.toLowerCase().includes('acoustic')) return 'pill-badge-blue';
-    return 'pill-badge-neutral';
-  };
-
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans text-gray-100">
       {/* ── Top Header Toolbar Card ── */}
-      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
-            <Navigation className="w-4 h-4 text-white" />
+      <div className="cyber-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2DD4BF] to-[#0EA5E9] flex items-center justify-center text-white shadow-lg shadow-[#2DD4BF]/30">
+            <Navigation className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-slate-900">
-              Survey Fleet & Autonomous Submersibles Command
+            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              Autonomous Fleet & Submersible Telemetry
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/40">
+                ACTIVE MESH
+              </span>
             </h1>
-            <span className="text-xs text-slate-400 font-medium">
-              AIS/NMEA acoustic telemetry, depth profiling, and battery health monitoring
-            </span>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
+              AIS / NMEA acoustic telemetry, bathymetric profiling & real-time battery status
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={loadFleet}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
+            className="p-2.5 rounded-xl bg-white/5 hover:bg-[#2DD4BF]/20 text-gray-300 hover:text-[#2DD4BF] border border-white/10 hover:border-[#2DD4BF]/40 transition-all duration-300"
             title="Refresh Fleet"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <div className="pill-badge-green text-xs py-1 px-3">
-            <span>Fleet Online</span>
+          <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+            <span>3 Fleet Units Connected</span>
           </div>
         </div>
       </div>
 
-      {/* ── Live Acoustic Modem Telemetry Status ── */}
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50/90 p-4 text-xs text-emerald-950 flex items-start gap-3 shadow-xs">
-        <div className="w-5 h-5 rounded-md bg-emerald-200/80 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
-          <Radio className="w-3.5 h-3.5 animate-pulse" />
+      {/* ── Live Acoustic Telemetry Banner ── */}
+      <div className="cyber-card p-4 text-xs flex items-start gap-3.5 border-l-4 border-l-[#2DD4BF]">
+        <div className="w-8 h-8 rounded-xl bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/30 flex items-center justify-center shrink-0 mt-0.5">
+          <Radio className="w-4 h-4 animate-pulse text-[#2DD4BF]" />
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="font-bold uppercase tracking-wider text-[11px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded">
-              AIS &bull; NMEA-0183 &bull; Acoustic Modem Active
+            <span className="font-extrabold uppercase tracking-wider text-[10px] bg-[#2DD4BF]/20 text-[#2DD4BF] px-2 py-0.5 rounded-full border border-[#2DD4BF]/30">
+              AIS &bull; NMEA-0183 &bull; Evologics S2CR
             </span>
-            <span className="font-semibold text-emerald-950">Fleet Command Network Online</span>
+            <span className="font-bold text-white">Live Acoustic Modem Grid Synchronized</span>
           </div>
-          <p className="text-emerald-800 leading-relaxed">
-            AUV/ROV coordinates, depth profiles, heading vectors, sonar ping frequencies, and battery telemetry are synchronized via acoustic modem pings (Evologics S2CR) and NMEA-0183 navigation feeds from the surface vessel.
+          <p className="text-gray-400 leading-relaxed">
+            AUV/ROV coordinates, depth profiles, heading vectors, sonar frequencies, and battery telemetry are synchronized in real-time via acoustic modem pings.
           </p>
         </div>
       </div>
 
-      {/* ── Main View: Fleet List + Unit Telemetry (Grid) ── */}
+      {/* ── Main View: Fleet List + Unit Inspector (Grid) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Unit List (8 cols on lg) */}
-        <div className="lg:col-span-8 light-saas-card p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3.5 py-2 w-72 border border-slate-200/80">
-              <Search className="w-4 h-4 text-slate-400" />
+        <div className="lg:col-span-8 cyber-card p-6 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2.5 bg-white/5 rounded-xl px-3.5 py-2 w-72 border border-white/10 focus-within:border-[#2DD4BF]/50 transition-colors">
+              <Search className="w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search vessels & AUVs..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+                className="w-full bg-transparent text-xs text-white placeholder-gray-500 outline-none font-medium"
               />
             </div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
               {filteredFleet.length} UNITS TRACKED
             </span>
           </div>
@@ -185,39 +184,43 @@ export default function FleetOperationsPage() {
                 <div
                   key={unit.id}
                   onClick={() => setSelectedUnitId(unit.id)}
-                  className={`p-4 rounded-2xl cursor-pointer transition-all flex items-center justify-between border ${
+                  className={`cyber-card-interactive p-4 cursor-pointer flex items-center justify-between transition-all duration-300 ${
                     isSelected
-                      ? 'bg-blue-50/50 border-blue-300 shadow-md'
-                      : 'bg-white hover:bg-slate-50 border-slate-200/80'
+                      ? 'border-[#2DD4BF] shadow-lg shadow-[#2DD4BF]/20 bg-white/10'
+                      : 'hover:border-white/20'
                   }`}
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2DD4BF] to-[#0EA5E9] text-white flex items-center justify-center font-bold text-xs shadow-md">
                       <Ship className="w-5 h-5 text-white" />
                     </div>
 
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold font-mono text-slate-900">{unit.id}</span>
-                        <span className="text-xs font-bold text-slate-800">{unit.name}</span>
+                        <span className="text-xs font-bold font-mono text-[#2DD4BF]">{unit.id}</span>
+                        <span className="text-sm font-bold text-white">{unit.name}</span>
                       </div>
-                      <div className="flex items-center gap-3 text-[11px] text-slate-400 font-medium">
+                      <div className="flex items-center gap-3 text-xs text-gray-400 font-medium">
                         <span>{unit.type}</span>
                         <span>·</span>
-                        <span>{unit.speed_knots} kt Speed</span>
+                        <span className="text-gray-300">{unit.speed_knots} kt Speed</span>
                         <span>·</span>
-                        <span>{unit.depth_m}m Depth</span>
+                        <span className="text-gray-300">{unit.depth_m}m Depth</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-right">
-                    <div className="space-y-0.5">
-                        <span className={`${statusBadgeClass(unit.status)} text-[10px] block`}>{unit.status}</span>
-                        <span className="text-[11px] text-slate-400 font-mono font-semibold">BAT: {unit.battery_pct}%</span>
+                    <div className="space-y-1">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 block">
+                        {unit.status}
+                      </span>
+                      <span className="text-xs text-gray-400 font-mono font-semibold">
+                        BAT: <span className="text-white">{unit.battery_pct}%</span>
+                      </span>
                     </div>
 
-                    <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                    <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-[#2DD4BF] translate-x-1' : 'text-gray-500'}`} />
                   </div>
                 </div>
               );
@@ -226,60 +229,60 @@ export default function FleetOperationsPage() {
         </div>
 
         {/* Right: Selected Unit Inspector (4 cols on lg) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-5">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="lg:col-span-4 cyber-card p-6 flex flex-col justify-between space-y-6">
+          <div className="space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="space-y-0.5">
-                <span className="text-xs font-black font-mono text-slate-900">{selectedUnit.id}</span>
-                <span className="text-xs font-bold text-slate-700 block">{selectedUnit.name}</span>
+                <span className="text-xs font-black font-mono text-[#2DD4BF]">{selectedUnit.id}</span>
+                <span className="text-base font-bold text-white block">{selectedUnit.name}</span>
               </div>
-              <span className={`${statusBadgeClass(selectedUnit.status)} text-xs font-bold`}>
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 {selectedUnit.status}
               </span>
             </div>
 
             {/* Vessel Telemetry Details */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2.5 text-xs font-mono">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 text-xs font-mono">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block border-b border-white/10 pb-1.5">
                 Live Sensor Telemetry
               </span>
-              <div className="grid grid-cols-2 gap-2 text-slate-600">
+              <div className="grid grid-cols-2 gap-3 text-gray-300">
                 <div>
-                  <span className="text-[10px] text-slate-400 block">LATITUDE</span>
-                  <span className="font-bold text-slate-900">{selectedUnit.lat}° N</span>
+                  <span className="text-[10px] text-gray-500 block">LATITUDE</span>
+                  <span className="font-bold text-white">{selectedUnit.lat}° N</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">LONGITUDE</span>
-                  <span className="font-bold text-slate-900">{selectedUnit.lon}° E</span>
+                  <span className="text-[10px] text-gray-500 block">LONGITUDE</span>
+                  <span className="font-bold text-white">{selectedUnit.lon}° E</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">HEADING</span>
-                  <span className="font-bold text-slate-900">{selectedUnit.heading}°</span>
+                  <span className="text-[10px] text-gray-500 block">HEADING</span>
+                  <span className="font-bold text-white">{selectedUnit.heading}°</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">SPEED OVER GROUND</span>
-                  <span className="font-bold text-slate-900">{selectedUnit.speed_knots} kt</span>
+                  <span className="text-[10px] text-gray-500 block">SPEED</span>
+                  <span className="font-bold text-white">{selectedUnit.speed_knots} kt</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">TRANSDUCER FREQ</span>
-                  <span className="font-bold text-slate-900">{selectedUnit.sonar_freq_khz} kHz</span>
+                  <span className="text-[10px] text-gray-500 block">FREQUENCY</span>
+                  <span className="font-bold text-white">{selectedUnit.sonar_freq_khz} kHz</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 block">SWATH COVERAGE</span>
-                  <span className="font-bold text-slate-900">{selectedUnit.swath_coverage_km2} km²</span>
+                  <span className="text-[10px] text-gray-500 block">SWATH AREA</span>
+                  <span className="font-bold text-white">{selectedUnit.swath_coverage_km2} km²</span>
                 </div>
               </div>
             </div>
 
             {/* Battery & Power Gauge */}
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2 text-xs font-medium">
-              <div className="flex justify-between text-slate-700">
-                <span>Battery & Power Reserve</span>
-                <span className="font-bold text-slate-900 font-mono">{selectedUnit.battery_pct}%</span>
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 text-xs font-medium">
+              <div className="flex justify-between text-gray-300">
+                <span>Battery Reserve</span>
+                <span className="font-bold text-white font-mono">{selectedUnit.battery_pct}%</span>
               </div>
-              <div className="w-full h-2 rounded-full bg-slate-200 overflow-hidden">
+              <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full"
+                  className="h-full bg-gradient-to-r from-[#2DD4BF] to-emerald-400 rounded-full"
                   style={{ width: `${selectedUnit.battery_pct}%` }}
                 />
               </div>
@@ -287,16 +290,16 @@ export default function FleetOperationsPage() {
           </div>
 
           {pingedUnitId === selectedUnitId ? (
-            <div className="w-full py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+            <div className="w-full py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center justify-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>Waypoint Transmitted to {selectedUnit.name}</span>
             </div>
           ) : (
             <button
               onClick={handlePing}
-              className="w-full btn-primary-dark text-xs justify-center"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#2DD4BF] to-[#0EA5E9] hover:from-[#0EA5E9] hover:to-[#2DD4BF] text-white font-bold text-xs shadow-lg shadow-[#2DD4BF]/30 hover:shadow-[#2DD4BF]/50 transition-all duration-300 flex items-center justify-center gap-2"
             >
-              <Radio className="w-3.5 h-3.5 text-emerald-400" />
+              <Radio className="w-4 h-4 text-white" />
               <span>Transmit Sonar Waypoint Command</span>
             </button>
           )}
@@ -305,3 +308,4 @@ export default function FleetOperationsPage() {
     </div>
   );
 }
+

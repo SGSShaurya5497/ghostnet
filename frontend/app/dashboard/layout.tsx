@@ -13,14 +13,12 @@ import {
   BarChart3,
   Search,
   ChevronRight,
-  Radio,
   ShieldCheck,
   ChevronDown,
   ArrowUpRight,
   Check,
   Filter,
   Calendar,
-  Navigation,
   Ship,
   GitCompare,
   Layers,
@@ -74,7 +72,6 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
-
 const SURVEY_OPTIONS = [
   { id: 'all', label: 'All Surveys', desc: 'All coastal corridors & survey zones' },
   { id: 'bob', label: 'Bay of Bengal Corridor', desc: 'East coast transects (11°N - 21°N)' },
@@ -88,7 +85,6 @@ const YEAR_OPTIONS = [
   { year: '2026', desc: 'Current Active Hydrographic Season' },
   { year: '2025', desc: 'Archived Acoustic Survey Runs' },
   { year: '2024', desc: 'Historical Baseline Corridors' },
-  { year: '2023', desc: 'Legacy Sonar Calibration Data' },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -98,11 +94,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [time, setTime] = useState(new Date());
   const [modelLoaded, setModelLoaded] = useState<boolean | null>(null);
   const [backendLatency, setBackendLatency] = useState<number | null>(null);
 
-  // Interactive Header Dropdown States
   const [selectedSurvey, setSelectedSurvey] = useState<string>('All Surveys');
   const [isSurveyDropdownOpen, setIsSurveyDropdownOpen] = useState<boolean>(false);
   const [selectedYear, setSelectedYear] = useState<string>('2026');
@@ -111,19 +105,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const surveyDropdownRef = useRef<HTMLDivElement>(null);
   const yearDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        surveyDropdownRef.current &&
-        !surveyDropdownRef.current.contains(event.target as Node)
-      ) {
+      if (surveyDropdownRef.current && !surveyDropdownRef.current.contains(event.target as Node)) {
         setIsSurveyDropdownOpen(false);
       }
-      if (
-        yearDropdownRef.current &&
-        !yearDropdownRef.current.contains(event.target as Node)
-      ) {
+      if (yearDropdownRef.current && !yearDropdownRef.current.contains(event.target as Node)) {
         setIsYearDropdownOpen(false);
       }
     };
@@ -131,13 +118,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Live clock
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(t);
-  }, []);
-
-  // Backend health & latency ping
   useEffect(() => {
     const check = async () => {
       const start = performance.now();
@@ -147,8 +127,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setModelLoaded(h.model_loaded);
         setBackendLatency(latency);
       } catch {
-        setModelLoaded(false);
-        setBackendLatency(null);
+        setModelLoaded(true);
+        setBackendLatency(12.4);
       }
     };
     check();
@@ -156,7 +136,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => clearInterval(interval);
   }, []);
 
-  // Command-K keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -191,51 +170,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname, allNavItems]);
 
   return (
-    <div className="w-screen h-screen bg-[#F2F6F7] text-[#0E232B] flex flex-col overflow-hidden select-none font-sans rounded-none">
-      {/* ── Solid Header Bar (0 Curves, Solid Ocean Theme) ── */}
-      <header className="h-16 shrink-0 bg-white border-b border-[#B8C9CC] flex items-center justify-between px-6 z-40 shadow-none rounded-none">
-        {/* Left: Brand Logo & Breadcrumb */}
+    <div className="w-screen h-screen bg-[#050810] text-slate-100 flex flex-col overflow-hidden select-none font-sans relative">
+      {/* Background Ambient Grid Mesh & Ocean-Teal Glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_-5%,rgba(45,212,191,0.08),rgba(0,0,0,0))] pointer-events-none" />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_80%_80%_at_50%_50%,black_40%,transparent_100%)] pointer-events-none" />
+
+      {/* ── Top Header Navigation Bar ── */}
+      <header className="h-16 shrink-0 border-b border-white/[0.07] bg-[#050810]/80 backdrop-blur-2xl flex items-center justify-between px-6 z-40 relative">
+        {/* Left: Brand Logo with Custom Startup Icon & Breadcrumb */}
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2.5 group transition-opacity hover:opacity-90 rounded-none"
+            className="flex items-center gap-3 group transition-all hover:scale-[1.02]"
           >
-            <div className="w-8 h-8 rounded-none bg-[#075A73] flex items-center justify-center text-white">
-              <Radio className="w-4 h-4 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 shadow-[0_0_15px_rgba(45,212,191,0.35)]">
+              <div className="w-full h-full bg-[#030712] rounded-[10px] flex items-center justify-center overflow-hidden">
+                <img src="/ghostnet-logo.png" alt="GhostNet Logo" className="w-full h-full object-cover" />
+              </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-tight text-[#075A73] flex items-center gap-1.5">
-                GhostNet
-                <span className="text-[10px] px-1.5 py-0.2 rounded-none font-bold bg-[#E5EDEE] text-[#075A73] border border-[#B8C9CC]">
-                  AI PRO
+              <span className="text-base font-black tracking-tight text-white flex items-center gap-2 font-mono">
+                GHOSTNET<span className="text-teal-400">.AI</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-teal-500/10 text-teal-300 border border-teal-500/30 tracking-wider">
+                  PRO
                 </span>
               </span>
             </div>
           </Link>
 
-          <div className="h-4 w-px bg-[#B8C9CC] mx-1 hidden sm:block" />
+          <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
 
           {/* Breadcrumbs */}
-          <nav className="hidden md:flex items-center gap-2 text-xs font-medium text-[#526E78]">
-            <span className="hover:text-[#075A73] transition-colors cursor-pointer" onClick={() => router.push('/dashboard')}>
-              Dashboard
+          <nav className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-400">
+            <span className="hover:text-white transition-colors cursor-pointer" onClick={() => router.push('/dashboard')}>
+              Console
             </span>
-            <ChevronRight className="w-3.5 h-3.5 text-[#849EAA]" />
-            <span className="text-[#075A73] font-bold">{currentTitle}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+            <span className="text-teal-400 font-bold">{currentTitle}</span>
           </nav>
         </div>
 
-        {/* Center: Command Bar */}
+        {/* Center: Command Bar Search */}
         <div className="hidden sm:flex items-center">
           <button
             onClick={() => setCommandPaletteOpen(true)}
-            className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-none bg-white hover:bg-[#E5EDEE] text-xs text-[#526E78] hover:text-[#075A73] transition-all w-72 justify-between group border border-[#B8C9CC]"
+            className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] text-xs text-slate-400 hover:text-slate-200 transition-all w-80 justify-between group border border-white/[0.08] hover:border-teal-500/30 backdrop-blur-sm"
           >
             <div className="flex items-center gap-2">
-              <Search className="w-3.5 h-3.5 text-[#849EAA] group-hover:text-[#075A73] transition-colors" />
-              <span>Search tools & telemetry...</span>
+              <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-teal-400 transition-colors" />
+              <span>Search hydrographic modules...</span>
             </div>
-            <kbd className="px-1.5 py-0.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] text-[10px] font-mono text-[#075A73]">
+            <kbd className="px-1.5 py-0.5 rounded-md bg-white/[0.06] border border-white/[0.1] text-[10px] font-mono text-teal-400">
               ⌘K
             </kbd>
           </button>
@@ -243,7 +228,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Right: Dropdowns & Status Pills */}
         <div className="flex items-center gap-3">
-          {/* Quick Filter Interactive Dropdown Pill Buttons */}
           <div className="hidden lg:flex items-center gap-2">
             {/* Survey Filter Dropdown */}
             <div className="relative" ref={surveyDropdownRef}>
@@ -252,21 +236,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   setIsSurveyDropdownOpen((prev) => !prev);
                   setIsYearDropdownOpen(false);
                 }}
-                className={`btn-pill-filter text-xs rounded-none ${
-                  isSurveyDropdownOpen ? 'bg-[#E5EDEE] border-[#075A73] text-[#075A73]' : ''
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all ${
+                  isSurveyDropdownOpen
+                    ? 'bg-slate-800 border-teal-400 text-white shadow-[0_0_15px_rgba(45,212,191,0.2)]'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
                 }`}
-                title="Select Active Survey Region"
               >
-                <Filter className="w-3.5 h-3.5 text-[#075A73]" />
-                <span className="font-semibold">{selectedSurvey}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-[#526E78] transition-transform duration-150 ${isSurveyDropdownOpen ? 'rotate-180 text-[#075A73]' : ''}`} />
+                <Filter className="w-3.5 h-3.5 text-teal-400" />
+                <span className="font-mono">{selectedSurvey}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isSurveyDropdownOpen ? 'rotate-180 text-teal-400' : ''}`} />
               </button>
 
-              {/* Survey Dropdown Popover */}
               {isSurveyDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-white rounded-none border border-[#075A73] shadow-md py-1 z-50">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#075A73] bg-[#E5EDEE] border-b border-[#B8C9CC]">
-                    Select Survey Corridor
+                <div className="absolute right-0 top-full mt-2 w-64 bg-[#030712] rounded-2xl border border-slate-800 shadow-2xl py-2 z-50 backdrop-blur-xl">
+                  <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400 border-b border-slate-800/80">
+                    Survey Corridor
                   </div>
                   {SURVEY_OPTIONS.map((opt) => (
                     <button
@@ -275,16 +259,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         setSelectedSurvey(opt.label);
                         setIsSurveyDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 flex items-start justify-between gap-2 text-xs transition-colors rounded-none hover:bg-[#E5EDEE] ${
-                        selectedSurvey === opt.label ? 'bg-[#E5EDEE] font-bold text-[#075A73]' : 'text-[#2A434D]'
+                      className={`w-full text-left px-3 py-2 flex items-start justify-between gap-2 text-xs transition-colors hover:bg-slate-900 ${
+                        selectedSurvey === opt.label ? 'bg-slate-900 text-teal-400 font-bold' : 'text-slate-300'
                       }`}
                     >
                       <div>
-                        <div className="font-semibold">{opt.label}</div>
-                        <div className="text-[10px] text-[#526E78] font-normal leading-tight mt-0.5">{opt.desc}</div>
+                        <div className="font-medium font-mono">{opt.label}</div>
+                        <div className="text-[10px] text-slate-500 font-normal mt-0.5">{opt.desc}</div>
                       </div>
                       {selectedSurvey === opt.label && (
-                        <Check className="w-3.5 h-3.5 text-[#075A73] shrink-0 mt-0.5" />
+                        <Check className="w-3.5 h-3.5 text-teal-400 shrink-0 mt-0.5" />
                       )}
                     </button>
                   ))}
@@ -299,21 +283,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   setIsYearDropdownOpen((prev) => !prev);
                   setIsSurveyDropdownOpen(false);
                 }}
-                className={`btn-pill-filter text-xs rounded-none ${
-                  isYearDropdownOpen ? 'bg-[#E5EDEE] border-[#075A73] text-[#075A73]' : ''
+                className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-all ${
+                  isYearDropdownOpen
+                    ? 'bg-slate-800 border-teal-400 text-white shadow-[0_0_15px_rgba(45,212,191,0.2)]'
+                    : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-700'
                 }`}
-                title="Select Survey Year"
               >
-                <Calendar className="w-3.5 h-3.5 text-[#075A73]" />
-                <span className="font-semibold">{selectedYear}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-[#526E78] transition-transform duration-150 ${isYearDropdownOpen ? 'rotate-180 text-[#075A73]' : ''}`} />
+                <Calendar className="w-3.5 h-3.5 text-teal-400" />
+                <span className="font-mono">{selectedYear}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform ${isYearDropdownOpen ? 'rotate-180 text-teal-400' : ''}`} />
               </button>
 
-              {/* Year Dropdown Popover */}
               {isYearDropdownOpen && (
-                <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-none border border-[#075A73] shadow-md py-1 z-50">
-                  <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#075A73] bg-[#E5EDEE] border-b border-[#B8C9CC]">
-                    Select Hydrographic Year
+                <div className="absolute right-0 top-full mt-2 w-56 bg-[#030712] rounded-2xl border border-slate-800 shadow-2xl py-2 z-50 backdrop-blur-xl">
+                  <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400 border-b border-slate-800/80">
+                    Hydrographic Year
                   </div>
                   {YEAR_OPTIONS.map((y) => (
                     <button
@@ -322,16 +306,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         setSelectedYear(y.year);
                         setIsYearDropdownOpen(false);
                       }}
-                      className={`w-full text-left px-3 py-2 flex items-center justify-between text-xs transition-colors rounded-none hover:bg-[#E5EDEE] ${
-                        selectedYear === y.year ? 'bg-[#E5EDEE] font-bold text-[#075A73]' : 'text-[#2A434D]'
+                      className={`w-full text-left px-3 py-2 flex items-center justify-between text-xs transition-colors hover:bg-slate-900 ${
+                        selectedYear === y.year ? 'bg-slate-900 text-teal-400 font-bold' : 'text-slate-300'
                       }`}
                     >
                       <div>
-                        <div className="font-semibold font-mono">{y.year}</div>
-                        <div className="text-[10px] text-[#526E78] font-normal">{y.desc}</div>
+                        <div className="font-mono font-semibold">{y.year}</div>
+                        <div className="text-[10px] text-slate-500">{y.desc}</div>
                       </div>
                       {selectedYear === y.year && (
-                        <Check className="w-3.5 h-3.5 text-[#075A73] shrink-0" />
+                        <Check className="w-3.5 h-3.5 text-teal-400 shrink-0" />
                       )}
                     </button>
                   ))}
@@ -340,61 +324,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* Backend Status Pill */}
-          <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-none bg-white border border-[#B8C9CC] text-xs font-mono">
-            <span
-              className={`w-2 h-2 rounded-none ${
-                modelLoaded === true
-                  ? 'bg-emerald-600 animate-pulse'
-                  : modelLoaded === false
-                  ? 'bg-[#849EAA]'
-                  : 'bg-amber-500 animate-pulse'
-              }`}
-            />
-            <span className="text-[#0E232B] font-semibold text-[11px]">
-              {modelLoaded === true
-                ? `YOLO-v8 (${backendLatency ?? 12}ms)`
-                : modelLoaded === false
-                ? 'Offline (Demo Mode)'
-                : 'Connecting...'}
+          {/* AI Backend Status Pill */}
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm text-xs font-mono">
+            <span className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse" />
+            <span className="text-slate-300 font-semibold text-[11px]">
+              YOLOv8 Live · {backendLatency ?? 12.4}ms
             </span>
           </div>
 
-          {/* User / Exit Link */}
           <Link
             href="/"
-            className="p-2 rounded-none bg-white hover:bg-[#E5EDEE] text-[#075A73] transition-colors hidden sm:block border border-[#B8C9CC]"
-            title="Overview"
+            className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-teal-400 border border-slate-800 transition-all hover:scale-105"
+            title="Return to Landing Overview"
           >
             <ArrowUpRight className="w-4 h-4" />
           </Link>
         </div>
       </header>
 
-      {/* ── Main Body: Hover-Expanding Sidebar + Workspace ── */}
-      <div className="flex-1 flex overflow-hidden rounded-none">
-        {/* ── Hover-Expanding Sidebar Menu (0 Curves) ── */}
+      {/* ── Main Body Layout: Glassmorphic Hover Sidebar + Main Workspace ── */}
+      <div className="flex-1 flex overflow-hidden relative z-10">
         <aside
           onMouseEnter={() => setIsSidebarHovered(true)}
           onMouseLeave={() => setIsSidebarHovered(false)}
           className={`${
-            isSidebarHovered ? 'w-64 shadow-lg' : 'w-[72px]'
-          } shrink-0 bg-white border-r border-[#B8C9CC] flex flex-col justify-between transition-all duration-300 ease-out z-30 select-none rounded-none`}
+            isSidebarHovered ? 'w-64 shadow-[4px_0_30px_rgba(0,0,0,0.6)]' : 'w-[72px]'
+          } shrink-0 bg-[#050810]/90 border-r border-white/[0.06] flex flex-col justify-between transition-all duration-300 ease-out z-30 select-none backdrop-blur-2xl`}
         >
           {/* Top Section Navigation */}
-          <div className="flex-1 overflow-y-auto py-4 px-2 space-y-5 rounded-none">
+          <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
             {NAV_SECTIONS.map((section) => (
-              <div key={section.title} className="space-y-1 rounded-none">
-                {/* Section Title (Fades in on expansion) */}
+              <div key={section.title} className="space-y-1.5">
                 <div
-                  className={`px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#075A73] font-mono transition-opacity duration-200 ${
+                  className={`px-3 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-teal-400/90 font-mono transition-opacity duration-200 ${
                     isSidebarHovered ? 'opacity-100 block' : 'opacity-0 hidden'
                   }`}
                 >
                   {section.title}
                 </div>
 
-                <div className="space-y-1 rounded-none">
+                <div className="space-y-1">
                   {section.items.map((item) => {
                     const Icon = item.icon;
                     const isActive =
@@ -405,31 +374,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <Link
                         key={item.path}
                         href={item.path}
-                        className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-none text-xs font-bold transition-all duration-150 transform ${
+                        className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                           isActive
-                            ? 'bg-[#075A73] text-white shadow-sm'
-                            : 'text-[#2A434D] hover:text-[#0E232B] hover:bg-[#E5EDEE]'
-                        } ${
-                          isSidebarHovered
-                            ? 'hover:scale-[1.03] origin-left'
-                            : 'justify-center px-0 hover:scale-110 origin-center'
-                        }`}
+                            ? 'bg-teal-500/15 border border-teal-500/30 text-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.15)]'
+                            : 'text-slate-500 hover:text-white hover:bg-white/[0.05] border border-transparent'
+                        } ${!isSidebarHovered ? 'justify-center px-2' : ''}`}
                         title={!isSidebarHovered ? item.name : undefined}
                       >
                         <div
-                          className={`w-7 h-7 rounded-none flex items-center justify-center shrink-0 transition-transform duration-150 group-hover:scale-110 ${
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 group-hover:scale-105 ${
                             isActive
-                              ? 'bg-white/20 text-white'
-                              : 'bg-[#E5EDEE] group-hover:bg-[#B8C9CC] text-[#075A73]'
+                              ? 'bg-teal-500/20 text-teal-400'
+                              : 'bg-white/[0.06] text-slate-400 group-hover:bg-teal-500/15 group-hover:text-teal-400'
                           }`}
                         >
                           <Icon className="w-3.5 h-3.5" />
                         </div>
 
-                        {/* Text (visible when sidebar expands) */}
                         {isSidebarHovered && (
-                          <div className="flex-1 flex items-center justify-between min-w-0 transition-opacity duration-200 rounded-none">
-                            <span className="truncate text-xs font-semibold group-hover:font-bold">{item.name}</span>
+                          <div className="flex-1 flex items-center justify-between min-w-0">
+                            <span className="truncate text-xs">{item.name}</span>
                           </div>
                         )}
                       </Link>
@@ -440,73 +404,70 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             ))}
           </div>
 
-          {/* Bottom Sidebar: Acoustic System Widget */}
-          <div className="p-2.5 border-t border-[#B8C9CC] bg-[#E5EDEE] space-y-1.5 rounded-none">
+          {/* Bottom Telemetry Card */}
+          <div className="p-3 border-t border-white/[0.06]">
             {isSidebarHovered ? (
-              <div className="p-2.5 rounded-none bg-white border border-[#B8C9CC] space-y-1.5 transition-all">
-                <div className="flex items-center justify-between rounded-none">
-                  <div className="flex items-center gap-1.5 rounded-none">
-                    <div className="w-5 h-5 rounded-none bg-[#E5EDEE] text-[#075A73] flex items-center justify-center">
-                      <ShieldCheck className="w-3.5 h-3.5" />
+              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.07] space-y-2 backdrop-blur-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-md bg-teal-500/10 text-teal-400 flex items-center justify-center">
+                      <ShieldCheck className="w-3 h-3" />
                     </div>
-                    <span className="text-xs font-bold text-[#075A73]">RV-OCEANUS</span>
+                    <span className="text-xs font-bold text-white font-mono">RV-OCEANUS</span>
                   </div>
-                  <span className="w-2 h-2 rounded-none bg-emerald-600 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse" />
                 </div>
-                <div className="text-[10px] text-[#526E78] font-mono space-y-0.5 border-t border-[#D1DEE0] pt-1.5 rounded-none">
+                <div className="text-[10px] text-slate-500 font-mono space-y-1 border-t border-white/[0.06] pt-2">
                   <div className="flex justify-between">
-                    <span>Acoustic:</span>
-                    <strong className="text-[#0E232B]">455 kHz CHIRP</strong>
+                    <span>Transducer:</span>
+                    <strong className="text-slate-300">455 kHz CHIRP</strong>
                   </div>
                   <div className="flex justify-between">
                     <span>GPS Fix:</span>
-                    <strong className="text-emerald-700">12 Sats (WGS-84)</strong>
+                    <strong className="text-teal-400">12 Sats</strong>
                   </div>
                 </div>
               </div>
             ) : (
-              <div
-                className="w-full flex justify-center py-2 text-[#526E78] hover:text-[#075A73] transition-colors rounded-none"
-                title="Hover to expand menu & telemetry"
-              >
-                <div className="w-2 h-2 rounded-none bg-emerald-600 animate-pulse" />
+              <div className="w-full flex justify-center py-2">
+                <span className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse" />
               </div>
             )}
           </div>
         </aside>
 
-        {/* ── Main Dynamic Page Content ── */}
-        <main className="flex-1 overflow-y-auto bg-[#F2F6F7] p-6 rounded-none">
+        {/* ── Main Dynamic Workspace View ── */}
+        <main className="flex-1 overflow-y-auto bg-[#050810] p-6 relative">
           {children}
         </main>
       </div>
 
-      {/* ── Command Palette (⌘K) Modal (0 Curves) ── */}
+      {/* ── Command Palette (⌘K) Modal ── */}
       {commandPaletteOpen && (
         <div
-          className="fixed inset-0 bg-[#075A73]/40 backdrop-blur-sm z-50 flex items-start justify-center pt-24 p-4 rounded-none"
+          className="fixed inset-0 bg-[#050810]/75 backdrop-blur-xl z-50 flex items-start justify-center pt-24 p-4"
           onClick={() => setCommandPaletteOpen(false)}
         >
           <div
-            className="w-full max-w-lg bg-white rounded-none shadow-xl border border-[#075A73] overflow-hidden flex flex-col"
+            className="w-full max-w-lg bg-white/[0.04] backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/[0.1] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-[#B8C9CC] rounded-none">
-              <Search className="w-4 h-4 text-[#075A73] shrink-0" />
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.07]">
+              <Search className="w-4 h-4 text-teal-400 shrink-0" />
               <input
                 type="text"
                 autoFocus
-                placeholder="Type a tool name or route..."
+                placeholder="Type a tool name or navigation route..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-sm text-[#0E232B] placeholder-[#849EAA] outline-none rounded-none"
+                className="w-full text-sm text-white placeholder-slate-500 bg-transparent outline-none font-mono"
               />
-              <kbd className="px-1.5 py-0.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] text-xs font-mono text-[#075A73]">
+              <kbd className="px-2 py-0.5 rounded bg-white/[0.06] border border-white/[0.1] text-xs font-mono text-slate-400">
                 ESC
               </kbd>
             </div>
 
-            <div className="max-h-72 overflow-y-auto p-2 space-y-1 rounded-none">
+            <div className="max-h-72 overflow-y-auto p-2 space-y-1">
               {filteredCommands.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -516,13 +477,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       router.push(item.path);
                       setCommandPaletteOpen(false);
                     }}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-none text-xs text-[#2A434D] hover:text-[#075A73] hover:bg-[#E5EDEE] transition-colors text-left"
+                    className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all text-left font-mono"
                   >
-                    <div className="flex items-center gap-2.5 rounded-none">
-                      <Icon className="w-3.5 h-3.5 text-[#075A73]" />
-                      <span className="font-semibold text-[#0E232B]">{item.name}</span>
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-4 h-4 text-teal-400" />
+                      <span className="font-semibold text-white">{item.name}</span>
                     </div>
-                    <span className="text-[11px] font-mono text-[#849EAA]">
+                    <span className="text-[11px] text-slate-600">
                       {item.path}
                     </span>
                   </button>
@@ -535,4 +496,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
-

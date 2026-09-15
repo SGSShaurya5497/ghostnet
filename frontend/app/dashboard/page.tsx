@@ -585,82 +585,84 @@ export default function AIWorkstationPage() {
   }, [detectionResult, selectedDetectionId]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
-      {/* ── Top Metric Banner Cards (0 Curves, Solid Ocean Theme) ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-none">
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans relative text-slate-100">
+      {/* ── Top Metric Banner Cards ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="cyber-card p-5 space-y-1.5 hover:scale-[1.02]">
+          <div className="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
             <span>TOTAL DETECTIONS</span>
             <span className="pill-badge-green text-[10px]">↗ +1.8%</span>
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
-            {detectionResult ? `${detectionResult.detections.length} Targets` : '16,432'}
+          <div className="text-3xl font-extrabold text-white tracking-tight font-mono">
+            {detectionResult ? `${detectionResult.detections.length} Targets` : '13 Verified'}
           </div>
-          <div className="text-xs text-[#526E78] font-medium">
+          <div className="text-xs text-slate-400 font-medium">
             Synthetic Gear & Marine Debris
           </div>
         </div>
 
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
+        <div className="cyber-card p-5 space-y-1.5 hover:scale-[1.02]">
+          <div className="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
             <span>INFERENCE LATENCY</span>
             <span className="pill-badge-ocean text-[10px]">ONNX FP16</span>
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
+          <div className="text-3xl font-extrabold text-[#2DD4BF] tracking-tight font-mono">
             {detectionResult ? `${detectionResult.processing_time_ms.toFixed(1)} ms` : '12.4 ms'}
           </div>
-          <div className="text-xs text-[#526E78] font-medium">
+          <div className="text-xs text-slate-400 font-medium">
             Real-time YOLOv8 Execution
           </div>
         </div>
 
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
+        <div className="cyber-card p-5 space-y-1.5 hover:scale-[1.02]">
+          <div className="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
             <span>SURVEY DEPTH</span>
             <span className="pill-badge-neutral text-[10px] py-0 px-1.5">WGS-84</span>
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
+          <div className="text-3xl font-extrabold text-sky-400 tracking-tight font-mono">
             {geoMeta.depth} m
           </div>
-          <div className="text-xs text-[#526E78] font-medium">
+          <div className="text-xs text-slate-400 font-medium">
             Bathymetric Swath: 50m
           </div>
         </div>
 
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
+        <div className="cyber-card p-5 space-y-1.5 hover:scale-[1.02]">
+          <div className="flex items-center justify-between text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
             <span>VERIFIED MASS</span>
             <span className="pill-badge-green text-[10px]">Active</span>
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
+          <div className="text-3xl font-extrabold text-emerald-400 tracking-tight font-mono">
             41.7 t
           </div>
-          <div className="text-xs text-[#526E78] font-medium">
+          <div className="text-xs text-slate-400 font-medium">
             Est. Marine Gear Recoverable
           </div>
         </div>
       </div>
 
       {/* ── Main Workstation Controls Bar ── */}
-      <div className="light-saas-card p-4 flex flex-wrap items-center justify-between gap-4 rounded-none">
+      <div className="cyber-card p-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-none bg-[#075A73] flex items-center justify-center text-white shadow-none">
-            <Scan className="w-4 h-4 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2DD4BF] to-[#0EA5E9] p-0.5 shadow-[0_0_15px_rgba(255,76,0,0.4)]">
+            <div className="w-full h-full bg-[#030712] rounded-[10px] flex items-center justify-center">
+              <Scan className="w-5 h-5 text-[#2DD4BF]" />
+            </div>
           </div>
           <div>
-            <h2 className="text-sm font-bold text-[#0E232B]">
-              {detectionResult ? detectionResult.frame_id : uploadedFile ? uploadedFile.name : 'Interactive Sonar Canvas'}
+            <h2 className="text-base font-bold text-white font-mono">
+              {detectionResult ? detectionResult.frame_id : uploadedFile ? uploadedFile.name : 'AI Sonar Vision Console'}
             </h2>
-            <span className="text-xs text-[#526E78]">
+            <span className="text-xs text-slate-400 font-mono">
               {filteredDetections.length} Classified Target{filteredDetections.length !== 1 ? 's' : ''} Overlaid
             </span>
           </div>
         </div>
 
-        {/* Confidence Threshold (Unboxed) & Actions */}
+        {/* Confidence Threshold & Actions */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-[#0E232B]">Threshold:</span>
+          <div className="flex items-center gap-2 bg-slate-900/90 border border-slate-800 px-3 py-1.5 rounded-xl">
+            <span className="text-xs font-semibold text-slate-300 font-mono">Threshold:</span>
             <input
               type="range"
               min="0.10"
@@ -668,14 +670,13 @@ export default function AIWorkstationPage() {
               step="0.05"
               value={confidenceThreshold}
               onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
-              className="w-24 accent-[#075A73] cursor-pointer"
+              className="w-24 accent-[#2DD4BF] cursor-pointer"
             />
-            <span className="text-xs font-bold text-[#0E232B] w-8 text-right font-mono">
+            <span className="text-xs font-bold text-[#2DD4BF] w-8 text-right font-mono">
               {(confidenceThreshold * 100).toFixed(0)}%
             </span>
           </div>
 
-          {/* Download Scanned JPG Button */}
           <button
             onClick={() => {
               if (!imgRef.current) return;
@@ -688,10 +689,10 @@ export default function AIWorkstationPage() {
               );
             }}
             disabled={!imageBlobUrl}
-            className="btn-primary-dark text-xs disabled:opacity-40 rounded-none"
+            className="btn-primary text-xs disabled:opacity-40"
             title="Download scanned sonar image with detections and GPS coordinates in JPG format"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-4 h-4" />
             <span>Download Scanned JPG</span>
           </button>
         </div>

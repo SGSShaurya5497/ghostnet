@@ -19,6 +19,7 @@ import {
   Map,
   Plus,
   ArrowRight,
+  Zap,
 } from 'lucide-react';
 
 import { ghostnetApi } from '@/lib/api';
@@ -159,14 +160,12 @@ export default function LiveDetectionsFeedPage() {
       // ignore
     }
 
-    // Call backend API to persist in server memory
     try {
       await ghostnetApi.createCleanupMission(missionPayload);
     } catch {
       // ignore
     }
 
-    // Update target status in current list
     setTargets((prev) =>
       prev.map((t) => (t.id === target.id ? { ...t, status: 'Mission Dispatched' } : t))
     );
@@ -175,60 +174,64 @@ export default function LiveDetectionsFeedPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans rounded-none">
-      {/* ── Top Header Toolbar Card (0 Curves, Solid Ocean Theme) ── */}
-      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4 rounded-none">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-none bg-[#075A73] flex items-center justify-center text-white shadow-none">
-            <Target className="w-4 h-4 text-white" />
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans text-gray-100">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="cyber-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2DD4BF] to-[#0EA5E9] flex items-center justify-center text-white shadow-lg shadow-[#2DD4BF]/30">
+            <Target className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-[#0E232B]">
-              Live Acoustic Target Detections
+            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              Live Acoustic Target Feed
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/40">
+                REALTIME DETECTIONS
+              </span>
             </h1>
-            <span className="text-xs text-[#526E78] font-medium">
-              Real-time classified marine debris returns across surveyed corridors
-            </span>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
+              Classified YOLOv8 debris acoustic signatures across Indian EEZ corridors
+            </p>
           </div>
         </div>
 
         {/* Quick KPI stats */}
         <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] text-xs font-semibold flex items-center gap-2">
-            <span className="text-[#526E78]">TOTAL MASS:</span>
-            <span className="text-[#0E232B] font-bold">42.6 t</span>
+          <div className="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold flex items-center gap-2">
+            <span className="text-gray-400">TOTAL MASS:</span>
+            <span className="text-[#2DD4BF] font-bold font-mono">42.6 t</span>
           </div>
-          <div className="pill-badge-red text-xs py-1 px-2.5 rounded-none">
+          <div className="px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-rose-400 animate-ping" />
             <span>2 Critical Snags Active</span>
           </div>
         </div>
       </div>
 
       {/* ── Main View: Target Feed + Inspector (Grid) ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 rounded-none">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Searchable Target List (8 cols on lg) */}
-        <div className="lg:col-span-8 light-saas-card p-6 space-y-4 rounded-none">
-          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#B8C9CC]">
-            <div className="flex items-center gap-2 bg-[#E5EDEE] rounded-none px-3 py-1.5 w-72 border border-[#B8C9CC]">
-              <Search className="w-3.5 h-3.5 text-[#849EAA]" />
+        <div className="lg:col-span-8 cyber-card p-6 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2.5 bg-white/5 rounded-xl px-3.5 py-2 w-72 border border-white/10 focus-within:border-[#2DD4BF]/50 transition-colors">
+              <Search className="w-4 h-4 text-gray-400" />
               <input
                 type="text"
                 placeholder="Search target ID, label, vessel..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-xs text-[#0E232B] placeholder-[#849EAA] outline-none font-medium rounded-none"
+                className="w-full bg-transparent text-xs text-white placeholder-gray-500 outline-none font-medium"
               />
             </div>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               {(['all', 'critical', 'high', 'medium'] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setFilterSeverity(s)}
-                  className={`px-3 py-1.5 rounded-none text-xs font-bold capitalize transition-all ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all duration-300 ${
                     filterSeverity === s
-                      ? 'bg-[#075A73] text-white shadow-none border border-[#075A73]'
-                      : 'bg-[#E5EDEE] text-[#526E78] hover:bg-[#B8C9CC] border border-[#B8C9CC]'
+                      ? 'bg-[#2DD4BF] text-white shadow-lg shadow-[#2DD4BF]/30'
+                      : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/10'
                   }`}
                 >
                   {s}
@@ -238,7 +241,7 @@ export default function LiveDetectionsFeedPage() {
           </div>
 
           {/* List Cards */}
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {filteredTargets.map((target) => {
               const isSelected = target.id === selectedTargetId;
 
@@ -246,46 +249,46 @@ export default function LiveDetectionsFeedPage() {
                 <div
                   key={target.id}
                   onClick={() => setSelectedTargetId(target.id)}
-                  className={`p-3.5 rounded-none cursor-pointer transition-all flex items-center justify-between border ${
+                  className={`cyber-card-interactive p-4 cursor-pointer flex items-center justify-between transition-all duration-300 ${
                     isSelected
-                      ? 'bg-[#E5EDEE] border-[#075A73] shadow-none'
-                      : 'bg-white hover:bg-[#F2F6F7] border-[#B8C9CC]'
+                      ? 'border-[#2DD4BF] shadow-lg shadow-[#2DD4BF]/20 bg-white/10'
+                      : 'hover:border-white/20'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3.5">
                     <div
-                      className={`w-9 h-9 rounded-none flex items-center justify-center font-bold text-xs ${
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
                         target.severity === 'critical'
-                          ? 'bg-red-50 text-red-700 border border-red-200'
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                           : target.severity === 'high'
-                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                          : 'bg-[#E5EDEE] text-[#075A73] border border-[#B8C9CC]'
+                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          : 'bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/30'
                       }`}
                     >
-                      <Crosshair className="w-4 h-4" />
+                      <Crosshair className="w-5 h-5" />
                     </div>
 
-                    <div className="space-y-0.5">
+                    <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold font-mono text-[#0E232B]">{target.id}</span>
-                        <span className="text-xs font-semibold text-[#2A434D]">{target.label}</span>
+                        <span className="text-xs font-bold font-mono text-[#2DD4BF]">{target.id}</span>
+                        <span className="text-sm font-bold text-white">{target.label}</span>
                       </div>
-                      <div className="flex items-center gap-2.5 text-[11px] text-[#526E78] font-medium">
+                      <div className="flex items-center gap-3 text-xs text-gray-400 font-medium">
                         <span>{target.vessel}</span>
                         <span>·</span>
-                        <span>{target.depth}m Depth</span>
+                        <span className="text-gray-300">{target.depth}m Depth</span>
                         <span>·</span>
-                        <span>{target.area_m2} m² Area</span>
+                        <span className="text-gray-300">{target.area_m2} m² Area</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3.5 text-right">
-                    <div className="px-2 py-0.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] text-xs font-black text-[#0E232B]">
+                  <div className="flex items-center gap-4 text-right">
+                    <div className="px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-xs font-black text-[#2DD4BF] font-mono">
                       {(target.confidence * 100).toFixed(0)}% Conf
                     </div>
 
-                    <ChevronRight className={`w-4 h-4 ${isSelected ? 'text-[#075A73]' : 'text-[#849EAA]'}`} />
+                    <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-[#2DD4BF] translate-x-1' : 'text-gray-500'}`} />
                   </div>
                 </div>
               );
@@ -294,20 +297,20 @@ export default function LiveDetectionsFeedPage() {
         </div>
 
         {/* Right: Selected Target Inspector (4 cols on lg) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between space-y-4 rounded-none">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#B8C9CC]">
+        <div className="lg:col-span-4 cyber-card p-6 flex flex-col justify-between space-y-6">
+          <div className="space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="space-y-0.5">
-                <span className="text-xs font-black font-mono text-[#0E232B]">{selectedTarget.id}</span>
-                <span className="text-xs font-bold text-[#2A434D] block">{selectedTarget.label}</span>
+                <span className="text-xs font-black font-mono text-[#2DD4BF]">{selectedTarget.id}</span>
+                <span className="text-base font-bold text-white block">{selectedTarget.label}</span>
               </div>
               <span
                 className={
                   selectedTarget.severity === 'critical'
-                    ? 'pill-badge-red'
+                    ? 'px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30'
                     : selectedTarget.severity === 'high'
-                    ? 'pill-badge-amber'
-                    : 'pill-badge-green'
+                    ? 'px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                    : 'px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                 }
               >
                 {selectedTarget.severity.toUpperCase()}
@@ -315,59 +318,55 @@ export default function LiveDetectionsFeedPage() {
             </div>
 
             {/* Geolocation Card */}
-            <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2.5 text-xs">
-              <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 text-xs font-mono">
+              <span className="text-[10px] font-bold text-[#2DD4BF] uppercase tracking-wider block border-b border-white/10 pb-1.5">
                 Target Geolocation
               </span>
-              <div className="grid grid-cols-2 gap-2 text-[#2A434D]">
+              <div className="grid grid-cols-2 gap-3 text-gray-300">
                 <div>
-                  <span className="text-[10px] text-[#526E78] block">LATITUDE</span>
-                  <span className="font-bold text-[#0E232B]">{selectedTarget.lat.toFixed(6)}° N</span>
+                  <span className="text-[10px] text-gray-500 block">LATITUDE</span>
+                  <span className="font-bold text-white">{selectedTarget.lat.toFixed(6)}° N</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#526E78] block">LONGITUDE</span>
-                  <span className="font-bold text-[#0E232B]">{selectedTarget.lon.toFixed(6)}° E</span>
+                  <span className="text-[10px] text-gray-500 block">LONGITUDE</span>
+                  <span className="font-bold text-white">{selectedTarget.lon.toFixed(6)}° E</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#526E78] block">DEPTH</span>
-                  <span className="font-bold text-[#0E232B]">{selectedTarget.depth} m</span>
+                  <span className="text-[10px] text-gray-500 block">DEPTH</span>
+                  <span className="font-bold text-white">{selectedTarget.depth} m</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#526E78] block">FOOTPRINT</span>
-                  <span className="font-bold text-[#0E232B]">{selectedTarget.area_m2} m²</span>
+                  <span className="text-[10px] text-gray-500 block">FOOTPRINT</span>
+                  <span className="font-bold text-white">{selectedTarget.area_m2} m²</span>
                 </div>
               </div>
             </div>
 
             {/* Mission Dispatch Status */}
-            <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2 text-xs">
-              <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2 text-xs">
+              <span className="text-[10px] font-bold text-[#2DD4BF] uppercase tracking-wider block border-b border-white/10 pb-1.5">
                 Recovery Mission
               </span>
-              <div className="flex items-center justify-between">
-                <span className="text-[#526E78] font-medium">Status:</span>
-                <span className="pill-badge-ocean">{selectedTarget.status}</span>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-gray-400 font-medium">Status:</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/40 font-bold text-[11px]">
+                  {selectedTarget.status}
+                </span>
               </div>
-              <div className="flex justify-between text-[#2A434D]">
+              <div className="flex justify-between text-gray-300">
                 <span>Assigned Unit:</span>
-                <span className="font-bold text-[#0E232B]">{selectedTarget.vessel}</span>
+                <span className="font-bold text-white">{selectedTarget.vessel}</span>
               </div>
             </div>
           </div>
 
-          {/* Action Buttons: Status Cycle, See on Map & Add to Cleanup Mission */}
-          <div className="space-y-2 pt-1">
+          {/* Action Buttons */}
+          <div className="space-y-3">
             <button
               onClick={() => cycleStatus(selectedTarget.id)}
-              className={`w-full text-xs justify-center rounded-none ${
-                selectedTarget.status === 'Cleared'
-                  ? 'btn-pill-filter'
-                  : 'btn-primary-dark'
-              }`}
+              className="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/10 transition-all flex items-center justify-center gap-2"
             >
-              <CheckCircle2 className={`w-3.5 h-3.5 ${
-                selectedTarget.status === 'Cleared' ? 'text-emerald-700' : 'text-emerald-300'
-              }`} />
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>{
                 selectedTarget.status === 'Unassigned'
                   ? 'Dispatch Cleanup Mission'
@@ -377,26 +376,22 @@ export default function LiveDetectionsFeedPage() {
               }</span>
             </button>
 
-            {/* Direct See on Survey Map Action */}
             <button
               onClick={() => seeOnMap(selectedTarget)}
-              className="w-full btn-primary justify-center text-xs rounded-none"
-              title="Navigate to this target on the Survey Google Map"
+              className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-[#2DD4BF]/20 text-gray-200 hover:text-white font-bold text-xs border border-white/10 hover:border-[#2DD4BF]/40 transition-all flex items-center justify-center gap-2"
             >
-              <MapPin className="w-3.5 h-3.5 text-white" />
-              <span>See on Survey Map</span>
-              <ArrowUpRight className="w-3.5 h-3.5 text-white ml-0.5" />
+              <MapPin className="w-4 h-4 text-[#2DD4BF]" />
+              <span>See on GIS Map</span>
+              <ArrowUpRight className="w-4 h-4 text-[#2DD4BF]" />
             </button>
 
-            {/* Add to Cleanup Missions Button */}
             <button
               onClick={() => dispatchToCleanupMission(selectedTarget)}
-              className="w-full px-3.5 py-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white text-xs font-bold shadow-none transition-all flex items-center justify-center gap-1.5 border border-[#075A73]"
-              title="Add this location to Cleanup Missions board"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#2DD4BF] to-[#0EA5E9] hover:from-[#0EA5E9] hover:to-[#2DD4BF] text-white font-bold text-xs shadow-lg shadow-[#2DD4BF]/30 transition-all flex items-center justify-center gap-2"
             >
-              <Plus className="w-3.5 h-3.5 text-white" />
+              <Plus className="w-4 h-4 text-white" />
               <span>Add to Cleanup Missions</span>
-              <ArrowRight className="w-3.5 h-3.5 text-white ml-0.5" />
+              <ArrowRight className="w-4 h-4 text-white" />
             </button>
           </div>
         </div>
@@ -404,3 +399,4 @@ export default function LiveDetectionsFeedPage() {
     </div>
   );
 }
+

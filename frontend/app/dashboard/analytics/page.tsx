@@ -7,6 +7,11 @@ import {
   RefreshCw,
   Target,
   Waves,
+  Zap,
+  BarChart3,
+  Flame,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 interface DebrisChannel {
@@ -82,67 +87,109 @@ export default function SurveyAnalyticsPage() {
   const activeMonthData = data.monthly_trends.find((m) => m.month === activeMonth);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans rounded-none">
-      {/* ── Top 4 KPI Metric Cards (0 Curves, Solid Ocean Theme) ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-none">
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
-            <span>TOTAL DETECTIONS</span>
-            <span className="pill-badge-green text-[10px]">↗ +4.2%</span>
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans text-gray-100">
+      {/* ── Top Header Toolbar ── */}
+      <div className="cyber-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2DD4BF] to-[#0EA5E9] flex items-center justify-center text-white shadow-lg shadow-[#2DD4BF]/30">
+            <BarChart3 className="w-5 h-5 text-white" />
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              Hydrographic Survey Analytics & ML Telemetry
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-[#2DD4BF]/20 text-[#2DD4BF] border border-[#2DD4BF]/40">
+                LIVE INTEL
+              </span>
+            </h1>
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
+              Multi-spectral sonar classification, volume estimation & EEZ recovery metrics
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={loadData}
+            className="p-2.5 rounded-xl bg-white/5 hover:bg-[#2DD4BF]/20 text-gray-300 hover:text-[#2DD4BF] border border-white/10 hover:border-[#2DD4BF]/40 transition-all duration-300"
+            title="Refresh Analytics"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <div className="px-3.5 py-1.5 rounded-xl bg-[#2DD4BF]/10 border border-[#2DD4BF]/30 text-xs font-bold text-[#2DD4BF] flex items-center gap-2">
+            <Flame className="w-3.5 h-3.5 text-[#2DD4BF] animate-pulse" />
+            <span>2026 Hydrographic Grid</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Top 4 KPI Metric Cards (3D Interactive Tilt Hover) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="cyber-card-interactive p-5 space-y-2 group">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400">
+            <span>TOTAL DETECTIONS</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              ↗ +4.2%
+            </span>
+          </div>
+          <div className="text-3xl font-black text-white tracking-tight group-hover:text-[#2DD4BF] transition-colors">
             {data.total_detections.toLocaleString()}
           </div>
-          <div className="text-xs text-[#526E78] font-medium">Acoustic returns classified</div>
+          <div className="text-xs text-gray-400 font-medium">Acoustic returns classified</div>
         </div>
 
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
+        <div className="cyber-card-interactive p-5 space-y-2 group">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400">
             <span>DEBRIS MASS</span>
-            <span className="pill-badge-red text-[10px]">Critical</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+              Critical
+            </span>
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
+          <div className="text-3xl font-black text-white tracking-tight group-hover:text-[#2DD4BF] transition-colors">
             {data.total_mass_tonnage} t
           </div>
-          <div className="text-xs text-[#526E78] font-medium">Est. marine gear recoverable</div>
+          <div className="text-xs text-gray-400 font-medium">Est. marine gear recoverable</div>
         </div>
 
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
+        <div className="cyber-card-interactive p-5 space-y-2 group">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400">
             <span>SURVEY COVERAGE</span>
-            <span className="pill-badge-neutral text-[10px] py-0 px-1.5">WGS-84</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-gray-300 border border-white/20">
+              WGS-84
+            </span>
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
+          <div className="text-3xl font-black text-white tracking-tight group-hover:text-[#2DD4BF] transition-colors">
             {data.active_swath_area_km2} km²
           </div>
-          <div className="text-xs text-[#526E78] font-medium">Bathymetric swath area</div>
+          <div className="text-xs text-gray-400 font-medium">Bathymetric swath area</div>
         </div>
 
-        <div className="light-saas-card p-5 space-y-1.5 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#526E78]">
+        <div className="cyber-card-interactive p-5 space-y-2 group">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-gray-400">
             <span>RESOLUTION RATE</span>
-            <span className="pill-badge-green text-[10px]">Active</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              Active
+            </span>
           </div>
-          <div className="text-2xl font-black text-[#0E232B] tracking-tight">
+          <div className="text-3xl font-black text-white tracking-tight group-hover:text-[#2DD4BF] transition-colors">
             {data.verified_resolution_pct}%
           </div>
-          <div className="text-xs text-[#526E78] font-medium">Verified detections cleared</div>
+          <div className="text-xs text-gray-400 font-medium">Verified detections cleared</div>
         </div>
       </div>
 
       {/* ── Main Charts Row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 rounded-none">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Debris Channel Performance */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between rounded-none">
-          <div>
-            <div className="flex items-center justify-between pb-4 border-b border-[#B8C9CC]">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0E232B]">
-                <Activity className="w-4 h-4 text-[#075A73]" />
+        <div className="lg:col-span-4 cyber-card p-6 flex flex-col justify-between space-y-6">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-gray-200">
+                <Activity className="w-4 h-4 text-[#2DD4BF]" />
                 <span>DEBRIS CHANNELS</span>
               </div>
               <button
                 onClick={loadData}
-                className="p-1.5 rounded-none bg-[#E5EDEE] hover:bg-[#B8C9CC] text-[#075A73] transition-colors border border-[#B8C9CC]"
+                className="p-1.5 rounded-lg bg-white/5 hover:bg-[#2DD4BF]/20 text-gray-400 hover:text-[#2DD4BF] transition-colors border border-white/10"
                 title="Refresh"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -150,8 +197,8 @@ export default function SurveyAnalyticsPage() {
             </div>
 
             {/* Radial segmented gauge */}
-            <div className="py-6 flex flex-col items-center justify-center relative">
-              <div className="relative w-52 h-28 flex items-end justify-center overflow-hidden">
+            <div className="py-4 flex flex-col items-center justify-center relative">
+              <div className="relative w-56 h-30 flex items-end justify-center overflow-hidden">
                 <svg viewBox="0 0 200 110" className="w-full h-full">
                   {Array.from({ length: 24 }).map((_, i) => {
                     const angle = (i / 23) * Math.PI;
@@ -167,17 +214,18 @@ export default function SurveyAnalyticsPage() {
                       <line
                         key={i}
                         x1={x1} y1={y1} x2={x2} y2={y2}
-                        stroke={isDark ? '#075A73' : '#B8C9CC'}
+                        stroke={isDark ? '#2DD4BF' : '#1F2937'}
                         strokeWidth="5"
+                        strokeLinecap="round"
                       />
                     );
                   })}
                 </svg>
-                <div className="absolute bottom-0 flex flex-col items-center text-center">
-                  <span className="text-2xl font-black tracking-tight text-[#0E232B]">
+                <div className="absolute bottom-1 flex flex-col items-center text-center">
+                  <span className="text-3xl font-black tracking-tight text-white">
                     {data.total_detections.toLocaleString()}
                   </span>
-                  <span className="text-[11px] font-medium text-[#526E78]">Targets Detected</span>
+                  <span className="text-[11px] font-semibold text-gray-400">Total Targets</span>
                 </div>
               </div>
             </div>
@@ -188,20 +236,21 @@ export default function SurveyAnalyticsPage() {
                 const share = totalChannelCount > 0 ? ((channel.count / totalChannelCount) * 100).toFixed(1) : '0';
                 const isPositive = channel.trend.startsWith('+');
                 return (
-                  <div key={i} className="flex items-center justify-between text-xs">
+                  <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#2DD4BF]/40 transition-all flex items-center justify-between text-xs">
                     <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5 font-bold text-[#2A434D]">
-                        <span className={`w-1.5 h-1.5 rounded-none ${i === 0 ? 'bg-[#075A73]' : 'bg-[#B8C9CC]'}`} />
+                      <div className="flex items-center gap-2 font-bold text-gray-200">
+                        <span className={`w-2 h-2 rounded-full ${i === 0 ? 'bg-[#2DD4BF]' : 'bg-gray-600'}`} />
                         <span>{channel.name}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-[11px] text-[#526E78]">
-                        <span>{channel.count.toLocaleString()} targets ({channel.mass_kg.toLocaleString()} kg)</span>
-                        <span className={isPositive ? 'pill-badge-green text-[10px] py-0 px-1.5' : 'pill-badge-red text-[10px] py-0 px-1.5'}>
+                      <div className="flex items-center gap-2 text-[11px] text-gray-400 font-medium">
+                        <span>{channel.count.toLocaleString()} targets</span>
+                        <span>·</span>
+                        <span className={isPositive ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
                           {channel.trend}
                         </span>
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-[#0E232B] font-mono">{share}%</span>
+                    <span className="text-base font-black text-white font-mono">{share}%</span>
                   </div>
                 );
               })}
@@ -210,57 +259,61 @@ export default function SurveyAnalyticsPage() {
         </div>
 
         {/* Right: Monthly Detection Trend Chart */}
-        <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between rounded-none">
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#B8C9CC]">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0E232B]">
-                <TrendingUp className="w-4 h-4 text-[#075A73]" />
+        <div className="lg:col-span-8 cyber-card p-6 flex flex-col justify-between space-y-6">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/10">
+              <div className="flex items-center gap-2.5 text-xs font-bold uppercase tracking-wider text-gray-200">
+                <TrendingUp className="w-4 h-4 text-[#2DD4BF]" />
                 <span>MONTHLY DETECTION TRENDS</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="pill-badge-ocean text-xs font-mono font-bold rounded-none">2026 Hydrographic Season</span>
+                <span className="px-3 py-1 rounded-full bg-[#2DD4BF]/20 border border-[#2DD4BF]/40 text-xs font-mono font-bold text-[#2DD4BF]">
+                  2026 Hydrographic Season
+                </span>
               </div>
             </div>
 
             {/* Big stat + legend */}
-            <div className="flex flex-wrap items-baseline justify-between gap-4 pt-4 pb-2">
+            <div className="flex flex-wrap items-baseline justify-between gap-4 pt-2 pb-2">
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-black text-[#0E232B] tracking-tight">
+                <span className="text-4xl font-black text-white tracking-tight">
                   {activeMonthData ? activeMonthData.actual.toLocaleString() : '320'}
                 </span>
-                <span className="pill-badge-green font-bold text-xs rounded-none">↗ Verified Returns</span>
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
+                  ↗ Verified Returns
+                </span>
               </div>
-              <div className="flex items-center gap-6 text-xs text-[#526E78] font-medium">
+              <div className="flex items-center gap-6 text-xs text-gray-400 font-medium">
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-none bg-[#075A73]" />
-                    <span>Actual Detections</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#2DD4BF]" />
+                    <span className="text-gray-300">Actual Detections</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-none bg-[#B8C9CC]" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-gray-600" />
                     <span>Survey Target</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 text-[#2A434D] font-semibold">
-                  <span>Selected Month: <strong className="text-[#075A73] font-mono">{activeMonth}</strong></span>
+                <div className="flex items-center gap-1 text-gray-300 font-semibold">
+                  <span>Selected: <strong className="text-[#2DD4BF] font-mono">{activeMonth}</strong></span>
                 </div>
               </div>
             </div>
 
             {/* Bar + spline chart */}
-            <div className="relative h-60 w-full mt-3">
+            <div className="relative h-64 w-full mt-3">
               <svg viewBox="0 0 700 200" className="w-full h-full overflow-visible">
                 {/* Grid lines */}
                 {[40, 80, 120, 160].map((y) => (
                   <line key={y} x1="40" y1={y} x2="680" y2={y}
-                    stroke="#D1DEE0" strokeDasharray="4 4" strokeWidth="1" />
+                    stroke="#374151" strokeDasharray="4 4" strokeWidth="1" />
                 ))}
 
                 {/* Y-axis labels */}
-                <text x="5" y="45" fill="#526E78" fontSize="10" fontFamily="sans-serif">350</text>
-                <text x="5" y="85" fill="#526E78" fontSize="10" fontFamily="sans-serif">250</text>
-                <text x="5" y="125" fill="#526E78" fontSize="10" fontFamily="sans-serif">150</text>
-                <text x="5" y="165" fill="#526E78" fontSize="10" fontFamily="sans-serif">50</text>
+                <text x="5" y="45" fill="#9CA3AF" fontSize="10" fontFamily="sans-serif">350</text>
+                <text x="5" y="85" fill="#9CA3AF" fontSize="10" fontFamily="sans-serif">250</text>
+                <text x="5" y="125" fill="#9CA3AF" fontSize="10" fontFamily="sans-serif">150</text>
+                <text x="5" y="165" fill="#9CA3AF" fontSize="10" fontFamily="sans-serif">50</text>
 
                 {/* Highlight active month column */}
                 {data.monthly_trends.map((m, i) => {
@@ -268,28 +321,28 @@ export default function SurveyAnalyticsPage() {
                   const isActive = m.month === activeMonth;
                   return isActive ? (
                     <rect key={i} x={x - 24} y="25" width="48" height="155"
-                      fill="rgba(7,90,115,0.12)" />
+                      fill="rgba(255,76,0,0.15)" rx="4" />
                   ) : null;
                 })}
 
-                {/* Target line (Ocean Mist Dashed) */}
+                {/* Target line */}
                 <path
                   d={`M ${data.monthly_trends.map((m, i) => {
                     const x = 60 + i * 100;
                     const y = 170 - ((m.target / maxActual) * 135);
                     return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
                   }).join(' ')}`}
-                  fill="none" stroke="#B8C9CC" strokeWidth="2" strokeDasharray="5 3"
+                  fill="none" stroke="#4B5563" strokeWidth="2" strokeDasharray="5 3"
                 />
 
-                {/* Actual detection spline (Deep Ocean Blue) */}
+                {/* Actual detection spline */}
                 <path
                   d={`M ${data.monthly_trends.map((m, i) => {
                     const x = 60 + i * 100;
                     const y = 170 - ((m.actual / maxActual) * 135);
                     return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
                   }).join(' ')}`}
-                  fill="none" stroke="#075A73" strokeWidth="2.5"
+                  fill="none" stroke="#2DD4BF" strokeWidth="3"
                 />
 
                 {/* Area fill */}
@@ -299,8 +352,15 @@ export default function SurveyAnalyticsPage() {
                     const y = 170 - ((m.actual / maxActual) * 135);
                     return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
                   }).join(' ')} L ${60 + (data.monthly_trends.length - 1) * 100} 170 L 60 170 Z`}
-                  fill="rgba(7,90,115,0.08)"
+                  fill="url(#tealGradient)"
                 />
+
+                <defs>
+                  <linearGradient id="tealGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2DD4BF" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#2DD4BF" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
 
                 {/* Data points (clickable) */}
                 {data.monthly_trends.map((m, i) => {
@@ -308,9 +368,9 @@ export default function SurveyAnalyticsPage() {
                   const y = 170 - ((m.actual / maxActual) * 135);
                   const isActive = m.month === activeMonth;
                   return (
-                    <circle key={i} cx={x} cy={y} r={isActive ? 6 : 4}
-                      fill={isActive ? '#075A73' : '#FFFFFF'}
-                      stroke="#075A73" strokeWidth="2.5"
+                    <circle key={i} cx={x} cy={y} r={isActive ? 7 : 4}
+                      fill={isActive ? '#2DD4BF' : '#111827'}
+                      stroke="#2DD4BF" strokeWidth="2.5"
                       style={{ cursor: 'pointer' }}
                       onClick={() => setActiveMonth(m.month)}
                     />
@@ -318,39 +378,16 @@ export default function SurveyAnalyticsPage() {
                 })}
               </svg>
 
-              {/* Floating tooltip for active month */}
-              {activeMonthData && (
-                <div className="absolute top-2 right-4 dark-tooltip z-20 pointer-events-none rounded-none">
-                  <div className="font-bold text-white mb-1.5">{activeMonth} 2026</div>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between gap-4 text-[#B8C9CC]">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-none bg-[#B8C9CC]" />
-                        <span>Target</span>
-                      </span>
-                      <span className="font-bold text-white font-mono">{activeMonthData.target} targets</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-4 text-[#B8C9CC]">
-                      <span className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-none bg-white" />
-                        <span>Detected</span>
-                      </span>
-                      <span className="font-bold text-white font-mono">{activeMonthData.actual} targets</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* X-Axis month labels */}
-              <div className="flex justify-between px-[3.5%] text-[11px] font-medium text-[#526E78] mt-2">
+              <div className="flex justify-between px-[3.5%] text-xs font-semibold text-gray-400 mt-2">
                 {data.monthly_trends.map((m) => (
                   <button
                     key={m.month}
                     onClick={() => setActiveMonth(m.month)}
-                    className={`w-12 py-1 rounded-none text-center transition-colors ${
+                    className={`w-12 py-1.5 rounded-lg text-center transition-all ${
                       m.month === activeMonth
-                        ? 'text-[#075A73] bg-[#E5EDEE] font-bold border border-[#075A73]'
-                        : 'hover:text-[#0E232B] hover:bg-[#E5EDEE]'
+                        ? 'text-white bg-[#2DD4BF] font-bold shadow-lg shadow-[#2DD4BF]/30'
+                        : 'hover:text-white hover:bg-white/10'
                     }`}
                   >
                     {m.month}
@@ -364,3 +401,4 @@ export default function SurveyAnalyticsPage() {
     </div>
   );
 }
+
