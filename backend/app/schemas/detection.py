@@ -20,6 +20,22 @@ class SeverityLevel(str, Enum):
     LOW = "low"
 
 
+class GeoSource(str, Enum):
+    """
+    Indicates the origin of geographic coordinates attached to a detection.
+
+    manual_entry              — lat/lon was manually typed into the upload form fields.
+                                GPS-grade accuracy is NOT implied.
+    parsed_navigation_metadata — lat/lon was extracted from embedded navigation metadata
+                                in the sonar file (e.g., a GSP/NMEA sidecar file).
+                                Not yet implemented in the current pipeline.
+    none                      — no geographic coordinates were provided for this detection.
+    """
+    MANUAL_ENTRY = "manual_entry"
+    PARSED_NAVIGATION_METADATA = "parsed_navigation_metadata"
+    NONE = "none"
+
+
 class BoundingBox(BaseModel):
     x_min: int = Field(..., description="Left edge of bounding box in pixels")
     y_min: int = Field(..., description="Top edge of bounding box in pixels")
@@ -46,6 +62,14 @@ class Detection(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score")
     bbox: BoundingBox
     geo: Optional[GeoPoint] = None
+    geo_source: GeoSource = Field(
+        GeoSource.NONE,
+        description=(
+            "Origin of geographic coordinates. 'manual_entry' = typed by operator, "
+            "'parsed_navigation_metadata' = extracted from sonar file (not yet implemented), "
+            "'none' = no coordinates provided."
+        )
+    )
     sonar_meta: SonarMeta = Field(default_factory=SonarMeta)
     severity: SeverityLevel = Field(SeverityLevel.MEDIUM, description="Derived severity level")
     area_m2: Optional[float] = Field(None, description="Estimated real-world area in m²")

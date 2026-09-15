@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.router import api_router
 from app.api.routes.health import router as health_router
 from app.core.config import settings
+from app.core.db import init_db
 from app.models.inference import model_manager
 
 # Configure logging
@@ -23,6 +24,12 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing GhostNet API service...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Allowed Origins: {settings.ALLOWED_ORIGINS}")
+    
+    # Initialize SQLite database (creates tables + seeds demo data if empty)
+    try:
+        init_db()
+    except Exception as e:
+        logger.error(f"Database initialization failed: {e}", exc_info=True)
     
     # Pre-warm model in background
     try:

@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     # Temporary frame storage directory
     UPLOAD_DIR: str = "uploads"
     
+    # SQLite database path (relative to backend/ working directory)
+    # On Render: ephemeral filesystem — data is lost on redeploy unless a Disk is attached.
+    # See render.yaml for disk mount instructions.
+    DB_PATH: str = "./ghostnet.db"
+    
     @field_validator("ALLOWED_ORIGINS", mode="before")
     @classmethod
     def parse_allowed_origins(cls, v: Union[str, List[str]]) -> List[str]:

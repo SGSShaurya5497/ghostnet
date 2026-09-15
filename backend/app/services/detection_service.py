@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 
 from app.core.preprocessing import load_image_from_bytes, apply_sonar_enhancement
+from app.core import db
 from app.models.inference import model_manager
 from app.services.confidence_filter import confidence_filter
 from app.services.geotagging import geotagging_engine
@@ -15,6 +16,7 @@ from app.schemas.detection import (
     DetectionLabel,
     DetectionResponse,
     GeoPoint,
+    GeoSource,
     ReportItem,
     SeverityLevel,
     SonarMeta,
@@ -23,39 +25,10 @@ from app.schemas.detection import (
 
 class DetectionService:
     def __init__(self):
-        # In-memory storage for demo and caching uploaded frames
+        # In-memory cache for uploaded frame image arrays (not persisted —
+        # raw image bytes are large; only decoded arrays needed during a session).
+        # Reports and detections are persisted to SQLite via app.core.db.
         self._frame_store: Dict[str, Tuple[np.ndarray, Optional[GeoPoint], SonarMeta]] = {}
-        self._reports_store: List[ReportItem] = []
-        self._seed_mock_reports()
-
-    def _seed_mock_reports(self):
-        """Seed initial history reports for dashboard analytics."""
-        self._reports_store = [
-            ReportItem(
-                report_id="rep_01J982A1B2C3",
-                frame_id="frame_20240315_001",
-                detection_count=3,
-                highest_severity=SeverityLevel.CRITICAL,
-                created_at=datetime.now(timezone.utc).isoformat(),
-                summary="Detected high-density monofilament gillnet cluster near shelf dropoff."
-            ),
-            ReportItem(
-                report_id="rep_01J982A1B2C4",
-                frame_id="frame_20240315_002",
-                detection_count=1,
-                highest_severity=SeverityLevel.HIGH,
-                created_at=datetime.now(timezone.utc).isoformat(),
-                summary="Isolated crab pot and synthetic line entanglement."
-            ),
-            ReportItem(
-                report_id="rep_01J982A1B2C5",
-                frame_id="frame_20240315_003",
-                detection_count=2,
-                highest_severity=SeverityLevel.MEDIUM,
-                created_at=datetime.now(timezone.utc).isoformat(),
-                summary="Submerged trawl netting fragment partially silted."
-            )
-        ]
 
     def store_frame(
         self,
@@ -64,7 +37,7 @@ class DetectionService:
         geo: Optional[GeoPoint] = None,
         sonar_meta: Optional[SonarMeta] = None
     ) -> str:
-        """Decode and store a frame in the cache."""
+        """Decode and store a frame in the session cache."""
         image = load_image_from_bytes(image_bytes)
         meta = sonar_meta or SonarMeta()
         self._frame_store[frame_id] = (image, geo, meta)
@@ -89,7 +62,8 @@ class DetectionService:
         frame_id: str,
         geo: Optional[GeoPoint] = None,
         sonar_meta: Optional[SonarMeta] = None,
-        conf_threshold: Optional[float] = None
+        conf_threshold: Optional[float] = None,
+        geo_source: GeoSource = GeoSource.NONE,
     ) -> DetectionResponse:
         start_time = time.time()
         
@@ -143,12 +117,12 @@ class DetectionService:
                 )
                 estimated_area_m2 = dimensions["area_m2"]
 
-                # 5. Geodetic Projection from vessel GPS ping + heading + slant-to-ground range
+                # 5. Geodetic Projection — only if real GPS coordinates were provided
                 if geo is not None:
                     hazard_geo = geotagging_engine.project_pixel_to_gps(
                         vessel_lat=geo.lat,
                         vessel_lon=geo.lon,
-                        heading_deg=184.2,  # Default or surveyed vessel heading
+                        heading_deg=184.2,  # Default vessel heading — overridden by real heading when available
                         vessel_depth_m=geo.depth_m or 42.5,
                         bbox=bbox_obj,
                         image_width_px=w,
@@ -161,36 +135,54 @@ class DetectionService:
                 severity = self.calculate_severity(calibrated_conf, estimated_area_m2)
                 det_id = f"det_{uuid.uuid4().hex[:14]}"
 
-                detections.append(
-                    Detection(
-                        id=det_id,
-                        frame_id=frame_id,
-                        label=DetectionLabel.GHOST_NET,
-                        confidence=calibrated_conf,
-                        bbox=bbox_obj,
-                        geo=hazard_geo,
-                        sonar_meta=meta,
-                        severity=severity,
-                        area_m2=estimated_area_m2,
-                        created_at=timestamp
-                    )
+                detection = Detection(
+                    id=det_id,
+                    frame_id=frame_id,
+                    label=DetectionLabel.GHOST_NET,
+                    confidence=calibrated_conf,
+                    bbox=bbox_obj,
+                    geo=hazard_geo,
+                    geo_source=geo_source,
+                    sonar_meta=meta,
+                    severity=severity,
+                    area_m2=estimated_area_m2,
+                    created_at=timestamp
+                )
+                detections.append(detection)
+
+                # Persist detection to SQLite
+                db.insert_detection(
+                    det_id=det_id,
+                    frame_id=frame_id,
+                    label=DetectionLabel.GHOST_NET.value,
+                    confidence=calibrated_conf,
+                    bbox={"x_min": x_min, "y_min": y_min, "x_max": x_max, "y_max": y_max},
+                    geo={"lat": hazard_geo.lat, "lon": hazard_geo.lon, "depth_m": hazard_geo.depth_m} if hazard_geo else None,
+                    geo_source=geo_source.value,
+                    sonar_meta={"range_m": meta.range_m, "frequency_khz": meta.frequency_khz},
+                    severity=severity.value,
+                    area_m2=estimated_area_m2,
+                    created_at=timestamp,
+                    seeded=0,
                 )
 
         duration_ms = int((time.time() - start_time) * 1000)
 
-        # Record report
+        # Record report in SQLite
         if detections:
-            highest_sev = max(detections, key=lambda d: ["low", "medium", "high", "critical"].index(d.severity.value)).severity
-            self._reports_store.insert(
-                0,
-                ReportItem(
-                    report_id=f"rep_{uuid.uuid4().hex[:12]}",
-                    frame_id=frame_id,
-                    detection_count=len(detections),
-                    highest_severity=highest_sev,
-                    created_at=timestamp,
-                    summary=f"Processed frame {frame_id} with {len(detections)} detection(s)."
-                )
+            highest_sev = max(
+                detections,
+                key=lambda d: ["low", "medium", "high", "critical"].index(d.severity.value)
+            ).severity
+            report_id = f"rep_{uuid.uuid4().hex[:12]}"
+            db.insert_report(
+                report_id=report_id,
+                frame_id=frame_id,
+                detection_count=len(detections),
+                highest_severity=highest_sev.value,
+                created_at=timestamp,
+                summary=f"Processed frame {frame_id} with {len(detections)} detection(s).",
+                seeded=0,
             )
 
         return DetectionResponse(
@@ -201,10 +193,21 @@ class DetectionService:
         )
 
     def list_reports(self, limit: int = 20, offset: int = 0) -> List[ReportItem]:
-        return self._reports_store[offset : offset + limit]
+        rows = db.get_reports(limit=limit, offset=offset)
+        return [
+            ReportItem(
+                report_id=r["report_id"],
+                frame_id=r["frame_id"],
+                detection_count=r["detection_count"],
+                highest_severity=SeverityLevel(r["highest_severity"]),
+                created_at=r["created_at"],
+                summary=r["summary"],
+            )
+            for r in rows
+        ]
 
     def total_reports_count(self) -> int:
-        return len(self._reports_store)
+        return db.count_reports()
 
 
 detection_service = DetectionService()
