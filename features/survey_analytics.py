@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+==============================================================================
+STATUS: EXPERIMENTAL / RESEARCH PROTOTYPE
+This module is a standalone algorithmic prototype and is not currently wired
+into the active FastAPI backend routes. Scheduled for Roadmap Phase 2.
+==============================================================================
+
 survey_analytics.py  (Feature 6) -- GhostNetPINGE
 Public entry point: generate_survey_statistics(detections, config=None)
 

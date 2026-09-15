@@ -74,7 +74,8 @@ export default function CleanupMissionsPage() {
     setLoading(true);
     ghostnetApi
       .getCleanupMissions()
-      .then((data) => {
+      .then((res) => {
+        const data = res?.missions || [];
         if (data && data.length > 0) {
           // Check if user just dispatched a new mission from Live Detections
           try {
@@ -167,7 +168,7 @@ export default function CleanupMissionsPage() {
               Marine Debris Cleanup & Salvage Operations
             </h1>
             <span className="text-xs text-[#526E78] font-medium">
-              Autonomous task dispatching and recovery workflow pipeline
+              Simulated cleanup missions and salvage operations pipeline
             </span>
           </div>
         </div>
@@ -179,11 +180,29 @@ export default function CleanupMissionsPage() {
           </div>
           <button
             onClick={loadMissions}
-            className="p-1.5 rounded-none bg-[#E5EDEE] hover:bg-[#B8C9CC] text-[#075A73] transition-colors border border-[#B8C9CC]"
-            title="Refresh"
+            className="p-2 rounded-none bg-[#E5EDEE] hover:bg-[#B8C9CC] text-[#0E232B] transition-colors"
+            title="Refresh Missions"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
+        </div>
+      </div>
+
+      {/* ── Simulated Mission Pipeline Banner ── */}
+      <div className="rounded-none border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 flex items-start gap-3 shadow-none">
+        <div className="w-5 h-5 rounded-none bg-amber-200 text-amber-900 flex items-center justify-center shrink-0 mt-0.5">
+          <Clock className="w-3.5 h-3.5" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-bold uppercase tracking-wider text-[11px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-none">
+              Demo Workflow &bull; Simulated Operations
+            </span>
+            <span className="font-semibold text-amber-950">No Live Maritime Salvage Dispatching</span>
+          </div>
+          <p className="text-amber-900 leading-relaxed">
+            Target tracking, stage transitions (Identified &rarr; Dispatched &rarr; In Recovery &rarr; Cleared), and vessel assignments operate in demo mode.
+            In production, stages interface with port authority logistics, commercial salvage contractor APIs, and maritime dispatch manifests.
         </div>
       </div>
 

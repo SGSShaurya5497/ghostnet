@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+==============================================================================
+STATUS: EXPERIMENTAL / RESEARCH PROTOTYPE
+This module is a standalone algorithmic prototype and is not currently wired
+into the active FastAPI backend routes. Scheduled for Roadmap Phase 2.
+==============================================================================
+
 report_generator.py  (Feature 9) -- GhostNetPINGE
 Public entry point: generate_report(survey_data, output_path, format="json", config=None)
 

@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+==============================================================================
+STATUS: EXPERIMENTAL / RESEARCH PROTOTYPE
+This module is a standalone algorithmic prototype and is not currently wired
+into the active FastAPI backend routes. Scheduled for Roadmap Phase 2.
+==============================================================================
+
 depth_analysis.py  (Feature 7) -- GhostNetPINGE
 Public entry point: analyze_depth(detections, config=None)
 

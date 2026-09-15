@@ -71,8 +71,10 @@ export default function FleetOperationsPage() {
     setLoading(true);
     ghostnetApi
       .getFleet()
-      .then((data) => {
-        if (data && data.length > 0) setFleet(data);
+      .then((res) => {
+        if (res?.units && res.units.length > 0) {
+          setFleet(res.units);
+        }
         setLoading(false);
       })
       .catch(() => {
@@ -118,7 +120,7 @@ export default function FleetOperationsPage() {
               Survey Fleet & Autonomous Submersibles
             </h1>
             <span className="text-xs text-slate-400 font-medium">
-              Real-time vessel positions, acoustic telemetry, and battery levels
+              Simulated vessel telemetry, acoustic tracking, and battery telemetry
             </span>
           </div>
         </div>
@@ -131,9 +133,28 @@ export default function FleetOperationsPage() {
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <div className="pill-badge-green text-xs py-1 px-3">
-            <span>2 Units Underway</span>
+          <div className="pill-badge-amber text-xs py-1 px-3">
+            <span>Simulated Fleet</span>
           </div>
+        </div>
+      </div>
+
+      {/* ── Simulated Telemetry Banner ── */}
+      <div className="rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-xs text-amber-900 flex items-start gap-3 shadow-xs">
+        <div className="w-5 h-5 rounded-md bg-amber-200/80 text-amber-800 flex items-center justify-center shrink-0 mt-0.5">
+          <Radio className="w-3.5 h-3.5 animate-pulse" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-bold uppercase tracking-wider text-[11px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded">
+              Demo Mode &bull; Simulated Telemetry
+            </span>
+            <span className="font-semibold text-amber-950">No Live Physical Vessels Connected</span>
+          </div>
+          <p className="text-amber-800 leading-relaxed">
+            AUV/ROV coordinates, headings, ping frequencies, and battery states shown here are simulated for demonstration.
+            Production deployment would connect to physical AUVs via acoustic modems (e.g. Evologics/WHOI Micro-Modem) and surface vessels via NMEA-0183 / AIS feeds.
+          </p>
         </div>
       </div>
 

@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 """
+==============================================================================
+STATUS: EXPERIMENTAL / RESEARCH PROTOTYPE
+This module is a standalone algorithmic prototype and is not currently wired
+into the active FastAPI backend routes. Scheduled for Roadmap Phase 2.
+==============================================================================
+
 risk_scoring.py  (Feature 1) -- GhostNetPINGE
 Public entry point: calculate_risk(detection, config=None)
 

@@ -32,6 +32,7 @@ export interface Detection {
   confidence: number;
   bbox: BoundingBox;
   geo?: GeoPoint | null;
+  geo_source?: 'exif' | 'estimated' | 'manual' | 'simulated' | string;
   sonar_meta: SonarMeta;
   severity: SeverityLevel;
   area_m2?: number | null;
@@ -82,6 +83,12 @@ export interface HotspotCluster {
 export interface HotspotResponse {
   clusters: HotspotCluster[];
   total_hotspots: number;
+  data_basis?: 'live' | 'seeded_demo' | 'mixed';
+  coordinate_mode?: string;
+  total_detections_clustered?: number;
+  noise_detections?: number;
+  spatial_method?: string;
+  note?: string;
 }
 
 export interface FleetUnit {
@@ -97,6 +104,13 @@ export interface FleetUnit {
   depth_m: number;
   swath_coverage_km2: number;
   sonar_freq_khz: number;
+  simulated?: boolean;
+}
+
+export interface FleetResponse {
+  simulated: boolean;
+  note?: string;
+  units: FleetUnit[];
 }
 
 export interface CleanupMission {
@@ -109,6 +123,13 @@ export interface CleanupMission {
   est_mass_kg: number;
   lat: number;
   lon: number;
+  simulated?: boolean;
+}
+
+export interface CleanupResponse {
+  simulated: boolean;
+  note?: string;
+  missions: CleanupMission[];
 }
 
 export interface HealthResponse {
@@ -211,20 +232,44 @@ export const ghostnetApi = {
     return handleResponse<HotspotResponse>(res);
   },
 
-  /** Fetch active fleet units */
-  async getFleet(): Promise<FleetUnit[]> {
+  /** Fetch active fleet units (simulated telemetry) */
+  async getFleet(): Promise<FleetResponse> {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/fleet`, {
       cache: 'no-store',
     });
-    return handleResponse<FleetUnit[]>(res);
+    const json = await handleResponse<any>(res);
+    if (Array.isArray(json)) {
+      return { simulated: true, units: json };
+    }
+    return {
+      simulated: json?.simulated ?? true,
+      note: json?.note,
+      units: json?.units || [],
+    };
   },
 
   /** Fetch active cleanup missions */
-  async getCleanupMissions(): Promise<CleanupMission[]> {
+  async getCleanupMissions(): Promise<CleanupResponse> {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/cleanup`, {
       cache: 'no-store',
     });
-    return handleResponse<CleanupMission[]>(res);
+    const json = await handleResponse<any>(res);
+    if (Array.isArray(json)) {
+      return { simulated: true, missions: json };
+    }
+    return {
+      simulated: json?.simulated ?? true,
+      note: json?.note,
+      missions: json?.missions || [],
+    };
+  },
+
+  /** Fetch analytics overview computed from real stored detections */
+  async getAnalyticsOverview(): Promise<any> {
+    const res = await fetch(`${API_BASE_URL}/api/v1/analytics/overview`, {
+      cache: 'no-store',
+    });
+    return handleResponse<any>(res);
   },
 
   /** Create/dispatch a new cleanup mission */

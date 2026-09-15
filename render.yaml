@@ -1,0 +1,28 @@
+# Render Blueprint Specification for GhostNet
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: ghostnet-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    region: oregon
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: ENVIRONMENT
+        value: production
+      # On Render: ephemeral container root resets on deploy. Point DB_PATH to the persistent disk mount.
+      - key: DB_PATH
+        value: /var/data/ghostnet.db
+      - key: ALLOWED_ORIGINS
+        value: "http://localhost:3000,https://ghostnet.vercel.app"
+    # IMPORTANT: Persistent Disk Mount for SQLite
+    # Free tier containers have ephemeral filesystems. Mounting a persistent disk at /var/data
+    # ensures stored detections, user uploads, and report history persist across deployments.
+    disk:
+      name: ghostnet-data
+      mountPath: /var/data
+      sizeGB: 1
