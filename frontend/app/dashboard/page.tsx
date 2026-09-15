@@ -1020,21 +1020,39 @@ export default function AIWorkstationPage() {
 
                 {/* Geotag Readout */}
                 <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2 text-xs">
-                  <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
-                    Geotag Telemetry
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
+                      Geotag Telemetry
+                    </span>
+                    {/* geo_source transparency label — Task 5 */}
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-none border ${
+                      (selectedDetection as any).geo_source === 'manual_entry'
+                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                        : (selectedDetection as any).geo_source === 'parsed_navigation_metadata'
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                        : 'bg-slate-100 border-slate-300 text-slate-500'
+                    }`}>
+                      {(selectedDetection as any).geo_source === 'manual_entry'
+                        ? '⚠ Manually entered'
+                        : (selectedDetection as any).geo_source === 'parsed_navigation_metadata'
+                        ? '✓ Nav metadata'
+                        : selectedDetection.geo
+                        ? '⚠ Manually entered'
+                        : 'No GPS data'}
+                    </span>
+                  </div>
                   <div className="grid grid-cols-2 gap-2 text-[#2A434D]">
                     <div>
                       <span className="text-[10px] text-[#526E78] block">LAT</span>
-                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.lat ?? geoMeta.lat ?? '15.4989°'}</span>
+                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.lat ?? geoMeta.lat ?? '—'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-[#526E78] block">LON</span>
-                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.lon ?? geoMeta.lon ?? '73.8278°'}</span>
+                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.lon ?? geoMeta.lon ?? '—'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-[#526E78] block">DEPTH</span>
-                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.depth_m ?? geoMeta.depth ?? '42.5'} m</span>
+                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.depth_m ?? geoMeta.depth ?? '—'} m</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-[#526E78] block">AREA</span>

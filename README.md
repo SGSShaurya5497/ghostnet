@@ -15,22 +15,24 @@
 
 GhostNet provides a comprehensive suite of 14 integrated hydrographic modules designed for marine technologists, AUV operators, and ocean cleanup missions:
 
-| Feature Module | Route | Purpose & Functionality |
-| :--- | :--- | :--- |
-| **1. AI Sonar Workstation** | `/dashboard` | The core computer vision workspace. Upload raw side-scan sonar frames (PNG, JPG, TIFF) or select preloaded scans. Runs YOLOv8 inference, highlights detected ghost nets/lines with interactive bounding boxes, allows dynamic confidence threshold adjustments (10%–95%), provides 3-axis geotags (Lat, Lon, Depth, Area in m²), Human-in-the-Loop validation (`Confirm`/`Reject`), and one-click JSON/CSV export. |
-| **2. Survey Analytics** | `/dashboard/analytics` | High-level telemetry and KPI monitoring. Integrated with `GET /api/v1/analytics/overview`. Features monthly detection trends (actual vs. target), debris mass breakdown (Ghost Nets, Synthetic Ropes, Traps & Cages, Trawl Doors), resolution percentages, active swath coverage area, and recent survey log. |
-| **3. Sonar Hydrography Console** | `/dashboard/sonar` | Real-time dual-swath acoustic waterfall spectrogram. Features HTML5 2D canvas waterfall stream with live ping counter, waveform amplitude oscilloscope, gain sensitivity slider, swath width adjustment, and multi-palette colormaps (Cyan, Emerald, Amber, Thermal). |
-| **4. Live Detections Feed** | `/dashboard/detections` | Real-time tactical feed of detected seafloor targets. Supports search, severity filters (*Critical*, *High*, *Medium*), geotag readouts, and an interactive 3-state mission dispatch cycler (`Unassigned` → `Mission Dispatched` → `Cleared`). |
-| **5. Geospatial Survey Map** | `/dashboard/map` | Georeferenced hydrographic map showing underwater contour curves, surveyed corridors, and anomaly clusters. Includes sector switching, layer filters (*Debris*, *Bathymetry*, *Corridors*), and vessel dispatch routing. |
-| **6. Debris Hotspots** | `/dashboard/hotspots` | Spatial density clustering engine. Supports clustering algorithms (*HDBSCAN*, *DBSCAN*, *K-Means*, *Gaussian KDE*), density threshold filters, heat kernel radius tuning, and cluster dossier inspection with direct salvage mission dispatch. |
-| **7. Fleet Operations** | `/dashboard/fleet` | Real-time telemetry tracking for survey vessels and autonomous submersibles (RV-OCEANUS, AUV-NEPTUNE-02, ROV-TRITON-X). Displays position, speed over ground, depth, battery level, transducer frequency, and provides an interactive "Transmit Sonar Waypoint Command" interface. |
-| **8. Autonomous Route Planning** | `/dashboard/route` | Lawnmower trajectory and swath generator for AUVs and survey ships. Features track spacing slider (0.5 to 3.0 NM), Eulerian drift compensation toggle, GPX waypoint file export, and "Transmit Autopilot Mission" command. |
-| **9. Cleanup Missions** | `/dashboard/cleanup` | Interactive 4-stage Kanban pipeline for salvage operations (`Identified` → `Dispatched` → `In Recovery` → `Cleared`). Features drag-less stage advancement, live total target mass calculation in tonnes, and priority badge categorization. |
-| **10. Risk Intelligence Matrix** | `/dashboard/risk` | Ecological threat and navigation hazard scoring engine. Analyzes mammal collision probability, propeller fouling risk, barrier reef proximity, and allows triggering a simulated NAVTEX warning broadcast to commercial maritime traffic. |
-| **11. Sonar Temporal Comparison** | `/dashboard/comparison` | Dual-epoch differential acoustic overlay (Epoch A vs. Epoch B). Features an interactive split-slider comparing historical vs. current surveys, calculates net drift velocity vectors (NM/day), detects newly snagged gear, and exports Differential GeoTIFF vector files. |
-| **12. Depth & Bathymetry Matrix** | `/dashboard/depth` | Multibeam acoustic backscatter and thermocline water column slicing. Features an interactive depth slicing plane slider (0m to -200m), seabed topography visualization, strata layer toggles (Epipelagic, Mesopelagic, Bathypelagic, Abyssal), transducer calibration, and pointcloud CSV download. |
-| **13. Audit Logs & Reports** | `/dashboard/reports` | Comprehensive audit trail powered by `GET /api/v1/reports`. Search by report ID or summary, filter by severity, view incident breakdowns, and export selected or all records as formatted CSV and JSON reports. |
-| **14. Alert Center** | `/dashboard/alerts` | Active warning center for high-priority underwater snag anomalies and dark vessel drifting. Derives dynamic active/critical counts, allows acknowledgment and resolution workflows, and links directly to tactical mapping. |
+> **Live Demo:** Sample sonar images for judging are in [`demo_samples/`](demo_samples/) — no internet or external dataset access required. See [`demo_samples/README.md`](demo_samples/README.md) for usage.
+
+| Feature Module | Route | Status | Purpose & Functionality |
+| :--- | :--- | :--- | :--- |
+| **1. AI Sonar Workstation** | `/dashboard` | ✅ Live | Core CV workspace. Upload side-scan sonar frames (PNG, JPG, TIFF). Runs YOLOv8 inference, bounding boxes, confidence threshold (10–95%), WGS-84 geotags (`geo_source` labeled: manual entry vs. parsed nav metadata), JSON/CSV export. |
+| **2. Survey Analytics** | `/dashboard/analytics` | ✅ Live | KPI monitoring from real SQLite detections via `GET /api/v1/analytics/overview`. Monthly detection trends, per-class debris mass, `data_basis` flag shows whether numbers are live or seeded. |
+| **3. Sonar Hydrography Console** | `/dashboard/sonar` | 🔵 Simulated | HTML5 canvas acoustic waterfall stream simulation. Gain slider, colormaps. No live sonar hardware connected — demo visualization only. |
+| **4. Live Detections Feed** | `/dashboard/detections` | ✅ Live | Tactical feed from stored SQLite detections. Search, severity filters, geotag readouts, 3-state mission dispatch cycler. |
+| **5. Geospatial Survey Map** | `/dashboard/map` | 🔵 Simulated | Map canvas with contour curves, corridors. Base map is a static demo; no live GPS track ingested. |
+| **6. Debris Hotspots** | `/dashboard/hotspots` | ✅ Live | Spatial clustering via `features/hotspot_detection.py` (single-linkage). Clusters real stored detections; `coordinate_space` field states geographic vs. image-space. *Algorithm: Spatial Adjacency (see Roadmap for HDBSCAN/DBSCAN).* |
+| **7. Fleet Operations** | `/dashboard/fleet` | 🔵 Simulated | Simulated telemetry for RV-OCEANUS, AUV-NEPTUNE-02, ROV-TRITON-X. API returns `simulated: true`. No live vessel hardware connected. |
+| **8. Autonomous Route Planning** | `/dashboard/route` | 🔵 Simulated | Route canvas and waypoint visualization. Nearest-neighbor algorithm (`features/route_planning.py`) requires real lat/lon. *GPX export: Roadmap.* |
+| **9. Cleanup Missions** | `/dashboard/cleanup` | 🔵 Simulated | Kanban pipeline (`Identified → Dispatched → In Recovery → Cleared`). API returns `simulated: true`. No live salvage dispatch system connected. |
+| **10. Risk Intelligence Matrix** | `/dashboard/risk` | ✅ Live (computed) | Risk scores computed from real stored detection severities via `GET /api/v1/analytics/risk-summary`. *NAVTEX broadcast button: Simulated trigger, no real maritime radio integration.* |
+| **11. Sonar Temporal Comparison** | `/dashboard/comparison` | 🔵 Simulated | Split-slider comparing two demo frames. *Differential GeoTIFF export: Roadmap.* |
+| **12. Depth & Bathymetry Matrix** | `/dashboard/depth` | 🔵 Simulated | Depth slicing visualization. No live multibeam sonar connected. |
+| **13. Audit Logs & Reports** | `/dashboard/reports` | ✅ Live | Full audit trail from `GET /api/v1/reports` (SQLite). CSV/JSON export of real detection records. |
+| **14. Alert Center** | `/dashboard/alerts` | ✅ Live | Alert counts derived from real stored detection severities. Acknowledgment and resolution workflows. |
 
 ## Feasibility & Viability
 
@@ -223,6 +225,23 @@ Scientific: Creates a national marine debris geodatabase; generates drift vector
 6. **India Marine Litter Policy** — MoEFCC: "National Action Plan for Marine Litter" (India, 2023)
 7. **MARPOL Annex V** — International Convention for the Prevention of Pollution from Ships: https://www.imo.org/en/OurWork/Environment/Pages/MARPOL.aspx
 8. **Project Model on Hugging Face** — GhostNet YOLOv8 Weights: https://huggingface.co/zzephyrr/GhostNetyolo26m
+
+---
+
+## 🗺️ Roadmap / Planned Features
+
+The following capabilities are designed and partially prototyped but are **not yet shipped** in the current demo build. They are clearly labeled as roadmap items here so judges can distinguish vision from current implementation.
+
+| Roadmap Item | Current State | What's Needed |
+|:---|:---|:---|
+| **HDBSCAN / DBSCAN / K-Means / Gaussian-KDE clustering** | UI shows single spatial adjacency algorithm | Integrate sklearn/hdbscan; backend `analytics_service.get_hotspots()` already structured for plug-in |
+| **GPX waypoint file export** | Button present in Route Planning UI | Serialize `route_planning.py` output to GPX XML format |
+| **NAVTEX maritime broadcast** | Button triggers UI toast only | Integration with real NAVTEX transmitter hardware or SDR API |
+| **IMU-assisted slant-range correction** | Flat slant math implemented in `geotagging.py` | Consume real heave/pitch/roll from IMU sensor over serial/UDP |
+| **Differential GeoTIFF export** | Temporal Comparison slider is live | Rasterize diff overlay to GeoTIFF using rasterio |
+| **Active Learning from Confirm/Reject feedback** | UI has Confirm/Reject buttons | Store accept/reject labels per detection in DB; retrain loop |
+| **Parsed navigation metadata geo_source** | `geo_source` field is in schema, `manual_entry` and `none` implemented | Parse lat/lon from sonar file headers (e.g. XTF, JSF format) |
+| **Formal held-out model evaluation (mAP)** | `ml/evaluate.py` is ready to run | Label ≥50 sonar images and create `ml/data/images/val/` split |
 
 ---
 
