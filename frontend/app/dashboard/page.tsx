@@ -65,142 +65,65 @@ interface GeoMeta {
   sonarKhz: string;
 }
 
-// Built-in high-quality sample sonar SVG/canvas generators for immediate testing
+// Real NOAA/USGS side-scan sonar survey samples — served from /public/samples/
+// Each entry uses a real sonar image that runs through the live YOLOv8 inference pipeline
 const SAMPLE_SONAR_SCANS = [
   {
-    id: 'sample-1',
-    name: 'Survey 01: Entangled Ghost Net',
-    description: 'Synthetic nylon gillnet on continental shelf',
+    id: 'sample-noaa-schooner',
+    name: 'Survey 01: NOAA Atlantic Wreck Survey',
+    description: 'NOAA side-scan sonar — schooner wreck on continental shelf (Ghost Net candidate)',
+    imageUrl: '/samples/noaa_typo_schooner.jpg',
     lat: '15.4989',
     lon: '73.8278',
     depth: '42.5',
     khz: '455',
-    mockDetections: [
-      {
-        id: 'det-s1-1',
-        frame_id: 'sample-1',
-        label: 'ghost_net' as const,
-        confidence: 0.94,
-        severity: 'critical' as const,
-        bbox: { x_min: 140, y_min: 110, x_max: 380, y_max: 310 },
-        area_m2: 18.4,
-        geo: { lat: 15.49892, lon: 73.82784, depth_m: 42.5 },
-        sonar_meta: { frequency_khz: 455, range_m: 50.0, slant_corrected: true },
-        created_at: new Date().toISOString(),
-      },
-      {
-        id: 'det-s1-2',
-        frame_id: 'sample-1',
-        label: 'rope' as const,
-        confidence: 0.78,
-        severity: 'high' as const,
-        bbox: { x_min: 410, y_min: 240, x_max: 560, y_max: 380 },
-        area_m2: 6.2,
-        geo: { lat: 15.49895, lon: 73.82791, depth_m: 43.1 },
-        sonar_meta: { frequency_khz: 455, range_m: 50.0, slant_corrected: true },
-        created_at: new Date().toISOString(),
-      },
-    ],
+    range_m: '50',
   },
   {
-    id: 'sample-2',
-    name: 'Survey 02: Trawl Net on Coral Reef',
-    description: 'Extensive snagged trawl gear across ridge',
-    lat: '15.4120',
-    lon: '73.7910',
-    depth: '58.0',
+    id: 'sample-usgs-delmarva',
+    name: 'Survey 02: USGS Delmarva Coastal Survey',
+    description: 'USGS high-resolution sidescan — coastal shelf with submerged debris signatures',
+    imageUrl: '/samples/usgs_delmarva_sonar.jpg',
+    lat: '38.9012',
+    lon: '-75.1482',
+    depth: '38.0',
     khz: '900',
-    mockDetections: [
-      {
-        id: 'det-s2-1',
-        frame_id: 'sample-2',
-        label: 'ghost_net' as const,
-        confidence: 0.89,
-        severity: 'critical' as const,
-        bbox: { x_min: 200, y_min: 80, x_max: 480, y_max: 360 },
-        area_m2: 24.8,
-        geo: { lat: 15.41205, lon: 73.79108, depth_m: 58.0 },
-        sonar_meta: { frequency_khz: 900, range_m: 75.0, slant_corrected: true },
-        created_at: new Date().toISOString(),
-      },
-    ],
+    range_m: '75',
   },
   {
-    id: 'sample-3',
-    name: 'Survey 03: Marine Trap & Metal Gear',
-    description: 'Submerged lobster trap with loose line',
-    lat: '15.5530',
-    lon: '73.8640',
-    depth: '31.2',
+    id: 'sample-noaa-monrovia',
+    name: 'Survey 03: NOAA Monrovia Shipwreck Site',
+    description: 'NOAA dual-frequency towfish — large structure with entanglement risk zones',
+    imageUrl: '/samples/noaa_monrovia_shipwreck.png',
+    lat: '6.3105',
+    lon: '-10.8147',
+    depth: '54.2',
     khz: '455',
-    mockDetections: [
-      {
-        id: 'det-s3-1',
-        frame_id: 'sample-3',
-        label: 'trawl_door' as const,
-        confidence: 0.82,
-        severity: 'medium' as const,
-        bbox: { x_min: 180, y_min: 160, x_max: 340, y_max: 290 },
-        area_m2: 4.5,
-        geo: { lat: 15.55304, lon: 73.86408, depth_m: 31.2 },
-        sonar_meta: { frequency_khz: 455, range_m: 40.0, slant_corrected: true },
-        created_at: new Date().toISOString(),
-      },
-    ],
+    range_m: '100',
+  },
+  {
+    id: 'sample-usgs-alaska',
+    name: 'Survey 04: USGS Alaska Cone Sonar',
+    description: 'USGS seafloor feature survey — cone mound with false-positive rock discrimination',
+    imageUrl: '/samples/usgs_alaska_cone_sonar.png',
+    lat: '59.4415',
+    lon: '-151.8260',
+    depth: '68.0',
+    khz: '400',
+    range_m: '80',
+  },
+  {
+    id: 'sample-usgs-missouri',
+    name: 'Survey 05: USGS Missouri River Sidescan',
+    description: 'USGS river sidescan — submerged debris on river bottom with high acoustic contrast',
+    imageUrl: '/samples/usgs_missouri_river_sidescan.png',
+    lat: '38.5740',
+    lon: '-90.1888',
+    depth: '12.5',
+    khz: '500',
+    range_m: '30',
   },
 ];
-
-function createSampleSonarBlobUrl(name: string): string {
-  if (typeof document === 'undefined') return '';
-  const canvas = document.createElement('canvas');
-  canvas.width = 640;
-  canvas.height = 480;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return '';
-
-  ctx.fillStyle = '#0F172A';
-  ctx.fillRect(0, 0, 640, 480);
-
-  const grad = ctx.createLinearGradient(0, 0, 640, 0);
-  grad.addColorStop(0, '#1E293B');
-  grad.addColorStop(0.48, '#0F172A');
-  grad.addColorStop(0.5, '#020617');
-  grad.addColorStop(0.52, '#0F172A');
-  grad.addColorStop(1, '#1E293B');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 640, 480);
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
-  for (let i = 0; i < 4000; i++) {
-    const x = Math.random() * 640;
-    const y = Math.random() * 480;
-    const s = Math.random() * 2;
-    ctx.fillRect(x, y, s, s);
-  }
-
-  ctx.strokeStyle = '#38BDF8';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  for (let x = 180; x < 350; x += 18) {
-    ctx.moveTo(x, 140);
-    ctx.lineTo(x + 30, 280);
-  }
-  for (let y = 140; y < 280; y += 18) {
-    ctx.moveTo(180, y);
-    ctx.lineTo(380, y + 20);
-  }
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-  ctx.fillRect(360, 160, 100, 120);
-
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-  ctx.font = '11px sans-serif';
-  ctx.fillText(`SIDE-SCAN SONAR: ${name.toUpperCase()} (455 kHz)`, 20, 30);
-  ctx.fillText('PORT SWATH [0-50m]            STARBOARD SWATH [0-50m]', 140, 460);
-
-  return canvas.toDataURL('image/png');
-}
 
 function formatLabel(raw: string): string {
   return raw.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -394,7 +317,7 @@ export default function AIWorkstationPage() {
   const [imageDims, setImageDims] = useState<ImageDims | null>(null);
   const [detectionResult, setDetectionResult] = useState<DetectionResponse | null>(null);
   const [selectedDetectionId, setSelectedDetectionId] = useState<string | null>(null);
-  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.25);
+  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.15);
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [pipelineStage, setPipelineStage] = useState<string>('');
@@ -529,24 +452,52 @@ export default function AIWorkstationPage() {
   }, []);
 
 
-  const loadSampleScan = (sample: (typeof SAMPLE_SONAR_SCANS)[0]) => {
-    const blobUrl = createSampleSonarBlobUrl(sample.name);
-    setImageBlobUrl(blobUrl);
+  const loadSampleScan = async (sample: (typeof SAMPLE_SONAR_SCANS)[0]) => {
+    // Load real sonar image and display it immediately
+    setImageBlobUrl(sample.imageUrl);
     setUploadedFile(null);
-    setSelectedDetectionId(sample.mockDetections[0]?.id ?? null);
+    setDetectionResult(null);
+    setSelectedDetectionId(null);
+    setErrorMessage(null);
     setGeoMeta({
       lat: sample.lat,
       lon: sample.lon,
       depth: sample.depth,
       sonarKhz: sample.khz,
     });
-    setDetectionResult({
-      frame_id: sample.id,
-      model_version: 'ghostnet-yolo-v1-onnx',
-      processing_time_ms: 12.8,
-      detections: sample.mockDetections as Detection[],
-    });
-    setErrorMessage(null);
+
+    // Run live inference on the real sonar image via the backend API
+    setIsProcessing(true);
+    setPipelineStage('Fetching sonar image...');
+    try {
+      const response = await fetch(sample.imageUrl);
+      const blob = await response.blob();
+      const ext = sample.imageUrl.endsWith('.png') ? 'png' : 'jpg';
+      const file = new File([blob], `${sample.id}.${ext}`, { type: blob.type || 'image/jpeg' });
+      setUploadedFile(file);
+      setPipelineStage('Running YOLOv8 inference...');
+      const detectRes = await ghostnetApi.detectDirectImage(
+        file,
+        {
+          lat: parseFloat(sample.lat),
+          lon: parseFloat(sample.lon),
+          depth_m: parseFloat(sample.depth),
+          frequency_khz: parseFloat(sample.khz),
+          range_m: parseFloat(sample.range_m),
+        },
+        confidenceThreshold
+      );
+      setDetectionResult(detectRes);
+      if (detectRes.detections.length > 0) {
+        setSelectedDetectionId(detectRes.detections[0].id);
+      }
+    } catch (err) {
+      console.warn('Live inference error for sample:', err);
+      setErrorMessage('Backend offline — start the FastAPI server at localhost:8000 to run live inference.');
+    } finally {
+      setIsProcessing(false);
+      setPipelineStage('');
+    }
   };
 
   const handleFileChange = (file: File) => {
@@ -570,9 +521,10 @@ export default function AIWorkstationPage() {
 
     setIsProcessing(true);
     setErrorMessage(null);
-    setPipelineStage('Running YOLOv8 ONNX inference...');
+    setPipelineStage('Running YOLOv8 inference...');
 
     try {
+      // If we have a real file (uploaded or loaded from sample), run live inference
       if (uploadedFile) {
         const detectRes = await ghostnetApi.detectDirectImage(
           uploadedFile,
@@ -587,60 +539,35 @@ export default function AIWorkstationPage() {
         setDetectionResult(detectRes);
         if (detectRes.detections.length > 0) {
           setSelectedDetectionId(detectRes.detections[0].id);
+        } else {
+          setErrorMessage('No marine debris detected at current confidence threshold. Try lowering the threshold or using a different sonar image.');
         }
-      } else {
-        setDetectionResult({
-          frame_id: 'frame-sample-' + Date.now(),
-          model_version: 'ghostnet-yolo-v1-onnx',
-          processing_time_ms: 12.4,
-          detections: [
-            {
-              id: 'det-live-1',
-              frame_id: 'frame-sample',
-              label: 'ghost_net',
-              confidence: 0.92,
-              severity: 'critical',
-              bbox: { x_min: 150, y_min: 120, x_max: 380, y_max: 320 },
-              area_m2: 16.4,
-              geo: {
-                lat: parseFloat(geoMeta.lat) || 15.4989,
-                lon: parseFloat(geoMeta.lon) || 73.8278,
-                depth_m: parseFloat(geoMeta.depth) || 42.5,
-              },
-              sonar_meta: { frequency_khz: parseFloat(geoMeta.sonarKhz) || 455, range_m: 50, slant_corrected: true },
-              created_at: new Date().toISOString(),
-            },
-          ],
-        });
-        setSelectedDetectionId('det-live-1');
+      } else if (imageBlobUrl) {
+        // Fetch blob URL and send to inference
+        const response = await fetch(imageBlobUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'sonar_frame.jpg', { type: blob.type || 'image/jpeg' });
+        const detectRes = await ghostnetApi.detectDirectImage(
+          file,
+          {
+            lat: parseFloat(geoMeta.lat) || undefined,
+            lon: parseFloat(geoMeta.lon) || undefined,
+            depth_m: parseFloat(geoMeta.depth) || undefined,
+            frequency_khz: parseFloat(geoMeta.sonarKhz) || undefined,
+          },
+          confidenceThreshold
+        );
+        setDetectionResult(detectRes);
+        if (detectRes.detections.length > 0) {
+          setSelectedDetectionId(detectRes.detections[0].id);
+        } else {
+          setErrorMessage('No marine debris detected at current confidence threshold.');
+        }
       }
       setPipelineStage('Done');
     } catch (err) {
-      console.warn('Fallback detect:', err);
-      setDetectionResult({
-        frame_id: 'frame-local-' + Date.now(),
-        model_version: 'ghostnet-yolo-v1-onnx',
-        processing_time_ms: 14.2,
-        detections: [
-          {
-            id: 'det-local-1',
-            frame_id: 'frame-local',
-            label: 'ghost_net',
-            confidence: 0.91,
-            severity: 'critical',
-            bbox: { x_min: 150, y_min: 120, x_max: 380, y_max: 320 },
-            area_m2: 15.6,
-            geo: {
-              lat: parseFloat(geoMeta.lat) || 15.4989,
-              lon: parseFloat(geoMeta.lon) || 73.8278,
-              depth_m: parseFloat(geoMeta.depth) || 42.5,
-            },
-            sonar_meta: { frequency_khz: parseFloat(geoMeta.sonarKhz) || 455, range_m: 50, slant_corrected: true },
-            created_at: new Date().toISOString(),
-          },
-        ],
-      });
-      setSelectedDetectionId('det-local-1');
+      console.warn('Detection error:', err);
+      setErrorMessage('Backend offline — start the FastAPI server at localhost:8000 to run live YOLOv8 inference.');
     } finally {
       setIsProcessing(false);
       setPipelineStage('');

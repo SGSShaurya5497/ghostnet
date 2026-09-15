@@ -224,6 +224,19 @@ export const ghostnetApi = {
     return handleResponse<ReportListResponse>(res);
   },
 
+  /** Fetch all detections */
+  async getDetections(): Promise<{ detections: Detection[] }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/detections`, { cache: 'no-store' });
+      if (res.ok) {
+        return handleResponse<{ detections: Detection[] }>(res);
+      }
+    } catch {
+      // fallback
+    }
+    return { detections: [] };
+  },
+
   /** Fetch hotspot clusters for map visualizer */
   async getHotspots(): Promise<HotspotResponse> {
     const res = await fetch(`${API_BASE_URL}/api/v1/analytics/hotspots`, {

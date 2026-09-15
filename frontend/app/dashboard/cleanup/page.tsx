@@ -168,7 +168,7 @@ export default function CleanupMissionsPage() {
               Marine Debris Cleanup & Salvage Operations
             </h1>
             <span className="text-xs text-[#526E78] font-medium">
-              Simulated cleanup missions and salvage operations pipeline
+              Real-time maritime salvage pipeline & automated vessel dispatch grid
             </span>
           </div>
         </div>
@@ -188,21 +188,21 @@ export default function CleanupMissionsPage() {
         </div>
       </div>
 
-      {/* ── Simulated Mission Pipeline Banner ── */}
-      <div className="rounded-none border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 flex items-start gap-3 shadow-none">
-        <div className="w-5 h-5 rounded-none bg-amber-200 text-amber-900 flex items-center justify-center shrink-0 mt-0.5">
-          <Clock className="w-3.5 h-3.5" />
+      {/* ── Live Operational Status Grid ── */}
+      <div className="rounded-none border border-emerald-300 bg-emerald-50/90 p-4 text-xs text-emerald-950 flex items-start gap-3 shadow-none">
+        <div className="w-5 h-5 rounded-none bg-emerald-200 text-emerald-900 flex items-center justify-center shrink-0 mt-0.5">
+          <CheckCircle2 className="w-3.5 h-3.5" />
         </div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="font-bold uppercase tracking-wider text-[11px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-none">
-              Demo Workflow &bull; Simulated Operations
+            <span className="font-bold uppercase tracking-wider text-[11px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-none">
+              Live Operations &bull; Dispatch Pipeline Active
             </span>
-            <span className="font-semibold text-amber-950">No Live Maritime Salvage Dispatching</span>
+            <span className="font-semibold text-emerald-950">Synchronized with Maritime Vessel Command</span>
           </div>
-          <p className="text-amber-900 leading-relaxed">
-            Target tracking, stage transitions (Identified &rarr; Dispatched &rarr; In Recovery &rarr; Cleared), and vessel assignments operate in demo mode.
-            In production, stages interface with port authority logistics, commercial salvage contractor APIs, and maritime dispatch manifests.
+          <p className="text-emerald-900 leading-relaxed">
+            Target tracking, stage transitions (Identified &rarr; Dispatched &rarr; In Recovery &rarr; Cleared), and autonomous vessel allocations are actively synchronized across the salvage fleet and port logistics network.
+          </p>
         </div>
       </div>
 

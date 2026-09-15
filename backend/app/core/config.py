@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     MODEL_REPO: str = "zzephyrr/GhostNetyolo26m"
     MODEL_FILENAME: str = "best.pt"
     HF_TOKEN: str = ""
-    CONF_THRESHOLD: float = 0.25
+    CONF_THRESHOLD: float = 0.15
     IOU_THRESHOLD: float = 0.45
     IMG_SIZE: int = 640
     

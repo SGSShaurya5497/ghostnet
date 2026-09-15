@@ -20,6 +20,15 @@ import {
   Check,
   Filter,
   Calendar,
+  Navigation,
+  Ship,
+  GitCompare,
+  Layers,
+  AlertTriangle,
+  FileText,
+  Route,
+  Crosshair,
+  Activity,
 } from 'lucide-react';
 
 interface NavItem {
@@ -35,19 +44,32 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Workspace',
+    title: 'Core Workspace',
     items: [
-      { name: 'AI Workstation', path: '/dashboard', icon: Scan },
+      { name: 'AI Sonar Workstation', path: '/dashboard', icon: Scan },
       { name: 'Survey Analytics', path: '/dashboard/analytics', icon: BarChart3 },
       { name: 'Sonar Hydrography', path: '/dashboard/sonar', icon: Waves },
       { name: 'Live Detections', path: '/dashboard/detections', icon: Target },
+      { name: 'Depth & Bathymetry', path: '/dashboard/depth', icon: Layers },
     ],
   },
   {
-    title: 'Geospatial & Missions',
+    title: 'Operations & GIS',
     items: [
-      { name: 'Survey Map', path: '/dashboard/map', icon: Map },
+      { name: 'Geospatial Survey Map', path: '/dashboard/map', icon: Map },
       { name: 'Cleanup Missions', path: '/dashboard/cleanup', icon: CheckCircle2 },
+      { name: 'Fleet Telemetry', path: '/dashboard/fleet', icon: Ship },
+      { name: 'Route Planning (TSP)', path: '/dashboard/route', icon: Route },
+    ],
+  },
+  {
+    title: 'Intelligence & Audit',
+    items: [
+      { name: 'Hotspot Clusters', path: '/dashboard/hotspots', icon: Crosshair },
+      { name: 'Temporal Comparison', path: '/dashboard/comparison', icon: GitCompare },
+      { name: 'Risk Engine', path: '/dashboard/risk', icon: Activity },
+      { name: 'Alert Center', path: '/dashboard/alerts', icon: AlertTriangle },
+      { name: 'Audit Reports', path: '/dashboard/reports', icon: FileText },
     ],
   },
 ];
