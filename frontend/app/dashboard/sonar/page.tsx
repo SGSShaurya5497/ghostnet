@@ -23,6 +23,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { ghostnetApi, type Detection } from '@/lib/api';
+import { useTacticalAudio } from '@/lib/sound-context';
 
 interface CapturedSnag {
   id: string;
@@ -75,6 +76,7 @@ function formatLabel(raw: string): string {
 
 export default function SonarVideoAnalysisPage() {
   const router = useRouter();
+  const { playSound } = useTacticalAudio();
 
   // Video State
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -103,6 +105,7 @@ export default function SonarVideoAnalysisPage() {
 
   // Load Preset Simulation
   const selectPreset = (clip: typeof PRELOADED_SURVEY_CLIPS[0]) => {
+    playSound('click');
     setSelectedPresetId(clip.id);
     setVideoFile(null);
     if (videoUrl) {
@@ -120,9 +123,11 @@ export default function SonarVideoAnalysisPage() {
   // Handle Custom Video Upload
   const handleVideoUpload = (file: File) => {
     if (!file.type.startsWith('video/')) {
+      playSound('error');
       alert('Please upload a valid video file (.mp4, .webm, .mov, etc.)');
       return;
     }
+    playSound('sonarPing');
     const url = URL.createObjectURL(file);
     setVideoFile(file);
     setVideoUrl(url);
@@ -155,6 +160,7 @@ export default function SonarVideoAnalysisPage() {
     // Avoid duplicate captures within 3 seconds of the same snag
     if (Math.abs(timestampSec - lastCaptureTime) < 3.0) return;
 
+    playSound(anomaly.severity === 'critical' ? 'criticalThreat' : 'detection');
     const snapshot = captureCurrentFrameAsDataUrl();
     const newSnag: CapturedSnag = {
       id: `SNAG-${Date.now().toString().slice(-6)}`,
@@ -418,6 +424,7 @@ export default function SonarVideoAnalysisPage() {
 
   // Sync custom HTML5 <video> element
   const togglePlay = () => {
+    playSound('toggle');
     if (videoRef.current && videoUrl) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -440,6 +447,7 @@ export default function SonarVideoAnalysisPage() {
   };
 
   const downloadJPG = (snag: CapturedSnag) => {
+    playSound('success');
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -481,6 +489,7 @@ export default function SonarVideoAnalysisPage() {
   };
 
   const sendToWorkstation = (snag: CapturedSnag) => {
+    playSound('sonarPing');
     try {
       sessionStorage.setItem('ghostnet_live_snapshot', snag.thumbnailUrl);
       sessionStorage.setItem('ghostnet_snapshot_time', snag.formattedTime);

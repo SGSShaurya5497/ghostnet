@@ -44,6 +44,7 @@ import {
   ShieldCheck,
   Compass,
 } from 'lucide-react';
+import { useTacticalAudio } from '@/lib/sound-context';
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -312,6 +313,7 @@ function downloadAnnotatedJPG(
 
 
 export default function AIWorkstationPage() {
+  const { playSound } = useTacticalAudio();
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [imageBlobUrl, setImageBlobUrl] = useState<string | null>(null);
   const [imageDims, setImageDims] = useState<ImageDims | null>(null);
@@ -458,6 +460,7 @@ export default function AIWorkstationPage() {
 
 
   const loadSampleScan = async (sample: (typeof SAMPLE_SONAR_SCANS)[0]) => {
+    playSound('sonarPing');
     // Load real sonar image and display it immediately
     setImageBlobUrl(sample.imageUrl);
     setUploadedFile(null);
@@ -495,6 +498,12 @@ export default function AIWorkstationPage() {
       setDetectionResult(detectRes);
       if (detectRes.detections.length > 0) {
         setSelectedDetectionId(detectRes.detections[0].id);
+        const hasCritical = detectRes.detections.some((d) => d.severity === 'critical');
+        if (hasCritical) {
+          playSound('criticalThreat');
+        } else {
+          playSound('detection');
+        }
       }
     } catch (err) {
       console.warn('Live inference error for sample:', err);
@@ -508,9 +517,11 @@ export default function AIWorkstationPage() {
   const handleFileChange = (file: File) => {
     const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|tiff?|bmp|webp)$/i.test(file.name);
     if (!isImage) {
+      playSound('error');
       setErrorMessage('Please select a valid high-resolution sonar image file (PNG, JPG, TIFF).');
       return;
     }
+    playSound('sonarPing');
     const url = URL.createObjectURL(file);
     setImageBlobUrl(url);
     setUploadedFile(file);
@@ -521,10 +532,12 @@ export default function AIWorkstationPage() {
 
   const runDetection = async () => {
     if (!uploadedFile && !imageBlobUrl) {
+      playSound('error');
       setErrorMessage('Please select or upload a sonar image first.');
       return;
     }
 
+    playSound('scan');
     setIsProcessing(true);
     setErrorMessage(null);
     setPipelineStage('Running YOLOv8 inference...');
@@ -545,7 +558,14 @@ export default function AIWorkstationPage() {
         setDetectionResult(detectRes);
         if (detectRes.detections.length > 0) {
           setSelectedDetectionId(detectRes.detections[0].id);
+          const hasCritical = detectRes.detections.some((d) => d.severity === 'critical');
+          if (hasCritical) {
+            playSound('criticalThreat');
+          } else {
+            playSound('detection');
+          }
         } else {
+          playSound('error');
           setErrorMessage('No marine debris detected at current confidence threshold. Try lowering the threshold or using a different sonar image.');
         }
       } else if (imageBlobUrl) {
@@ -566,12 +586,20 @@ export default function AIWorkstationPage() {
         setDetectionResult(detectRes);
         if (detectRes.detections.length > 0) {
           setSelectedDetectionId(detectRes.detections[0].id);
+          const hasCritical = detectRes.detections.some((d) => d.severity === 'critical');
+          if (hasCritical) {
+            playSound('criticalThreat');
+          } else {
+            playSound('detection');
+          }
         } else {
+          playSound('error');
           setErrorMessage('No marine debris detected at current confidence threshold.');
         }
       }
       setPipelineStage('Done');
     } catch (err) {
+      playSound('error');
       console.warn('Detection error:', err);
       setErrorMessage('Backend offline — start the FastAPI server at localhost:8000 to run live YOLOv8 inference.');
     } finally {
@@ -686,6 +714,7 @@ export default function AIWorkstationPage() {
           <button
             onClick={() => {
               if (!imgRef.current) return;
+              playSound('success');
               downloadAnnotatedJPG(
                 imgRef.current,
                 filteredDetections,
@@ -842,7 +871,10 @@ export default function AIWorkstationPage() {
               ].map((cm) => (
                 <button
                   key={cm.id}
-                  onClick={() => setActiveColormap(cm.id as any)}
+                  onClick={() => {
+                    playSound('toggle');
+                    setActiveColormap(cm.id as any);
+                  }}
                   className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold transition-all ${
                     activeColormap === cm.id
                       ? `${cm.bg} ring-1 ring-white/30 shadow-[0_0_8px_rgba(45,212,191,0.3)]`
@@ -856,7 +888,10 @@ export default function AIWorkstationPage() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowReticle((prev) => !prev)}
+                onClick={() => {
+                  playSound('toggle');
+                  setShowReticle((prev) => !prev);
+                }}
                 className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-semibold transition-all ${
                   showReticle
                     ? 'bg-teal-500/20 border-teal-500/40 text-teal-300'
@@ -867,7 +902,10 @@ export default function AIWorkstationPage() {
                 HUD Reticle
               </button>
               <button
-                onClick={() => setMeasureMode((prev) => !prev)}
+                onClick={() => {
+                  playSound('toggle');
+                  setMeasureMode((prev) => !prev);
+                }}
                 className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-semibold transition-all ${
                   measureMode
                     ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 ring-1 ring-cyan-400/50'
@@ -945,6 +983,7 @@ export default function AIWorkstationPage() {
                         key={det.id}
                         onClick={(e) => {
                           e.stopPropagation();
+                          playSound('click');
                           setSelectedDetectionId(det.id);
                         }}
                         className={`absolute cursor-pointer transition-all rounded ${
@@ -1121,6 +1160,7 @@ export default function AIWorkstationPage() {
             <button
               onClick={() => {
                 if (!imgRef.current) return;
+                playSound('success');
                 downloadAnnotatedJPG(
                   imgRef.current,
                   [selectedDetection],

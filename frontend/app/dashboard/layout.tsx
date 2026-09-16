@@ -28,6 +28,8 @@ import {
   Crosshair,
   Activity,
 } from 'lucide-react';
+import { useTacticalAudio } from '@/lib/sound-context';
+import SoundController from '@/components/SoundController';
 
 interface NavItem {
   name: string;
@@ -84,6 +86,7 @@ const YEAR_OPTIONS = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { playSound } = useTacticalAudio();
   
   const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
@@ -175,6 +178,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex items-center gap-4">
           <Link
             href="/dashboard"
+            onClick={() => playSound('sonarPing')}
             className="flex items-center gap-3 group transition-all hover:scale-[1.02]"
           >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 shadow-[0_0_15px_rgba(45,212,191,0.35)]">
@@ -199,7 +203,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Breadcrumbs */}
           <nav className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-400">
-            <span className="hover:text-white transition-colors cursor-pointer" onClick={() => router.push('/dashboard')}>
+            <span
+              className="hover:text-white transition-colors cursor-pointer"
+              onClick={() => {
+                playSound('click');
+                router.push('/dashboard');
+              }}
+            >
               Fleet Ops
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
@@ -210,7 +220,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Center: Command Bar Search */}
         <div className="hidden sm:flex items-center">
           <button
-            onClick={() => setCommandPaletteOpen(true)}
+            onClick={() => {
+              playSound('click');
+              setCommandPaletteOpen(true);
+            }}
             className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] text-xs text-slate-400 hover:text-slate-200 transition-all w-88 justify-between group border border-white/[0.08] hover:border-teal-500/30 backdrop-blur-sm shadow-inner"
           >
             <div className="flex items-center gap-2">
@@ -230,6 +243,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="relative" ref={surveyDropdownRef}>
               <button
                 onClick={() => {
+                  playSound('toggle');
                   setIsSurveyDropdownOpen((prev) => !prev);
                   setIsYearDropdownOpen(false);
                 }}
@@ -253,6 +267,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <button
                       key={opt.id}
                       onClick={() => {
+                        playSound('click');
                         setSelectedSurvey(opt.label);
                         setIsSurveyDropdownOpen(false);
                       }}
@@ -277,6 +292,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="relative" ref={yearDropdownRef}>
               <button
                 onClick={() => {
+                  playSound('toggle');
                   setIsYearDropdownOpen((prev) => !prev);
                   setIsSurveyDropdownOpen(false);
                 }}
@@ -300,6 +316,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <button
                       key={y.year}
                       onClick={() => {
+                        playSound('click');
                         setSelectedYear(y.year);
                         setIsYearDropdownOpen(false);
                       }}
@@ -321,6 +338,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
+          {/* Tactical Audio Sound System Controller */}
+          <SoundController />
+
           {/* AI Backend Status Pill */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08] backdrop-blur-sm text-xs font-mono">
             <span className="w-2 h-2 rounded-full bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.8)] animate-pulse" />
@@ -331,6 +351,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <Link
             href="/"
+            onClick={() => playSound('sonarPing')}
             className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-teal-400 border border-slate-800 transition-all hover:scale-105"
             title="Return to Landing Overview"
           >
@@ -371,6 +392,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <Link
                         key={item.path}
                         href={item.path}
+                        onClick={() => playSound('click')}
                         className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
                           isActive
                             ? 'bg-teal-500/15 border border-teal-500/30 text-teal-300 shadow-[0_0_15px_rgba(45,212,191,0.15)]'

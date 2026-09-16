@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono, Outfit } from 'next/font/google';
+import { SoundProvider } from '@/lib/sound-context';
 import './globals.css';
 
 const outfit = Outfit({
@@ -47,7 +48,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=3" />
       </head>
       <body className="antialiased bg-[#050810] text-white">
-        {children}
+        <SoundProvider>
+          {children}
+        </SoundProvider>
       </body>
     </html>
   );
