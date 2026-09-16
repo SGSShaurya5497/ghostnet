@@ -512,12 +512,14 @@ export default function SonarVideoAnalysisPage() {
         {/* Action Controls & Upload */}
         <div className="flex items-center gap-3">
           <input
+            id="seabed-video-input"
             ref={fileInputRef}
             type="file"
-            accept="video/*"
-            className="hidden"
+            accept="video/*,.mp4,.webm,.mov"
+            className="sr-only"
             onChange={(e) => {
               if (e.target.files?.[0]) handleVideoUpload(e.target.files[0]);
+              e.target.value = '';
             }}
           />
 

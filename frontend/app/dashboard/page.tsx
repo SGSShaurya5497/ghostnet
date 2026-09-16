@@ -317,7 +317,8 @@ export default function AIWorkstationPage() {
   const [imageDims, setImageDims] = useState<ImageDims | null>(null);
   const [detectionResult, setDetectionResult] = useState<DetectionResponse | null>(null);
   const [selectedDetectionId, setSelectedDetectionId] = useState<string | null>(null);
-  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.15);
+  const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.05);
+
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [pipelineStage, setPipelineStage] = useState<string>('');
@@ -501,7 +502,8 @@ export default function AIWorkstationPage() {
   };
 
   const handleFileChange = (file: File) => {
-    if (!file.type.startsWith('image/')) {
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|tiff?|bmp|webp)$/i.test(file.name);
+    if (!isImage) {
       setErrorMessage('Please select a valid image file (PNG, JPG, TIFF).');
       return;
     }
@@ -711,7 +713,11 @@ export default function AIWorkstationPage() {
                 </span>
               </div>
               <button
-                onClick={() => fileInputRef.current?.click()}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
                 className="p-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/30 transition-colors"
                 title="Select Sonar Image"
               >
@@ -719,9 +725,24 @@ export default function AIWorkstationPage() {
               </button>
             </div>
 
-            {/* Expanded Sonar Image Dropzone (Takes full vertical height) */}
-            <div
-              onClick={() => fileInputRef.current?.click()}
+            {/* Hidden native input separated to prevent event bubbling cancellation */}
+            <input
+              id="sonar-file-input"
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.png,.jpg,.jpeg,.tiff,.tif,.bmp,.webp"
+              className="sr-only"
+              onChange={(e) => {
+                if (e.target.files?.[0]) {
+                  handleFileChange(e.target.files[0]);
+                }
+                e.target.value = '';
+              }}
+            />
+
+            {/* Expanded Sonar Image Dropzone (Native Label: clicking automatically opens file picker) */}
+            <label
+              htmlFor="sonar-file-input"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
@@ -743,16 +764,10 @@ export default function AIWorkstationPage() {
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-teal-500/30 text-[11px] font-mono font-bold text-teal-300">
                 <span>PNG · JPG · JPEG · TIFF</span>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) handleFileChange(e.target.files[0]);
-                }}
-              />
-            </div>
+              <div className="mt-1 px-4 py-1.5 rounded-lg bg-teal-500/20 group-hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-xs font-semibold tracking-wide transition-all shadow-sm">
+                Browse Files
+              </div>
+            </label>
 
             {/* Ingest Telemetry Specs */}
             <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08] space-y-2 text-xs">

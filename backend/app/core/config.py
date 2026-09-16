@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     
     # Model configuration
     MODEL_REPO: str = "zzephyrr/GhostNetyolo26m"
+    # MODEL_FILENAME: str = "weights.onnx"
     MODEL_FILENAME: str = "best.pt"
     HF_TOKEN: str = ""
     CONF_THRESHOLD: float = 0.15
