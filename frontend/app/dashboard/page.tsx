@@ -699,20 +699,23 @@ export default function AIWorkstationPage() {
       </div>
 
       {/* ── 3-Pane Workstation Layout ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch rounded-none">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* ── Left Ingest Sidebar (4 cols on lg) ── */}
-        <div className="lg:col-span-4 light-saas-card p-5 flex flex-col justify-between space-y-4 h-full rounded-none">
+        <div className="lg:col-span-4 cyber-card p-5 flex flex-col justify-between space-y-4 h-full">
           <div className="space-y-4 flex-1 flex flex-col">
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#B8C9CC]">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0E232B]">
-                INGEST SONAR RASTER
-              </span>
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-teal-300">
+                  Ingest Sonar Raster
+                </span>
+              </div>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-1.5 rounded-none bg-[#E5EDEE] hover:bg-[#B8C9CC] text-[#075A73] border border-[#B8C9CC] transition-colors"
+                className="p-1.5 rounded-lg bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/30 transition-colors"
                 title="Select Sonar Image"
               >
-                <UploadCloud className="w-3.5 h-3.5" />
+                <UploadCloud className="w-4 h-4" />
               </button>
             </div>
 
@@ -724,20 +727,20 @@ export default function AIWorkstationPage() {
                 e.preventDefault();
                 if (e.dataTransfer.files?.[0]) handleFileChange(e.dataTransfer.files[0]);
               }}
-              className="flex-1 min-h-[300px] border-2 border-dashed border-[#B8C9CC] hover:border-[#075A73] rounded-none p-6 flex flex-col items-center justify-center text-center gap-3.5 cursor-pointer bg-[#E5EDEE]/40 hover:bg-[#E5EDEE]/80 transition-all group select-none"
+              className="flex-1 min-h-[280px] border-2 border-dashed border-teal-500/30 hover:border-teal-400/80 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-3.5 cursor-pointer bg-teal-950/20 hover:bg-teal-950/30 transition-all group select-none relative overflow-hidden"
             >
-              <div className="w-16 h-16 rounded-none bg-white border border-[#B8C9CC] flex items-center justify-center text-[#075A73] group-hover:bg-[#075A73] group-hover:text-white group-hover:border-[#075A73] transition-all shadow-none">
+              <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-teal-500/30 flex items-center justify-center text-teal-400 group-hover:scale-105 group-hover:border-teal-400 group-hover:shadow-[0_0_20px_rgba(45,212,191,0.3)] transition-all shadow-md">
                 <UploadCloud className="w-8 h-8" />
               </div>
-              <div className="space-y-1 max-w-[260px]">
-                <span className="text-sm font-bold text-[#0E232B] block truncate">
+              <div className="space-y-1.5 max-w-[260px]">
+                <span className="text-sm font-bold text-white block truncate">
                   {uploadedFile ? uploadedFile.name : 'Upload Sonar Image'}
                 </span>
-                <span className="text-xs text-[#526E78] block leading-relaxed">
-                  Click or drag & drop high-resolution Side-Scan Sonar or Bathymetric images
+                <span className="text-xs text-slate-400 block leading-relaxed">
+                  Click or drag &amp; drop high-resolution Side-Scan Sonar or Bathymetric images
                 </span>
               </div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-[#B8C9CC] text-[11px] font-mono font-bold text-[#075A73]">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900/90 border border-teal-500/30 text-[11px] font-mono font-bold text-teal-300">
                 <span>PNG · JPG · JPEG · TIFF</span>
               </div>
               <input
@@ -752,18 +755,18 @@ export default function AIWorkstationPage() {
             </div>
 
             {/* Ingest Telemetry Specs */}
-            <div className="p-3 rounded-none bg-[#E5EDEE]/60 border border-[#B8C9CC] space-y-1.5 text-[11px] text-[#526E78]">
-              <div className="flex justify-between">
+            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08] space-y-2 text-xs">
+              <div className="flex justify-between items-center text-slate-400">
                 <span>Raster Mode:</span>
-                <strong className="text-[#0E232B] font-mono">Side-Scan Sonar</strong>
+                <strong className="text-slate-200 font-mono">Side-Scan Sonar</strong>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center text-slate-400">
                 <span>Resolution:</span>
-                <strong className="text-[#0E232B] font-mono">0.05 m/px</strong>
+                <strong className="text-slate-200 font-mono">0.05 m/px</strong>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center text-slate-400">
                 <span>GPS Datum:</span>
-                <strong className="text-emerald-700 font-mono">WGS-84 Geotagged</strong>
+                <strong className="text-teal-300 font-mono font-semibold">WGS-84 Geotagged</strong>
               </div>
             </div>
           </div>
@@ -773,16 +776,16 @@ export default function AIWorkstationPage() {
             id="workstation-detect-btn"
             onClick={runDetection}
             disabled={isProcessing || (!uploadedFile && !imageBlobUrl)}
-            className="w-full py-3 rounded-none bg-[#075A73] hover:bg-[#054356] disabled:opacity-40 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-none border border-[#075A73]"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-teal-400 via-teal-500 to-cyan-500 hover:from-teal-300 hover:to-cyan-400 disabled:opacity-40 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_25px_rgba(45,212,191,0.35)] hover:shadow-[0_0_35px_rgba(45,212,191,0.5)] border border-teal-400/40 cursor-pointer"
           >
             {isProcessing ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
                 <span>{pipelineStage || 'Running Inference...'}</span>
               </>
             ) : (
               <>
-                <Scan className="w-3.5 h-3.5 text-white" />
+                <Scan className="w-4 h-4 text-slate-950" />
                 <span>Run AI Detection</span>
               </>
             )}
@@ -790,12 +793,19 @@ export default function AIWorkstationPage() {
         </div>
 
         {/* ── Center Sonar Viewport Canvas (5 cols on lg) ── */}
-        <div className="lg:col-span-5 light-saas-card p-5 flex flex-col justify-between relative overflow-hidden h-full rounded-none">
-          <div className="flex items-center justify-between pb-2.5 border-b border-[#B8C9CC]">
-            <span className="text-xs font-bold uppercase tracking-wider text-[#0E232B]">
-              ACOUSTIC RASTER VIEWPORT
-            </span>
-            <span className="pill-badge-green text-[10px]">
+        <div className="lg:col-span-5 cyber-card p-5 flex flex-col justify-between relative overflow-hidden h-full">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300">
+                Acoustic Raster Viewport
+              </span>
+            </div>
+            <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+              imageBlobUrl
+                ? 'bg-teal-500/10 border-teal-500/30 text-teal-300'
+                : 'bg-slate-800/80 border-slate-700 text-slate-400'
+            }`}>
               {imageBlobUrl ? 'Raster Loaded' : 'No Frame'}
             </span>
           </div>
@@ -803,15 +813,15 @@ export default function AIWorkstationPage() {
           {/* Viewport Canvas Frame */}
           <div
             ref={containerRef}
-            className="flex-1 min-h-[360px] h-[360px] bg-[#0E232B] border border-[#075A73] rounded-none relative overflow-hidden flex items-center justify-center p-3 select-none my-3 shadow-none"
+            className="flex-1 min-h-[360px] h-[360px] bg-[#020611] border border-teal-500/20 rounded-xl relative overflow-hidden flex items-center justify-center p-3 select-none my-3 shadow-inner"
           >
             {showGrid && (
               <div
-                className="absolute inset-0 pointer-events-none opacity-20"
+                className="absolute inset-0 pointer-events-none opacity-25"
                 style={{
                   backgroundImage:
-                    'linear-gradient(to right, #B8C9CC 1px, transparent 1px), linear-gradient(to bottom, #B8C9CC 1px, transparent 1px)',
-                  backgroundSize: '24px 24px',
+                    'linear-gradient(to right, rgba(45,212,191,0.2) 1px, transparent 1px), linear-gradient(to bottom, rgba(45,212,191,0.2) 1px, transparent 1px)',
+                  backgroundSize: '28px 28px',
                 }}
               />
             )}
@@ -829,7 +839,7 @@ export default function AIWorkstationPage() {
                   ref={imgRef}
                   src={imageBlobUrl}
                   alt="Side-Scan Sonar Raster"
-                  className="max-h-[340px] w-auto object-contain rounded-none block select-none pointer-events-none"
+                  className="max-h-[340px] w-auto object-contain rounded-lg block select-none pointer-events-none shadow-2xl"
                   onLoad={updateDimensions}
                 />
 
@@ -844,10 +854,10 @@ export default function AIWorkstationPage() {
                     const height = (det.bbox.y_max - det.bbox.y_min) * imageDims.scaleY;
 
                     const borderColor = isSelected
-                      ? '#075A73'
+                      ? '#2DD4BF'
                       : det.confidence >= 0.7
-                      ? '#0D9488'
-                      : '#D97706';
+                      ? '#10B981'
+                      : '#F59E0B';
 
                     return (
                       <div
@@ -856,8 +866,8 @@ export default function AIWorkstationPage() {
                           e.stopPropagation();
                           setSelectedDetectionId(det.id);
                         }}
-                        className={`absolute cursor-pointer transition-all rounded-none ${
-                          isSelected ? 'ring-2 ring-[#075A73]' : 'hover:ring-1 hover:ring-white/60'
+                        className={`absolute cursor-pointer transition-all rounded ${
+                          isSelected ? 'ring-2 ring-teal-400 shadow-[0_0_15px_rgba(45,212,191,0.6)]' : 'hover:ring-1 hover:ring-white/80'
                         }`}
                         style={{
                           left,
@@ -865,15 +875,15 @@ export default function AIWorkstationPage() {
                           width,
                           height,
                           border: `2px solid ${borderColor}`,
-                          backgroundColor: isSelected ? 'rgba(7,90,115,0.2)' : 'rgba(7,90,115,0.06)',
+                          backgroundColor: isSelected ? 'rgba(45,212,191,0.25)' : 'rgba(45,212,191,0.08)',
                         }}
                       >
                         {showLabels && (
                           <div
-                            className="absolute -top-6 left-0 px-2 py-0.5 rounded-none text-[10px] font-bold flex items-center gap-1 shadow-none whitespace-nowrap"
+                            className="absolute -top-6 left-0 px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center gap-1 shadow-md whitespace-nowrap"
                             style={{
                               backgroundColor: borderColor,
-                              color: '#FFFFFF',
+                              color: '#050810',
                             }}
                           >
                             <span>{formatLabel(det.label)}</span>
@@ -885,12 +895,17 @@ export default function AIWorkstationPage() {
                   })}
               </div>
             ) : (
-              <div className="text-center p-6 space-y-2 text-[#526E78]">
-                <FileImage className="w-8 h-8 mx-auto text-[#849EAA]" />
-                <span className="text-xs font-medium block">No Sonar Raster Ingested</span>
+              <div className="text-center p-6 space-y-3 text-slate-400">
+                <div className="w-12 h-12 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-500">
+                  <FileImage className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-mono font-semibold text-slate-300 block">No Sonar Raster Ingested</span>
+                  <span className="text-[11px] text-slate-500 block">Upload an acoustic scan from demo_samples/ or drag an image</span>
+                </div>
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 rounded-none bg-white/10 hover:bg-white/20 text-white text-xs font-semibold"
+                  className="px-4 py-1.5 rounded-xl bg-teal-500/10 hover:bg-teal-500/20 text-teal-300 border border-teal-500/30 text-xs font-mono font-semibold transition-colors"
                 >
                   Upload Image
                 </button>
@@ -898,21 +913,24 @@ export default function AIWorkstationPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-[#526E78] font-medium">
+          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
             <span>Swath: Port/Starboard 50m</span>
-            <span>WGS-84 Coordinate Fix</span>
+            <span className="text-teal-400">WGS-84 Coordinate Fix</span>
           </div>
         </div>
 
         {/* ── Right Inspector Panel (3 cols on lg) ── */}
-        <div className="lg:col-span-3 light-saas-card p-5 flex flex-col justify-between space-y-4 h-full rounded-none">
+        <div className="lg:col-span-3 cyber-card p-5 flex flex-col justify-between space-y-4 h-full">
           <div>
-            <div className="flex items-center justify-between pb-2.5 border-b border-[#B8C9CC]">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#0E232B]">
-                TARGET INSPECTOR
-              </span>
-              <button className="p-1.5 rounded-none bg-[#E5EDEE] text-[#075A73] border border-[#B8C9CC]">
-                <Crosshair className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-teal-300">
+                  Target Inspector
+                </span>
+              </div>
+              <button className="p-1.5 rounded-lg bg-teal-500/10 text-teal-400 border border-teal-500/30">
+                <Crosshair className="w-4 h-4" />
               </button>
             </div>
 
@@ -920,10 +938,10 @@ export default function AIWorkstationPage() {
               <div className="space-y-4 pt-3">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <span className="text-xs font-black text-[#0E232B] block font-mono">
+                    <span className="text-xs font-black text-white block font-mono">
                       {selectedDetection.id}
                     </span>
-                    <span className="text-xs text-[#526E78] font-medium">
+                    <span className="text-xs text-teal-400 font-medium font-mono">
                       {formatLabel(selectedDetection.label)}
                     </span>
                   </div>
@@ -933,32 +951,32 @@ export default function AIWorkstationPage() {
                 </div>
 
                 {/* Confidence Gauge */}
-                <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-[#526E78] font-medium">Acoustic Confidence</span>
-                    <span className="font-bold text-[#0E232B]">{(selectedDetection.confidence * 100).toFixed(1)}%</span>
+                <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08] space-y-2">
+                  <div className="flex justify-between text-xs font-mono">
+                    <span className="text-slate-400">Acoustic Confidence</span>
+                    <span className="font-bold text-teal-300">{(selectedDetection.confidence * 100).toFixed(1)}%</span>
                   </div>
-                  <div className="w-full h-1.5 rounded-none bg-[#B8C9CC] overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
                     <div
-                      className="h-full bg-[#075A73] rounded-none"
+                      className="h-full bg-gradient-to-r from-teal-500 to-cyan-400 rounded-full"
                       style={{ width: `${selectedDetection.confidence * 100}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Geotag Readout */}
-                <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2 text-xs">
+                <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08] space-y-2.5 text-xs font-mono">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
+                    <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider block">
                       Geotag Telemetry
                     </span>
-                    {/* geo_source transparency label — Task 5 */}
-                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-none border ${
+                    {/* geo_source transparency label */}
+                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
                       (selectedDetection as any).geo_source === 'manual_entry'
-                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
                         : (selectedDetection as any).geo_source === 'parsed_navigation_metadata'
-                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                        : 'bg-slate-100 border-slate-300 text-slate-500'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                        : 'bg-slate-800 border-slate-700 text-slate-400'
                     }`}>
                       {(selectedDetection as any).geo_source === 'manual_entry'
                         ? '⚠ Manually entered'
@@ -969,49 +987,49 @@ export default function AIWorkstationPage() {
                         : 'No GPS data'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-[#2A434D]">
-                    <div>
-                      <span className="text-[10px] text-[#526E78] block">LAT</span>
-                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.lat ?? geoMeta.lat ?? '—'}</span>
+                  <div className="grid grid-cols-2 gap-2 text-slate-300">
+                    <div className="p-2 rounded-lg bg-slate-950/60 border border-white/[0.04]">
+                      <span className="text-[9px] text-slate-500 block font-bold">LAT</span>
+                      <span className="font-bold text-white text-xs">{selectedDetection.geo?.lat ?? geoMeta.lat ?? '—'}</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-[#526E78] block">LON</span>
-                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.lon ?? geoMeta.lon ?? '—'}</span>
+                    <div className="p-2 rounded-lg bg-slate-950/60 border border-white/[0.04]">
+                      <span className="text-[9px] text-slate-500 block font-bold">LON</span>
+                      <span className="font-bold text-white text-xs">{selectedDetection.geo?.lon ?? geoMeta.lon ?? '—'}</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-[#526E78] block">DEPTH</span>
-                      <span className="font-bold text-[#0E232B]">{selectedDetection.geo?.depth_m ?? geoMeta.depth ?? '—'} m</span>
+                    <div className="p-2 rounded-lg bg-slate-950/60 border border-white/[0.04]">
+                      <span className="text-[9px] text-slate-500 block font-bold">DEPTH</span>
+                      <span className="font-bold text-cyan-300 text-xs">{selectedDetection.geo?.depth_m ?? geoMeta.depth ?? '—'} m</span>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-[#526E78] block">AREA</span>
-                      <span className="font-bold text-[#0E232B]">{(selectedDetection.area_m2 ?? 12.0).toFixed(1)} m²</span>
+                    <div className="p-2 rounded-lg bg-slate-950/60 border border-white/[0.04]">
+                      <span className="text-[9px] text-slate-500 block font-bold">AREA</span>
+                      <span className="font-bold text-emerald-300 text-xs">{(selectedDetection.area_m2 ?? 12.0).toFixed(1)} m²</span>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="py-6 flex flex-col items-center justify-center text-center space-y-3">
-                <div className="w-10 h-10 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] flex items-center justify-center text-[#075A73]">
-                  <Crosshair className="w-5 h-5 text-[#075A73]" />
+              <div className="py-6 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-[0_0_20px_rgba(45,212,191,0.2)]">
+                  <Crosshair className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-[#0E232B] block">Telemetry Standby</span>
-                  <span className="text-[11px] text-[#526E78] max-w-[210px] block mt-1 leading-relaxed">
+                  <span className="text-xs font-mono font-bold text-white uppercase tracking-wider block">Telemetry Standby</span>
+                  <span className="text-[11px] text-slate-400 max-w-[210px] block mt-1.5 leading-relaxed font-sans">
                     Click any detected bounding box on the raster to inspect verified coordinates, acoustic signature, and dimensions.
                   </span>
                 </div>
-                <div className="w-full p-3 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] text-left space-y-1.5 text-[11px]">
-                  <div className="flex justify-between text-[#526E78]">
+                <div className="w-full p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08] text-left space-y-2 text-xs font-mono">
+                  <div className="flex justify-between items-center text-slate-400">
                     <span>Resolution:</span>
-                    <strong className="font-mono text-[#0E232B]">0.05 m/px</strong>
+                    <strong className="text-white">0.05 m/px</strong>
                   </div>
-                  <div className="flex justify-between text-[#526E78]">
+                  <div className="flex justify-between items-center text-slate-400">
                     <span>Slant Corrected:</span>
-                    <strong className="text-emerald-700">Active</strong>
+                    <strong className="text-emerald-400">Active</strong>
                   </div>
-                  <div className="flex justify-between text-[#526E78]">
+                  <div className="flex justify-between items-center text-slate-400">
                     <span>Detection Model:</span>
-                    <strong className="text-[#0E232B]">YOLOv8-Marine</strong>
+                    <strong className="text-teal-300">YOLOv8-Marine</strong>
                   </div>
                 </div>
               </div>
@@ -1031,11 +1049,11 @@ export default function AIWorkstationPage() {
                   `${selectedDetection.id} (${formatLabel(selectedDetection.label)})`
                 );
               }}
-              className="w-full btn-pill-filter justify-center text-xs rounded-none"
+              className="w-full py-2.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 text-teal-300 text-xs font-mono font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
               title="Download cropped JPG snapshot with latitude, longitude & coordinates"
             >
-              <Download className="w-3.5 h-3.5 text-[#075A73]" />
-              <span>Download Target JPG (with GPS)</span>
+              <Download className="w-4 h-4 text-teal-400" />
+              <span>Download Target JPG</span>
             </button>
           )}
         </div>

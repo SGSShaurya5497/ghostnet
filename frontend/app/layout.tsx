@@ -25,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'GhostNet AI — Sonar Intelligence Platform | SIH 2024',
-  description: 'Autonomous side-scan sonar detection & hydrographic survey intelligence platform for ghost nets and marine debris. YOLOv8-powered real-time detection across India\'s 8,118 km coastline.',
+  description: 'Autonomous side-scan sonar detection & hydrographic survey intelligence platform for ghost nets and marine debris. YOLOv8-powered real-time detection across India\'s 11,098 km coastline.',
   keywords: ['GhostNet', 'Sonar AI', 'Marine Debris', 'Ghost Net Detection', 'Autonomous Survey', 'YOLOv8', 'SIH 2024', 'Hydrographic Survey'],
 };
 

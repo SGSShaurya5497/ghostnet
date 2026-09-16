@@ -440,19 +440,43 @@ export default function LandingPage() {
             </div>
           </FadeIn>
 
-          {/* Main heading */}
+          {/* Main Hero Header — Cyber-Acoustic Defense Typography */}
           <FadeIn delay={0.05}>
-            <div className="w-full flex flex-col items-center justify-center mb-6 text-center">
-              <div className="text-xs sm:text-sm font-mono font-bold tracking-[0.25em] text-teal-300 uppercase mb-3 px-3.5 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 shadow-[0_0_20px_rgba(45,212,191,0.15)]">
-                Autonomous Sonar Intelligence
+            <div className="w-full flex flex-col items-center justify-center mb-6 text-center relative">
+              {/* Background Bioluminescent Radar Aura */}
+              <div
+                className="absolute -top-12 left-1/2 -translate-x-1/2 w-[350px] sm:w-[600px] h-[250px] pointer-events-none -z-10 rounded-full"
+                style={{
+                  background: 'radial-gradient(circle, rgba(45,212,191,0.22) 0%, rgba(14,165,233,0.12) 45%, transparent 75%)',
+                  filter: 'blur(50px)',
+                }}
+              />
+
+              {/* Tactical Subheader Pill */}
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full text-[11px] sm:text-xs font-mono font-bold tracking-[0.25em] text-teal-300 bg-teal-950/70 border border-teal-500/30 shadow-[0_0_25px_rgba(45,212,191,0.25)] uppercase mb-5 backdrop-blur-xl">
+                <span className="w-2 h-2 rounded-full bg-teal-400 animate-ping" />
+                <span className="text-teal-200">DEFENSE HYDROGRAPHY</span>
+                <span className="text-white/25">|</span>
+                <span className="text-teal-400">ACOUSTIC AI INTELLIGENCE</span>
               </div>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.08] text-white my-2">
-                <span className="bg-gradient-to-r from-teal-200 via-teal-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(45,212,191,0.35)]">
-                  Ghost Net Detection
+
+              {/* Futuristic Multi-Layer Title */}
+              <h1 className="relative font-black tracking-[-0.04em] leading-[0.92] select-none text-center">
+                <span className="block text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-black uppercase text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-slate-400 drop-shadow-[0_4px_35px_rgba(0,0,0,0.9)]">
+                  GHOST NET
+                </span>
+                <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase mt-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-400 to-emerald-300 drop-shadow-[0_0_50px_rgba(45,212,191,0.55)]">
+                  DETECTION &amp; SALVAGE
                 </span>
               </h1>
-              <div className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white/90 mt-2 font-display">
-                for India&apos;s Oceans &amp; Coastlines
+
+              {/* Technical Acoustic Radar Telemetry Line */}
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[11px] sm:text-xs font-mono tracking-wider text-teal-400/90 uppercase font-semibold">
+                <span className="px-2.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">YOLOv8 DEEP SEA RECON</span>
+                <span className="text-white/30">•</span>
+                <span className="px-2.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">455 kHz DUAL SWATH</span>
+                <span className="text-white/30">•</span>
+                <span className="px-2.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">11,098 KM COASTLINE SHIELD</span>
               </div>
             </div>
           </FadeIn>
@@ -462,7 +486,7 @@ export default function LandingPage() {
             <p className="text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
               Autonomous side-scan sonar intelligence platform using{' '}
               <span style={{ color: TEAL }} className="font-semibold">YOLOv8</span> to detect, map and
-              eliminate ghost fishing nets — protecting 8,118 km of Indian coastline.
+              eliminate ghost fishing nets — protecting 11,098 km of Indian coastline.
             </p>
           </FadeIn>
 
@@ -538,7 +562,7 @@ export default function LandingPage() {
                   note="Measured · avg over 50 runs"
                 />
                 <StatCard
-                  value={8118}
+                  value={11098}
                   label="km Coastline Coverage"
                   suffix=""
                 />
@@ -577,7 +601,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap gap-8 justify-center items-center">
             {[
               { label: 'Inference Latency', value: '18.4 ms' },
-              { label: 'Survey Coverage', value: '8,118 km' },
+              { label: 'Survey Coverage', value: '11,098 km' },
               { label: 'YOLOv8 Architecture', value: 'n-seg' },
               { label: 'Sonar Freq.', value: '455 kHz' },
               { label: 'AUV Fleet Support', value: 'Unlimited' },
@@ -694,7 +718,7 @@ export default function LandingPage() {
               />
               <br />
               <SplitText
-                text="8,118 km Coastline"
+                text="11,098 km Coastline"
                 splitType="words"
                 delay={0.2}
                 duration={0.7}
@@ -761,7 +785,7 @@ export default function LandingPage() {
             <span style={{ color: TEAL }}>·</span>
             <span>Marine Debris Detection</span>
             <span style={{ color: TEAL }}>·</span>
-            <span>India Coastline 8,118 km</span>
+            <span>India Coastline 11,098 km</span>
           </div>
         </div>
       </footer>
