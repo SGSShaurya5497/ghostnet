@@ -318,7 +318,11 @@ export default function AIWorkstationPage() {
   const [detectionResult, setDetectionResult] = useState<DetectionResponse | null>(null);
   const [selectedDetectionId, setSelectedDetectionId] = useState<string | null>(null);
   const [confidenceThreshold, setConfidenceThreshold] = useState<number>(0.05);
-
+  const [activeColormap, setActiveColormap] = useState<'amber' | 'teal' | 'emerald' | 'thermal' | 'raw'>('amber');
+  const [showReticle, setShowReticle] = useState<boolean>(true);
+  const [measureMode, setMeasureMode] = useState<boolean>(false);
+  const [shadowLengthM, setShadowLengthM] = useState<number | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   
   const [isProcessing, setIsProcessing] = useState(false);
   const [pipelineStage, setPipelineStage] = useState<string>('');
@@ -504,7 +508,7 @@ export default function AIWorkstationPage() {
   const handleFileChange = (file: File) => {
     const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|tiff?|bmp|webp)$/i.test(file.name);
     if (!isImage) {
-      setErrorMessage('Please select a valid image file (PNG, JPG, TIFF).');
+      setErrorMessage('Please select a valid high-resolution sonar image file (PNG, JPG, TIFF).');
       return;
     }
     const url = URL.createObjectURL(file);
@@ -809,7 +813,7 @@ export default function AIWorkstationPage() {
 
         {/* ── Center Sonar Viewport Canvas (5 cols on lg) ── */}
         <div className="lg:col-span-5 cyber-card p-5 flex flex-col justify-between relative overflow-hidden h-full">
-          <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-300">
@@ -825,10 +829,61 @@ export default function AIWorkstationPage() {
             </span>
           </div>
 
+          {/* Tactical Colormap & HUD Controls Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 py-2 px-1 border-b border-white/[0.06] text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-mono text-slate-400 uppercase font-semibold">Palette:</span>
+              {[
+                { id: 'amber', label: 'Amber SSS', bg: 'bg-amber-500/20 text-amber-300 border-amber-500/30' },
+                { id: 'teal', label: 'Cyber Teal', bg: 'bg-teal-500/20 text-teal-300 border-teal-500/30' },
+                { id: 'emerald', label: 'FLIR Green', bg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
+                { id: 'thermal', label: 'Thermal', bg: 'bg-rose-500/20 text-rose-300 border-rose-500/30' },
+                { id: 'raw', label: 'Raw Mono', bg: 'bg-slate-700/40 text-slate-300 border-slate-600/30' },
+              ].map((cm) => (
+                <button
+                  key={cm.id}
+                  onClick={() => setActiveColormap(cm.id as any)}
+                  className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-bold transition-all ${
+                    activeColormap === cm.id
+                      ? `${cm.bg} ring-1 ring-white/30 shadow-[0_0_8px_rgba(45,212,191,0.3)]`
+                      : 'bg-slate-900/60 text-slate-400 border-white/[0.08] hover:text-white'
+                  }`}
+                >
+                  {cm.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowReticle((prev) => !prev)}
+                className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-semibold transition-all ${
+                  showReticle
+                    ? 'bg-teal-500/20 border-teal-500/40 text-teal-300'
+                    : 'bg-slate-900/60 border-white/[0.08] text-slate-400'
+                }`}
+                title="Toggle Tactical Reticle Crosshairs"
+              >
+                HUD Reticle
+              </button>
+              <button
+                onClick={() => setMeasureMode((prev) => !prev)}
+                className={`px-2 py-0.5 rounded-md border text-[10px] font-mono font-semibold transition-all ${
+                  measureMode
+                    ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 ring-1 ring-cyan-400/50'
+                    : 'bg-slate-900/60 border-white/[0.08] text-slate-400'
+                }`}
+                title="Acoustic Shadow Height Estimation"
+              >
+                {measureMode ? 'Shadow Tool: ON' : 'Shadow Tool'}
+              </button>
+            </div>
+          </div>
+
           {/* Viewport Canvas Frame */}
           <div
             ref={containerRef}
-            className="flex-1 min-h-[360px] h-[360px] bg-[#020611] border border-teal-500/20 rounded-xl relative overflow-hidden flex items-center justify-center p-3 select-none my-3 shadow-inner"
+            className="flex-1 min-h-[360px] h-[360px] bg-[#020611] border border-teal-500/20 rounded-xl relative overflow-hidden flex items-center justify-center p-3 select-none my-2 shadow-inner"
           >
             {showGrid && (
               <div
@@ -849,14 +904,25 @@ export default function AIWorkstationPage() {
                   transformOrigin: 'center center',
                 }}
               >
-                {/* Sonar Raster Image */}
+                {/* Sonar Raster Image with Colormap filter */}
                 <img
                   ref={imgRef}
                   src={imageBlobUrl}
                   alt="Side-Scan Sonar Raster"
-                  className="max-h-[340px] w-auto object-contain rounded-lg block select-none pointer-events-none shadow-2xl"
+                  className={`max-h-[340px] w-auto object-contain rounded-lg block select-none pointer-events-none shadow-2xl colormap-${activeColormap}`}
                   onLoad={updateDimensions}
                 />
+
+                {/* Tactical HUD Overlays */}
+                {showReticle && (
+                  <>
+                    <div className="waterfall-scanline" />
+                    <div className="absolute inset-0 pointer-events-none tactical-hud-concentric opacity-25" />
+                    <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-black/85 border border-teal-500/30 text-[9px] font-mono text-teal-300 backdrop-blur pointer-events-none">
+                      SWATH: 100m · SLANT-CORRECTED · {geoMeta.sonarKhz} kHz
+                    </div>
+                  </>
+                )}
 
                 {/* Bounding Box Overlays */}
                 {imageDims &&

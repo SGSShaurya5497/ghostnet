@@ -42,33 +42,26 @@ interface NavSection {
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    title: 'Core Workspace',
+    title: 'Acoustic Intelligence',
     items: [
       { name: 'AI Sonar Workstation', path: '/dashboard', icon: Scan },
+      { name: 'Video Waterfall Scanner', path: '/dashboard/sonar', icon: Waves },
       { name: 'Live Detections', path: '/dashboard/detections', icon: Target },
       { name: 'Survey Analytics', path: '/dashboard/analytics', icon: BarChart3 },
-      // Optional/Simulated modules commented out to keep demo focused & 100% defensible:
-      // { name: 'Sonar Hydrography', path: '/dashboard/sonar', icon: Waves },
-      // { name: 'Depth & Bathymetry', path: '/dashboard/depth', icon: Layers },
     ],
   },
   {
     title: 'Operations & GIS',
     items: [
       { name: 'Geospatial Survey Map', path: '/dashboard/map', icon: Map },
-      { name: 'Cleanup Missions', path: '/dashboard/cleanup', icon: CheckCircle2 },
-      // { name: 'Fleet Telemetry', path: '/dashboard/fleet', icon: Ship },
-      // { name: 'Route Planning (TSP)', path: '/dashboard/route', icon: Route },
+      { name: 'Cleanup Tasking', path: '/dashboard/cleanup', icon: CheckCircle2 },
     ],
   },
   {
-    title: 'Intelligence & Audit',
+    title: 'Tactical Intelligence',
     items: [
       { name: 'Hotspot Clusters', path: '/dashboard/hotspots', icon: Crosshair },
-      { name: 'Audit Reports', path: '/dashboard/reports', icon: FileText },
-      // { name: 'Temporal Comparison', path: '/dashboard/comparison', icon: GitCompare },
-      // { name: 'Risk Engine', path: '/dashboard/risk', icon: Activity },
-      // { name: 'Alert Center', path: '/dashboard/alerts', icon: AlertTriangle },
+      { name: 'Audit & Compliance', path: '/dashboard/reports', icon: FileText },
     ],
   },
 ];
@@ -190,11 +183,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-black tracking-tight text-white flex items-center gap-2 font-mono">
-                GHOSTNET<span className="text-teal-400">.AI</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-teal-500/10 text-teal-300 border border-teal-500/30 tracking-wider">
-                  PRO
+              <span className="text-sm font-black tracking-tight text-white flex items-center gap-2 font-mono">
+                GHOSTNET<span className="text-teal-400">.SYSTEMS</span>
+                <span className="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-500/15 text-teal-300 border border-teal-500/35 tracking-widest uppercase">
+                  A2I v2.4
                 </span>
+              </span>
+              <span className="text-[9px] text-slate-400 font-mono tracking-wider">
+                AUTONOMOUS ACOUSTIC INTELLIGENCE
               </span>
             </div>
           </Link>
@@ -204,7 +200,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Breadcrumbs */}
           <nav className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-400">
             <span className="hover:text-white transition-colors cursor-pointer" onClick={() => router.push('/dashboard')}>
-              Console
+              Fleet Ops
             </span>
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
             <span className="text-teal-400 font-bold">{currentTitle}</span>
@@ -215,11 +211,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="hidden sm:flex items-center">
           <button
             onClick={() => setCommandPaletteOpen(true)}
-            className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] text-xs text-slate-400 hover:text-slate-200 transition-all w-80 justify-between group border border-white/[0.08] hover:border-teal-500/30 backdrop-blur-sm"
+            className="flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] text-xs text-slate-400 hover:text-slate-200 transition-all w-88 justify-between group border border-white/[0.08] hover:border-teal-500/30 backdrop-blur-sm shadow-inner"
           >
             <div className="flex items-center gap-2">
               <Search className="w-3.5 h-3.5 text-slate-500 group-hover:text-teal-400 transition-colors" />
-              <span>Search hydrographic modules...</span>
+              <span>Search acoustic transects, targets, sensor feeds...</span>
             </div>
             <kbd className="px-1.5 py-0.5 rounded-md bg-white/[0.06] border border-white/[0.1] text-[10px] font-mono text-teal-400">
               ⌘K

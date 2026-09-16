@@ -24,9 +24,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'GhostNet AI — Sonar Intelligence Platform | SIH 2024',
-  description: 'Autonomous side-scan sonar detection & hydrographic survey intelligence platform for ghost nets and marine debris. YOLOv8-powered real-time detection across India\'s 11,098 km coastline.',
-  keywords: ['GhostNet', 'Sonar AI', 'Marine Debris', 'Ghost Net Detection', 'Autonomous Survey', 'YOLOv8', 'SIH 2024', 'Hydrographic Survey'],
+  title: 'GhostNet Systems™ | Autonomous Subsea Sonar Intelligence Platform',
+  description: 'Enterprise autonomous side-scan sonar intelligence and hydrographic survey platform for deep-sea anomaly identification, ghost gear interdiction, and seabed feature mapping. Powered by Edge YOLOv8 neural acoustics.',
+  keywords: ['GhostNet', 'Acoustic AI', 'Side-Scan Sonar', 'AUV Telemetry', 'Subsea Anomaly Detection', 'Hydrographic Survey', 'YOLOv8 ONNX', 'Ocean Robotics'],
   icons: {
     icon: [
       { url: '/favicon.ico?v=3', sizes: 'any' },

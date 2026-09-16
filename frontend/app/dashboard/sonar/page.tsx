@@ -492,19 +492,24 @@ export default function SonarVideoAnalysisPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans rounded-none">
-      {/* ── Top Header Toolbar Card (0 Curves, Solid Ocean Theme) ── */}
-      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4 rounded-none">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-none bg-[#075A73] flex items-center justify-center text-white shadow-none">
-            <Video className="w-4 h-4 text-white" />
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+      {/* ── Top Header Toolbar Card: Tactical Ocean AUV Theme ── */}
+      <div className="cyber-card p-5 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 p-0.5 shadow-[0_0_15px_rgba(45,212,191,0.35)]">
+            <div className="w-full h-full bg-[#030712] rounded-[10px] flex items-center justify-center">
+              <Video className="w-5 h-5 text-teal-400" />
+            </div>
           </div>
           <div>
-            <h1 className="text-base font-bold text-[#0E232B]">
-              Seabed Video Scanner & Real-Time AI Detection
+            <h1 className="text-base font-bold text-white font-mono flex items-center gap-2">
+              AUV Video &amp; Acoustic Waterfall Scanner
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-extrabold bg-teal-500/15 text-teal-300 border border-teal-500/35 tracking-wider">
+                YOLOv8 TRACKER
+              </span>
             </h1>
-            <span className="text-xs text-[#526E78] font-medium">
-              Upload or scan seabed video · Pause anytime to analyze frames in AI Workstation
+            <span className="text-xs text-slate-400 font-mono">
+              Real-time seabed survey feed · Temporal feature tracker · Extract frames directly to AI Workstation
             </span>
           </div>
         </div>
@@ -525,50 +530,54 @@ export default function SonarVideoAnalysisPage() {
 
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="btn-pill-filter text-xs rounded-none"
+            className="btn-pill-filter text-xs"
             title="Upload custom underwater seabed survey video"
           >
-            <UploadCloud className="w-3.5 h-3.5 text-[#075A73]" />
-            <span>{videoFile ? videoFile.name : 'Upload Seabed Video'}</span>
+            <UploadCloud className="w-3.5 h-3.5 text-teal-400" />
+            <span>{videoFile ? videoFile.name : 'Upload Survey Video'}</span>
           </button>
 
           <button
             onClick={togglePlay}
-            className="btn-primary text-xs rounded-none"
+            className="btn-primary text-xs"
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            <span>{isPlaying ? 'Pause Video' : 'Scan Video'}</span>
+            <span>{isPlaying ? 'Pause Feed' : 'Scan Feed'}</span>
           </button>
 
           {/* Dedicated Instant Analyze Frame Button */}
           <button
             onClick={analyzeCurrentFrameInWorkstation}
-            className="px-3.5 py-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white text-xs font-bold shadow-none transition-all flex items-center gap-1.5 border border-[#075A73]"
+            className="px-4 py-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 text-xs font-bold font-mono transition-all flex items-center gap-1.5 border border-teal-500/40 shadow-sm"
             title="Analyze the current stopped frame in the AI Workstation"
           >
-            <Sparkles className="w-3.5 h-3.5 text-white" />
+            <Sparkles className="w-3.5 h-3.5 text-teal-400" />
             <span>Analyze Frame at {formatTime(currentTime)}</span>
           </button>
         </div>
       </div>
 
       {/* ── Main 2-Column Layout: Video Display + Captured Targets Sidebar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch rounded-none">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left Column: Video Viewport + Live Bounding Box + Controls (8 cols on lg) */}
-        <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between space-y-4 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold text-[#526E78] uppercase tracking-wider pb-2 border-b border-[#B8C9CC]">
+        <div className="lg:col-span-8 cyber-card p-5 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-400 uppercase tracking-wider pb-3 border-b border-white/[0.08] font-mono">
             <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-none ${isPlaying ? 'bg-emerald-600 animate-pulse' : 'bg-amber-500'}`} />
-              <span>{videoFile ? `CUSTOM VIDEO: ${videoFile.name}` : currentPreset.name}</span>
+              <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-teal-400 animate-pulse shadow-[0_0_8px_rgba(45,212,191,0.8)]' : 'bg-amber-400'}`} />
+              <span className="text-slate-200">{videoFile ? `FEED: ${videoFile.name}` : currentPreset.name}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[#526E78] font-mono">{formatTime(currentTime)} / {formatTime(duration)}</span>
-              {isScanning && <span className="pill-badge-ocean text-[10px] rounded-none">AI Scanning...</span>}
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400 font-mono">{formatTime(currentTime)} / {formatTime(duration)}</span>
+              {isScanning && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] bg-teal-500/15 border border-teal-500/30 text-teal-300 font-mono animate-pulse">
+                  AI SCANNING ACTIVE
+                </span>
+              )}
             </div>
           </div>
 
           {/* Video Player / Canvas Frame with Overlaid Bounding Boxes */}
-          <div className="h-[380px] w-full rounded-none bg-[#0E232B] border border-[#075A73] overflow-hidden relative shadow-none flex items-center justify-center select-none">
+          <div className="h-[400px] w-full rounded-xl bg-[#020611] border border-teal-500/25 overflow-hidden relative shadow-inner flex items-center justify-center select-none">
             {videoUrl ? (
               <video
                 ref={videoRef}
@@ -591,6 +600,9 @@ export default function SonarVideoAnalysisPage() {
               />
             )}
 
+            {/* Scanline HUD effect */}
+            <div className="waterfall-scanline" />
+
             {/* Live Bounding Box Overlay on Video Stream */}
             {activeDetections.map((det, idx) => {
               const left = `${(det.bbox.x_min / 640) * 100}%`;
@@ -601,13 +613,13 @@ export default function SonarVideoAnalysisPage() {
               return (
                 <div
                   key={idx}
-                  className="absolute border-2 border-emerald-400 bg-emerald-500/10 pointer-events-none rounded-none transition-all"
+                  className="absolute border-2 border-teal-400 bg-teal-500/15 pointer-events-none rounded-lg shadow-[0_0_15px_rgba(45,212,191,0.4)] transition-all"
                   style={{ left, top, width, height }}
                 >
-                  <div className="absolute -top-6 left-0 px-2 py-0.5 rounded-none bg-[#075A73] text-white text-[10px] font-bold shadow-none whitespace-nowrap flex items-center gap-1">
-                    <Target className="w-3 h-3" />
+                  <div className="absolute -top-7 left-0 px-2.5 py-0.5 rounded-md bg-slate-950/90 text-teal-300 border border-teal-500/40 text-[10px] font-mono font-bold whitespace-nowrap flex items-center gap-1.5 shadow-md">
+                    <Target className="w-3 h-3 text-teal-400" />
                     <span>{formatLabel(det.label)}</span>
-                    <span>{(det.confidence * 100).toFixed(0)}%</span>
+                    <span className="text-white">{(det.confidence * 100).toFixed(0)}%</span>
                   </div>
                 </div>
               );
@@ -615,22 +627,22 @@ export default function SonarVideoAnalysisPage() {
 
             {/* Detection Banner Overlay */}
             {activeDetections.length > 0 && (
-              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-none bg-red-950/90 backdrop-blur-md text-red-200 text-[11px] font-bold border border-red-700/60 shadow-none flex items-center gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-                <span>GHOST NET DETECTED IN SCAN</span>
+              <div className="absolute top-3 right-3 px-3 py-1.5 rounded-xl bg-red-950/90 backdrop-blur-md text-red-200 text-xs font-mono font-bold border border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.3)] flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-red-400 animate-bounce" />
+                <span>GHOST GEAR TARGET ACQUIRED</span>
               </div>
             )}
 
             {/* When Video is Paused: In-Player Action Overlay */}
             {!isPlaying && (
-              <div className="absolute inset-0 bg-[#0E232B]/60 backdrop-blur-[2px] flex items-center justify-center pointer-events-none">
+              <div className="absolute inset-0 bg-[#030712]/70 backdrop-blur-[3px] flex items-center justify-center pointer-events-none">
                 <button
                   onClick={analyzeCurrentFrameInWorkstation}
-                  className="pointer-events-auto px-5 py-2.5 rounded-none bg-[#075A73] hover:bg-[#054356] hover:scale-105 text-white font-bold text-sm shadow-none border border-white/20 flex items-center gap-2.5 transition-all"
+                  className="pointer-events-auto px-6 py-3 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-500 hover:from-teal-300 hover:to-cyan-400 hover:scale-105 text-slate-950 font-black text-xs font-mono uppercase tracking-wider shadow-[0_0_25px_rgba(45,212,191,0.4)] border border-teal-400/40 flex items-center gap-2 transition-all cursor-pointer"
                 >
-                  <Sparkles className="w-4 h-4 text-white" />
-                  <span>Analyze Frame at {formatTime(currentTime)} in AI Workstation</span>
-                  <ArrowRight className="w-4 h-4 text-white" />
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>Analyze Frame at {formatTime(currentTime)} in Workstation</span>
+                  <ArrowRight className="w-4 h-4 text-slate-950" />
                 </button>
               </div>
             )}
@@ -640,7 +652,7 @@ export default function SonarVideoAnalysisPage() {
           <div className="space-y-3 pt-1">
             {/* Seek Bar */}
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-[#0E232B] font-mono w-10">{formatTime(currentTime)}</span>
+              <span className="text-xs font-bold text-teal-400 font-mono w-10">{formatTime(currentTime)}</span>
               <input
                 type="range"
                 min="0"
@@ -648,9 +660,9 @@ export default function SonarVideoAnalysisPage() {
                 step="0.1"
                 value={currentTime}
                 onChange={(e) => seekTo(parseFloat(e.target.value))}
-                className="flex-1 rounded-none"
+                className="flex-1 accent-[#2DD4BF] cursor-pointer"
               />
-              <span className="text-xs font-medium text-[#526E78] font-mono w-10 text-right">{formatTime(duration)}</span>
+              <span className="text-xs font-medium text-slate-400 font-mono w-10 text-right">{formatTime(duration)}</span>
             </div>
 
             {/* Playback Settings & Presets */}
@@ -658,25 +670,25 @@ export default function SonarVideoAnalysisPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={togglePlay}
-                  className="p-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white transition-colors"
+                  className="p-2 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 border border-teal-500/40 transition-colors"
                 >
                   {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                 </button>
                 <button
                   onClick={() => seekTo(0)}
-                  className="p-2 rounded-none bg-[#E5EDEE] hover:bg-[#B8C9CC] text-[#075A73] transition-colors border border-[#B8C9CC]"
+                  className="p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-white/[0.08] transition-colors"
                   title="Restart Video"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
 
                 {/* Speed Toggles */}
-                <div className="flex items-center bg-[#E5EDEE] rounded-none p-1 border border-[#B8C9CC] text-xs font-bold">
+                <div className="flex items-center bg-slate-900/90 rounded-xl p-1 border border-white/[0.08] text-xs font-mono font-bold">
                   {[1, 1.5, 2].map((rate) => (
                     <button
                       key={rate}
                       onClick={() => setPlaybackRate(rate)}
-                      className={`px-2.5 py-1 rounded-none transition-colors ${playbackRate === rate ? 'bg-white text-[#075A73] shadow-none' : 'text-[#526E78]'}`}
+                      className={`px-2.5 py-1 rounded-lg transition-colors ${playbackRate === rate ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30' : 'text-slate-400 hover:text-white'}`}
                     >
                       {rate}x
                     </button>
@@ -685,21 +697,21 @@ export default function SonarVideoAnalysisPage() {
 
                 <button
                   onClick={analyzeCurrentFrameInWorkstation}
-                  className="ml-2 px-3 py-1.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] hover:bg-[#B8C9CC] text-[#075A73] text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  className="ml-2 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-white/[0.08] hover:border-teal-500/30 text-teal-400 text-xs font-mono font-bold flex items-center gap-1.5 transition-colors"
                   title="Send current paused frame to Workstation"
                 >
-                  <Scan className="w-3.5 h-3.5 text-[#075A73]" />
-                  <span>Send Frame to Workstation</span>
+                  <Scan className="w-3.5 h-3.5 text-teal-400" />
+                  <span>Send to Workstation</span>
                 </button>
               </div>
 
               {/* Auto Pause Toggle */}
-              <label className="flex items-center gap-2 text-xs font-semibold text-[#2A434D] cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-300 font-mono cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={autoPauseOnDetect}
                   onChange={(e) => setAutoPauseOnDetect(e.target.checked)}
-                  className="w-4 h-4 text-[#075A73] rounded-none border-[#B8C9CC] focus:ring-[#075A73]"
+                  className="w-4 h-4 text-teal-400 rounded accent-[#2DD4BF]"
                 />
                 <span>Auto-pause on Net Detection</span>
               </label>
@@ -708,18 +720,18 @@ export default function SonarVideoAnalysisPage() {
         </div>
 
         {/* Right Column: Captured Ghost Nets & Targets Feed (4 cols on lg) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between h-full space-y-4 rounded-none">
+        <div className="lg:col-span-4 cyber-card p-5 flex flex-col justify-between h-full space-y-4">
           <div className="space-y-3">
-            <div className="flex items-center justify-between pb-3 border-b border-[#B8C9CC]">
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#0E232B] block">
+                <span className="text-xs font-bold font-mono uppercase tracking-wider text-white block">
                   CAPTURED TARGETS TIMELINE
                 </span>
-                <span className="text-[11px] text-[#526E78]">
-                  {capturedSnags.length} Ghost Net{capturedSnags.length !== 1 ? 's' : ''} auto-captured
+                <span className="text-[11px] text-slate-400 font-mono">
+                  {capturedSnags.length} Target{capturedSnags.length !== 1 ? 's' : ''} auto-cataloged
                 </span>
               </div>
-              <span className="pill-badge-red text-[10px] rounded-none">AUTO-LOG</span>
+              <span className="pill-badge-ocean text-[10px]">AUTO-LOG</span>
             </div>
 
             {/* Timeline List of Captured Targets */}
@@ -728,75 +740,75 @@ export default function SonarVideoAnalysisPage() {
                 capturedSnags.map((snag) => (
                   <div
                     key={snag.id}
-                    className="p-3 rounded-none bg-[#E5EDEE]/50 border border-[#B8C9CC] hover:border-[#075A73] transition-all space-y-2 group"
+                    className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-teal-500/40 hover:bg-white/[0.05] transition-all space-y-2 group"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-[#0E232B] font-mono">{snag.id}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-none font-bold bg-[#E5EDEE] text-[#075A73] font-mono border border-[#B8C9CC]">
+                        <span className="text-xs font-black text-teal-300 font-mono">{snag.id}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-md font-bold bg-slate-900 text-slate-400 font-mono border border-white/[0.08]">
                           @{snag.formattedTime}
                         </span>
                       </div>
-                      <span className="pill-badge-red text-[10px] uppercase rounded-none">{snag.severity}</span>
+                      <span className="pill-badge-red text-[10px] uppercase">{snag.severity}</span>
                     </div>
 
                     {/* Snapshot Preview & Details */}
                     <div className="flex gap-3 items-center">
-                      <div className="w-20 h-14 rounded-none bg-[#0E232B] overflow-hidden border border-[#B8C9CC] shrink-0 relative">
+                      <div className="w-20 h-14 rounded-lg bg-black overflow-hidden border border-white/[0.1] shrink-0 relative">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={snag.thumbnailUrl}
                           alt="Captured Snag"
-                          className="w-full h-full object-cover rounded-none"
+                          className="w-full h-full object-cover rounded-lg"
                         />
                       </div>
-                      <div className="space-y-0.5 text-[11px] text-[#2A434D] flex-1">
-                        <span className="font-bold text-[#0E232B] block text-xs truncate">{formatLabel(snag.label)}</span>
-                        <div className="flex justify-between text-[#526E78]">
+                      <div className="space-y-0.5 text-[11px] text-slate-300 flex-1 font-mono">
+                        <span className="font-bold text-white block text-xs truncate">{formatLabel(snag.label)}</span>
+                        <div className="flex justify-between text-slate-400">
                           <span>Confidence:</span>
-                          <strong className="text-emerald-700">{(snag.confidence * 100).toFixed(0)}%</strong>
+                          <strong className="text-teal-400">{(snag.confidence * 100).toFixed(0)}%</strong>
                         </div>
-                        <div className="flex justify-between text-[#526E78]">
+                        <div className="flex justify-between text-slate-400">
                           <span>Est. Area:</span>
-                          <strong className="text-[#0E232B]">{snag.area_m2} m²</strong>
+                          <strong className="text-cyan-300">{snag.area_m2} m²</strong>
                         </div>
                       </div>
                     </div>
 
                     {/* Action Buttons for this Captured Target */}
-                    <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-[#B8C9CC] text-[11px]">
+                    <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-white/[0.06] text-[11px] font-mono">
                       <button
                         onClick={() => seekTo(snag.timestampSec)}
-                        className="py-1 px-2 rounded-none bg-white border border-[#B8C9CC] hover:bg-[#E5EDEE] text-[#0E232B] font-semibold transition-colors flex items-center justify-center gap-1"
+                        className="py-1 px-2 rounded-lg bg-slate-900 border border-white/[0.08] hover:bg-slate-800 text-slate-300 font-semibold transition-colors flex items-center justify-center gap-1"
                         title="Seek video to this timestamp"
                       >
-                        <Clock className="w-3 h-3 text-[#526E78]" />
+                        <Clock className="w-3 h-3 text-slate-400" />
                         <span>Seek</span>
                       </button>
                       <button
                         onClick={() => downloadJPG(snag)}
-                        className="py-1 px-2 rounded-none bg-white border border-[#B8C9CC] hover:bg-[#E5EDEE] text-[#0E232B] font-semibold transition-colors flex items-center justify-center gap-1"
+                        className="py-1 px-2 rounded-lg bg-slate-900 border border-white/[0.08] hover:bg-slate-800 text-slate-300 font-semibold transition-colors flex items-center justify-center gap-1"
                         title="Download captured JPG frame"
                       >
-                        <Download className="w-3.5 h-3.5 text-[#526E78]" />
+                        <Download className="w-3.5 h-3.5 text-slate-400" />
                         <span>JPG</span>
                       </button>
                       <button
                         onClick={() => sendToWorkstation(snag)}
-                        className="py-1 px-2 rounded-none bg-[#075A73] hover:bg-[#054356] text-white font-semibold transition-colors flex items-center justify-center gap-1"
+                        className="py-1 px-2 rounded-lg bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/30 font-semibold transition-colors flex items-center justify-center gap-1"
                         title="Analyze in AI Workstation"
                       >
-                        <Scan className="w-3.5 h-3.5 text-white" />
+                        <Scan className="w-3.5 h-3.5 text-teal-400" />
                         <span>Analyze</span>
                       </button>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="py-12 text-center space-y-2 text-[#849EAA]">
-                  <Scan className="w-8 h-8 mx-auto text-[#B8C9CC]" />
-                  <span className="text-xs font-bold text-[#0E232B] block">No Snags Detected Yet</span>
-                  <p className="text-[11px] text-[#526E78] max-w-[200px] mx-auto leading-relaxed">
+                <div className="py-12 text-center space-y-2 text-slate-500">
+                  <Scan className="w-8 h-8 mx-auto text-slate-600" />
+                  <span className="text-xs font-bold text-slate-300 block font-mono">No Snags Detected Yet</span>
+                  <p className="text-[11px] text-slate-500 max-w-[200px] mx-auto leading-relaxed">
                     Play the video scan or pause at any point and click &ldquo;Analyze Frame&rdquo; to send the frame to the AI Workstation.
                   </p>
                 </div>
@@ -805,8 +817,8 @@ export default function SonarVideoAnalysisPage() {
           </div>
 
           {/* Preloaded Demo Clips Selector */}
-          <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2">
-            <span className="text-[10px] font-bold text-[#526E78] uppercase tracking-wider block">
+          <div className="p-3.5 rounded-xl bg-slate-900/80 border border-white/[0.08] space-y-2 font-mono">
+            <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider block">
               Preloaded Survey Video Clips
             </span>
             <div className="space-y-1.5">
@@ -814,17 +826,17 @@ export default function SonarVideoAnalysisPage() {
                 <button
                   key={clip.id}
                   onClick={() => selectPreset(clip)}
-                  className={`w-full text-left p-2 rounded-none transition-all border ${
+                  className={`w-full text-left p-2.5 rounded-xl transition-all border ${
                     selectedPresetId === clip.id
-                      ? 'bg-white border-[#075A73] shadow-none font-semibold'
-                      : 'bg-[#E5EDEE] border-transparent hover:bg-white hover:border-[#B8C9CC]'
+                      ? 'bg-teal-500/15 border-teal-500/40 text-teal-300 shadow-[0_0_12px_rgba(45,212,191,0.15)] font-semibold'
+                      : 'bg-white/[0.02] border-white/[0.06] text-slate-300 hover:bg-white/[0.05] hover:border-white/[0.1]'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#0E232B] truncate">{clip.name}</span>
-                    <span className="text-[10px] font-mono text-[#526E78]">{clip.durationSec}s</span>
+                    <span className="text-xs font-bold text-white truncate">{clip.name}</span>
+                    <span className="text-[10px] font-mono text-slate-400">{clip.durationSec}s</span>
                   </div>
-                  <p className="text-[10px] text-[#526E78] truncate mt-0.5">{clip.description}</p>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{clip.description}</p>
                 </button>
               ))}
             </div>

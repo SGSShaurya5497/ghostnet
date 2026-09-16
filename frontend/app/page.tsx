@@ -420,23 +420,25 @@ export default function LandingPage() {
       <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 text-center pt-16">
         <motion.div style={{ y: heroY, opacity: heroOpacity }} className="max-w-5xl w-full">
 
-          {/* SIH Badge */}
+          {/* Enterprise Product Badge */}
           <FadeIn>
             <div
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-8"
               style={{
-                border: '1px solid rgba(45,212,191,0.3)',
+                border: '1px solid rgba(45,212,191,0.35)',
                 background: 'rgba(45,212,191,0.08)',
                 color: '#5EEAD4',
                 backdropFilter: 'blur(8px)',
               }}
             >
               <span
-                className="w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ background: '#2DD4BF', boxShadow: '0 0 8px rgba(45,212,191,0.8)' }}
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{ background: '#2DD4BF', boxShadow: '0 0 10px rgba(45,212,191,0.9)' }}
               />
-              SIH 2024 · Problem Statement 1706 · Marine Debris Detection
-              <ChevronRight className="w-3 h-3 opacity-60" />
+              <span className="font-mono uppercase tracking-wider text-[11px]">
+                GHOSTNET SYSTEMS™ · AUTONOMOUS ACOUSTIC INTELLIGENCE SUITE v2.4
+              </span>
+              <ChevronRight className="w-3.5 h-3.5 opacity-60 text-teal-400" />
             </div>
           </FadeIn>
 
@@ -466,7 +468,7 @@ export default function LandingPage() {
                   GHOST NET
                 </span>
                 <span className="block text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold uppercase mt-2 tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-cyan-400 to-emerald-300 drop-shadow-[0_0_50px_rgba(45,212,191,0.55)]">
-                  DETECTION &amp; SALVAGE
+                  ACOUSTIC AUTONOMY
                 </span>
               </h1>
 
@@ -476,7 +478,7 @@ export default function LandingPage() {
                 <span className="text-white/30">•</span>
                 <span className="px-2.5 py-0.5 rounded bg-white/[0.04] border border-white/[0.08]">455 kHz DUAL SWATH</span>
                 <span className="text-white/30">•</span>
-                <span className="px-2.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">11,098 KM COASTLINE SHIELD</span>
+                <span className="px-2.5 py-0.5 rounded bg-teal-500/10 border border-teal-500/30 text-teal-300">AUTONOMOUS HARBOR &amp; REEF SHIELD</span>
               </div>
             </div>
           </FadeIn>
@@ -484,9 +486,9 @@ export default function LandingPage() {
           {/* Subtitle */}
           <FadeIn delay={0.3}>
             <p className="text-slate-400 text-lg sm:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
-              Autonomous side-scan sonar intelligence platform using{' '}
-              <span style={{ color: TEAL }} className="font-semibold">YOLOv8</span> to detect, map and
-              eliminate ghost fishing nets — protecting 11,098 km of Indian coastline.
+              Enterprise subsea acoustic intelligence and hydrographic survey platform deploying{' '}
+              <span style={{ color: TEAL }} className="font-semibold">Edge YOLOv8 ONNX</span> neural networks
+              to identify, geolocate, and interdict submerged marine hazards and ghost fishing gear in real time.
             </p>
           </FadeIn>
 
@@ -776,16 +778,16 @@ export default function LandingPage() {
             >
               <Image src="/ghostnet-logo.png" alt="GhostNet" fill className="object-cover" />
             </div>
-            <span className="text-sm text-slate-500 font-mono">
-              GHOSTNET<span style={{ color: TEAL }}>.AI</span> · SIH 2024 · PS-1706
+            <span className="text-sm text-slate-400 font-mono">
+              GHOSTNET SYSTEMS<span style={{ color: TEAL }}>™</span> · AUTONOMOUS ACOUSTIC INTELLIGENCE
             </span>
           </div>
-          <div className="flex items-center gap-6 text-xs text-slate-600 font-mono">
-            <span>YOLOv8 Sonar Intelligence</span>
+          <div className="flex items-center gap-6 text-xs text-slate-500 font-mono">
+            <span>Edge YOLOv8 Neural Acoustics</span>
             <span style={{ color: TEAL }}>·</span>
-            <span>Marine Debris Detection</span>
+            <span>Side-Scan Sonar Telemetry</span>
             <span style={{ color: TEAL }}>·</span>
-            <span>India Coastline 11,098 km</span>
+            <span>WGS-84 GIS Geolocation</span>
           </div>
         </div>
       </footer>
