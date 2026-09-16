@@ -595,26 +595,64 @@ export default function LandingPage() {
         </FadeIn>
       </section>
 
-      {/* ── STATS TICKER ── */}
-      <section className="relative z-10 py-10 overflow-hidden"
+      {/* ── STATS TICKER with Acoustic Waveform ── */}
+      <section className="relative z-10 py-8 overflow-hidden"
         style={{ borderTop: '1px solid rgba(45,212,191,0.07)', borderBottom: '1px solid rgba(45,212,191,0.07)' }}
       >
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-wrap gap-8 justify-center items-center">
-            {[
-              { label: 'Inference Latency', value: '18.4 ms' },
-              { label: 'Survey Coverage', value: '11,098 km' },
-              { label: 'YOLOv8 Architecture', value: 'n-seg' },
-              { label: 'Sonar Freq.', value: '455 kHz' },
-              { label: 'AUV Fleet Support', value: 'Unlimited' },
-              { label: 'Depth Range', value: '5–120 m' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-slate-600 font-mono text-xs">{item.label}</span>
-                <span className="text-white font-bold font-mono" style={{ color: '#94D5CC' }}>{item.value}</span>
-                {i < 5 && <span className="text-slate-700 text-xl font-thin">·</span>}
+          <div className="flex items-center gap-6 justify-between">
+            {/* Acoustic Waveform Animation */}
+            <div className="hidden md:flex items-end gap-1 shrink-0 h-8">
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+            </div>
+
+            {/* Scrolling Ticker */}
+            <div className="flex-1 overflow-hidden relative">
+              <div className="ticker-track gap-10">
+                {[
+                  { label: 'Inference Latency', value: '18.4 ms' },
+                  { label: 'Survey Coverage', value: '11,098 km' },
+                  { label: 'YOLOv8 Architecture', value: 'n-seg' },
+                  { label: 'Sonar Freq.', value: '455 kHz' },
+                  { label: 'AUV Fleet Support', value: 'Unlimited' },
+                  { label: 'Depth Range', value: '5–120 m' },
+                  { label: 'Detection Classes', value: '6 Types' },
+                  { label: 'GIS Datum', value: 'WGS-84' },
+                  { label: 'Model Precision', value: 'FP16 ONNX' },
+                  { label: 'Edge Platform', value: 'Jetson Orin' },
+                  // Duplicate for seamless loop
+                  { label: 'Inference Latency', value: '18.4 ms' },
+                  { label: 'Survey Coverage', value: '11,098 km' },
+                  { label: 'YOLOv8 Architecture', value: 'n-seg' },
+                  { label: 'Sonar Freq.', value: '455 kHz' },
+                  { label: 'AUV Fleet Support', value: 'Unlimited' },
+                  { label: 'Depth Range', value: '5–120 m' },
+                  { label: 'Detection Classes', value: '6 Types' },
+                  { label: 'GIS Datum', value: 'WGS-84' },
+                  { label: 'Model Precision', value: 'FP16 ONNX' },
+                  { label: 'Edge Platform', value: 'Jetson Orin' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 shrink-0">
+                    <span className="text-slate-600 font-mono text-xs uppercase tracking-wider">{item.label}</span>
+                    <span className="font-bold font-mono text-sm" style={{ color: '#2DD4BF' }}>{item.value}</span>
+                    <span className="text-slate-800 text-lg font-thin ml-4">·</span>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Right waveform */}
+            <div className="hidden md:flex items-end gap-1 shrink-0 h-8 scale-x-[-1]">
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+              <div className="waveform-bar" />
+            </div>
           </div>
         </div>
       </section>
@@ -646,6 +684,98 @@ export default function LandingPage() {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── SENSOR HARDWARE COMPATIBILITY ── */}
+      <section className="relative z-10 py-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <FadeIn className="text-center mb-12">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono uppercase tracking-widest mb-5 text-slate-500"
+              style={{ border: '1px solid rgba(45,212,191,0.12)' }}
+            >
+              <Activity className="w-3 h-3" style={{ color: TEAL }} />
+              Sensor Agnostic Architecture
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white mb-4">
+              Compatible with{' '}
+              <span style={{ color: TEAL }}>any sonar system</span>
+            </h2>
+            <p className="text-slate-400 text-base max-w-2xl mx-auto">
+              Native support for all major side-scan sonar, multibeam, and acoustic telemetry hardware through universal XTF / JSF / GSF data adapters and direct USB/Ethernet sensor bridges.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.1}>
+            <div
+              className="rounded-2xl p-8"
+              style={{
+                background: 'rgba(8, 15, 28, 0.6)',
+                border: '1px solid rgba(255, 255, 255, 0.06)',
+                backdropFilter: 'blur(20px)',
+              }}
+            >
+              {/* Hardware grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+                {[
+                  { brand: 'KLEIN MARINE', model: '4900 Series', freq: '445 kHz', type: 'Side-Scan' },
+                  { brand: 'EDGETECH', model: '4125 / 4205', freq: '120/410 kHz', type: 'Side-Scan' },
+                  { brand: 'KONGSBERG', model: 'GeoSwath+', freq: '250 kHz', type: 'Multibeam' },
+                  { brand: 'DEEPVISION', model: 'DE 680d', freq: '680 kHz', type: 'Side-Scan' },
+                  { brand: 'SONARDYNE', model: 'Ranger 2', freq: 'USBL', type: 'Positioning' },
+                  { brand: 'BLUEVIEW', model: 'P900-45', freq: '900 kHz', type: 'Imaging' },
+                ].map((hw, i) => (
+                  <div
+                    key={i}
+                    className="p-4 rounded-xl text-center flex flex-col items-center gap-2 cursor-default transition-all duration-200"
+                    style={{
+                      background: 'rgba(255,255,255,0.02)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: '12px',
+                      padding: '16px 12px',
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(45,212,191,0.05)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(45,212,191,0.2)';
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.02)';
+                      (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.06)';
+                    }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ background: 'rgba(45,212,191,0.08)', border: '1px solid rgba(45,212,191,0.15)' }}
+                    >
+                      <Compass className="w-4 h-4" style={{ color: TEAL }} />
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-black font-mono text-white uppercase tracking-wider">{hw.brand}</div>
+                      <div className="text-[10px] text-slate-500 font-mono">{hw.model}</div>
+                    </div>
+                    <div
+                      className="text-[9px] font-bold px-2 py-0.5 rounded-full font-mono uppercase tracking-wider"
+                      style={{ background: 'rgba(45,212,191,0.1)', color: '#2DD4BF', border: '1px solid rgba(45,212,191,0.15)' }}
+                    >
+                      {hw.freq}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom row: format support */}
+              <div className="cyber-divider mb-6" />
+              <div className="flex flex-wrap gap-3 justify-center">
+                {['XTF (Extended Triton Format)', 'JSF (Klein Native)', 'GSF (Multibeam)', 'GeoTIFF Export', 'KML / SHP GIS', 'ONNX Edge Model', 'REST / gRPC API', 'S3 / NAS Storage'].map((fmt, i) => (
+                  <span key={i} className="hardware-compat-pill">
+                    <CheckCircle2 className="w-3 h-3" style={{ color: TEAL }} />
+                    {fmt}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </section>
 

@@ -512,3 +512,231 @@ code, kbd, samp, pre, .font-mono {
 .tactical-hud-concentric {
   background-image: radial-gradient(circle, transparent 20%, rgba(45, 212, 191, 0.08) 21%, transparent 22%, transparent 40%, rgba(45, 212, 191, 0.08) 41%, transparent 42%, transparent 60%, rgba(45, 212, 191, 0.08) 61%, transparent 62%, transparent 80%, rgba(45, 212, 191, 0.08) 81%, transparent 82%);
 }
+
+/* ── Shimmer Skeleton Loader ── */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(45, 212, 191, 0.06) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+/* ── Glow Pulse (status indicators) ── */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(45, 212, 191, 0.6); }
+  50% { box-shadow: 0 0 18px rgba(45, 212, 191, 1), 0 0 30px rgba(45, 212, 191, 0.4); }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* ── Floating / Levitate ── */
+@keyframes levitate {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.animate-levitate {
+  animation: levitate 4s ease-in-out infinite;
+}
+
+/* ── Horizontal Scroll Ticker ── */
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 28s linear infinite;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* ── Bioluminescent Teal Border Flash ── */
+@keyframes border-flash {
+  0%, 100% { border-color: rgba(45, 212, 191, 0.2); }
+  50% { border-color: rgba(45, 212, 191, 0.6); box-shadow: 0 0 12px rgba(45, 212, 191, 0.3); }
+}
+
+.animate-border-flash {
+  animation: border-flash 3s ease-in-out infinite;
+}
+
+/* ── Tactical Data Fade In ── */
+@keyframes data-materialize {
+  0% { opacity: 0; transform: translateY(4px); letter-spacing: 0.3em; }
+  100% { opacity: 1; transform: translateY(0); letter-spacing: inherit; }
+}
+
+.animate-data-materialize {
+  animation: data-materialize 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ── Mission Critical Badge ── */
+.badge-mission-critical {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-family: var(--font-data-var), monospace;
+  background: rgba(239, 68, 68, 0.12);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: border-flash 2.5s ease-in-out infinite;
+}
+
+/* ── Teal Neon Text ── */
+.text-neon-teal {
+  color: #2DD4BF;
+  text-shadow: 0 0 10px rgba(45, 212, 191, 0.5), 0 0 20px rgba(45, 212, 191, 0.3), 0 0 40px rgba(45, 212, 191, 0.15);
+}
+
+/* ── Scan Line Overlay (for sonar realism) ── */
+@keyframes scan-overlay {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100%; }
+}
+
+.sonar-scanlines {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.08) 2px,
+    rgba(0, 0, 0, 0.08) 4px
+  );
+  pointer-events: none;
+}
+
+/* ── Tactical Progress Bar ── */
+.tactical-progress-bar {
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  position: relative;
+}
+
+.tactical-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.4), transparent);
+  animation: shimmer 2s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+
+/* ── Depth Gauge Gradient ── */
+.depth-gradient {
+  background: linear-gradient(180deg,
+    rgba(45, 212, 191, 0.9) 0%,
+    rgba(14, 165, 233, 0.7) 40%,
+    rgba(99, 102, 241, 0.5) 70%,
+    rgba(30, 58, 138, 0.8) 100%
+  );
+}
+
+/* ── Acoustic Waveform Bars ── */
+@keyframes waveform-beat {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+
+.waveform-bar {
+  width: 3px;
+  border-radius: 2px;
+  transform-origin: bottom;
+  background: #2DD4BF;
+}
+
+.waveform-bar:nth-child(1) { animation: waveform-beat 0.8s ease-in-out infinite 0s; height: 16px; }
+.waveform-bar:nth-child(2) { animation: waveform-beat 0.8s ease-in-out infinite 0.1s; height: 24px; }
+.waveform-bar:nth-child(3) { animation: waveform-beat 0.8s ease-in-out infinite 0.2s; height: 20px; }
+.waveform-bar:nth-child(4) { animation: waveform-beat 0.8s ease-in-out infinite 0.15s; height: 28px; }
+.waveform-bar:nth-child(5) { animation: waveform-beat 0.8s ease-in-out infinite 0.05s; height: 18px; }
+
+/* ── Cyber Divider ── */
+.cyber-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(45, 212, 191, 0.3), rgba(14, 165, 233, 0.2), transparent);
+  position: relative;
+}
+
+.cyber-divider::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2DD4BF;
+  box-shadow: 0 0 8px rgba(45, 212, 191, 0.8);
+}
+
+/* ── Glassmorphic Top-Loading Bar ── */
+@keyframes top-bar-slide {
+  0% { width: 0%; opacity: 1; }
+  70% { width: 85%; opacity: 1; }
+  90% { width: 100%; opacity: 0.7; }
+  100% { width: 100%; opacity: 0; }
+}
+
+.top-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #2DD4BF, #0EA5E9, #2DD4BF);
+  box-shadow: 0 0 12px rgba(45, 212, 191, 0.8);
+  z-index: 9999;
+  animation: top-bar-slide 1.5s ease-out forwards;
+}
+
+/* ── Hardware Compat Grid ── */
+.hardware-compat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-data-var), monospace;
+  background: rgba(255, 255, 255, 0.03);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  letter-spacing: 0.04em;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.hardware-compat-pill:hover {
+  background: rgba(45, 212, 191, 0.06);
+  color: #2DD4BF;
+  border-color: rgba(45, 212, 191, 0.25);
+}
+
