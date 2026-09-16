@@ -264,3 +264,186 @@ code, kbd, samp, pre, .font-mono {
   backdrop-filter: blur(16px) !important;
   color: white !important;
 }
+
+/* ── Cyber Card Design System ── */
+.cyber-card {
+  background: rgba(8, 15, 28, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 1px 1px rgba(255, 255, 255, 0.03) inset;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cyber-card:hover {
+  border-color: rgba(45, 212, 191, 0.25);
+}
+
+.cyber-card-interactive {
+  background: rgba(8, 15, 28, 0.65);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.4);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cyber-card-interactive:hover {
+  background: rgba(13, 25, 45, 0.8);
+  border-color: rgba(45, 212, 191, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px -6px rgba(0, 0, 0, 0.6), 0 0 15px rgba(45, 212, 191, 0.15);
+}
+
+/* Fallback protection for any legacy light-saas-card reference */
+.light-saas-card {
+  background: rgba(8, 15, 28, 0.7) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 1.25rem !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ── Pill Badges ── */
+.pill-badge-red {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-family: var(--font-data-var), monospace;
+  background: rgba(239, 68, 68, 0.15);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pill-badge-amber {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-family: var(--font-data-var), monospace;
+  background: rgba(245, 158, 11, 0.15);
+  color: #FBBF24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pill-badge-green {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-family: var(--font-data-var), monospace;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pill-badge-blue {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-family: var(--font-data-var), monospace;
+  background: rgba(14, 165, 233, 0.15);
+  color: #38BDF8;
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pill-badge-ocean {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  font-family: var(--font-data-var), monospace;
+  background: rgba(45, 212, 191, 0.15);
+  color: #2DD4BF;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  letter-spacing: 0.05em;
+}
+
+/* ── Common Buttons ── */
+.btn-primary {
+  background: linear-gradient(135deg, #2DD4BF 0%, #0EA5E9 100%);
+  color: #050810;
+  font-weight: 700;
+  font-family: var(--font-data-var), monospace;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0 20px rgba(45, 212, 191, 0.3);
+  border: 1px solid rgba(45, 212, 191, 0.4);
+  cursor: pointer;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 30px rgba(45, 212, 191, 0.5);
+  color: #000000;
+}
+
+.btn-primary-dark {
+  background: rgba(255, 255, 255, 0.07);
+  color: #ffffff;
+  font-weight: 700;
+  font-family: var(--font-data-var), monospace;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.25s ease;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+}
+
+.btn-primary-dark:hover:not(:disabled) {
+  background: rgba(45, 212, 191, 0.15);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #2DD4BF;
+}
+
+.btn-pill-filter {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.75rem;
+  color: #cbd5e1;
+  font-weight: 600;
+  font-family: var(--font-data-var), monospace;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-pill-filter:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(45, 212, 191, 0.3);
+  color: #ffffff;
+}

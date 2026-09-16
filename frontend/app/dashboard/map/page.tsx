@@ -199,12 +199,15 @@ export default function SurveyGoogleMapPage() {
         const marker = L.marker([target.lat, target.lon], { icon: customIcon })
           .addTo(map)
           .bindPopup(`
-            <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; min-width: 170px;">
-              <strong style="color: #0F172A; font-size: 13px;">${target.id}</strong><br/>
-              <span style="color: #475569; font-weight: 600;">${target.label}</span><br/>
-              <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid #E2E8F0; font-size: 11px; color: #64748B;">
-                Depth: <strong>${target.depth}m</strong> | Area: <strong>${target.area_m2}m²</strong><br/>
-                Coordinates: <strong>${target.lat.toFixed(6)}°N, ${target.lon.toFixed(6)}°E</strong>
+            <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4; min-width: 180px; background: #060b14; color: #f1f5f9; padding: 6px 8px; border-radius: 8px; border: 1px solid rgba(45,212,191,0.3);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                <strong style="color: #2DD4BF; font-family: monospace; font-size: 13px;">${target.id}</strong>
+                <span style="font-size: 10px; font-weight: bold; color: ${color}; text-transform: uppercase;">${target.severity}</span>
+              </div>
+              <span style="color: #e2e8f0; font-weight: 600; font-size: 12px;">${target.label}</span><br/>
+              <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 11px; color: #94a3b8; font-family: monospace;">
+                Depth: <strong style="color: #fff;">${target.depth}m</strong> | Area: <strong style="color: #fff;">${target.area_m2}m²</strong><br/>
+                Position: <strong style="color: #38bdf8;">${target.lat.toFixed(6)}°N, ${target.lon.toFixed(6)}°E</strong>
               </div>
             </div>
           `);
@@ -303,34 +306,37 @@ export default function SurveyGoogleMapPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans rounded-none">
-      {/* ── Top Header Toolbar Card (0 Curves, Solid Ocean Theme) ── */}
-      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4 rounded-none">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-none bg-[#075A73] flex items-center justify-center text-white shadow-none">
-            <Globe className="w-4 h-4 text-white" />
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans text-slate-100">
+      {/* ── Top Header Toolbar Card ── */}
+      <div className="cyber-card p-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2DD4BF] to-[#0EA5E9] flex items-center justify-center text-white shadow-lg shadow-[#2DD4BF]/20">
+            <Globe className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-[#0E232B]">
-              Google Maps Seabed & Ghost Net Geolocation
+            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+              Google Maps Seabed &amp; Ghost Net Geolocation
+              <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono">
+                GOOGLE SATELLITE TELEMETRY
+              </span>
             </h1>
-            <span className="text-xs text-[#526E78] font-medium">
-              Real-world satellite & seabed coordinates for active detected marine debris
-            </span>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">
+              Real-world satellite &amp; seabed coordinates for active detected marine debris
+            </p>
           </div>
         </div>
 
         {/* Google Maps Layer Switcher */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center bg-[#E5EDEE] rounded-none p-1 border border-[#B8C9CC] text-xs font-bold">
+          <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/10 text-xs font-mono font-bold">
             {(['satellite', 'terrain', 'roadmap'] as const).map((layerKey) => (
               <button
                 key={layerKey}
                 onClick={() => setActiveLayer(layerKey)}
-                className={`px-3 py-1.5 rounded-none capitalize transition-all ${
+                className={`px-3 py-1.5 rounded-lg capitalize transition-all ${
                   activeLayer === layerKey
-                    ? 'bg-white text-[#075A73] shadow-none font-bold'
-                    : 'text-[#526E78] hover:text-[#0E232B]'
+                    ? 'bg-teal-500/25 text-teal-300 border border-teal-500/40 shadow-sm'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
                 {layerKey}
@@ -341,27 +347,27 @@ export default function SurveyGoogleMapPage() {
       </div>
 
       {/* ── Main View: Real Google Map + Target Geolocation Sidebar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch rounded-none">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left Column: Interactive Google Map Viewport (8 cols on lg) */}
-        <div className="lg:col-span-8 light-saas-card p-6 flex flex-col justify-between space-y-4 rounded-none">
-          <div className="flex items-center justify-between text-xs font-bold text-[#526E78] uppercase tracking-wider pb-2 border-b border-[#B8C9CC]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-none bg-emerald-600 animate-pulse" />
+        <div className="lg:col-span-8 cyber-card p-6 flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between text-xs font-bold text-slate-300 uppercase tracking-wider pb-3 border-b border-white/10 font-mono">
+            <div className="flex items-center gap-2.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>GOOGLE SATELLITE: EAST COAST SHELF (BAY OF BENGAL CORRIDOR)</span>
             </div>
-            <span className="text-[#075A73] font-mono font-bold">5 TARGETS PLOTTED</span>
+            <span className="text-cyan-300 font-mono font-bold">5 TARGETS PLOTTED</span>
           </div>
 
           {/* Interactive Leaflet/Google Maps Container */}
-          <div className="h-[440px] w-full rounded-none border border-[#B8C9CC] overflow-hidden relative shadow-none z-0">
+          <div className="h-[440px] w-full rounded-2xl border border-white/10 overflow-hidden relative shadow-inner z-0">
             <div ref={mapContainerRef} className="w-full h-full" />
 
             {/* Bottom Left Coordinate HUD */}
-            <div className="absolute bottom-3 left-3 z-[1000] px-3.5 py-2 rounded-none bg-[#0E232B]/95 backdrop-blur-md text-white text-[11px] font-mono border border-[#075A73] shadow-none flex items-center gap-3">
-              <Compass className="w-3.5 h-3.5 text-[#B8C9CC]" />
+            <div className="absolute bottom-3 left-3 z-[1000] px-3.5 py-2 rounded-xl bg-slate-950/90 backdrop-blur-md text-white text-[11px] font-mono border border-teal-500/30 shadow-lg flex items-center gap-3">
+              <Compass className="w-3.5 h-3.5 text-teal-400" />
               <span>{selectedTarget.lat.toFixed(6)}° N, {selectedTarget.lon.toFixed(6)}° E</span>
               <span>·</span>
-              <span className="text-white font-bold">{selectedTarget.depth}m Depth</span>
+              <span className="text-teal-300 font-bold">{selectedTarget.depth}m Depth</span>
             </div>
           </div>
 
@@ -373,24 +379,26 @@ export default function SurveyGoogleMapPage() {
                 <button
                   key={t.id}
                   onClick={() => focusOnTarget(t)}
-                  className={`px-3 py-2 rounded-none border text-left shrink-0 transition-all flex items-center gap-2 ${
+                  className={`px-3 py-2 rounded-xl border text-left shrink-0 transition-all flex items-center gap-2.5 ${
                     isSelected
-                      ? 'bg-[#E5EDEE] border-[#075A73] shadow-none'
-                      : 'bg-white border-[#B8C9CC] hover:bg-[#E5EDEE]/50'
+                      ? 'bg-teal-500/20 border-teal-400/60 shadow-lg shadow-teal-500/10'
+                      : 'bg-slate-900/80 border-white/10 hover:bg-slate-800/80 hover:border-white/20'
                   }`}
                 >
                   <span
-                    className={`w-2.5 h-2.5 rounded-none ${
+                    className={`w-2.5 h-2.5 rounded-full ${
                       t.severity === 'critical'
                         ? 'bg-red-500'
                         : t.severity === 'high'
                         ? 'bg-amber-500'
-                        : 'bg-emerald-500'
+                        : 'bg-emerald-400'
                     }`}
                   />
                   <div>
-                    <span className="text-xs font-bold text-[#0E232B] block font-mono">{t.id}</span>
-                    <span className="text-[10px] text-[#526E78]">{t.depth}m · {t.vessel}</span>
+                    <span className={`text-xs font-bold block font-mono ${isSelected ? 'text-teal-300' : 'text-white'}`}>
+                      {t.id}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">{t.depth}m · {t.vessel}</span>
                   </div>
                 </button>
               );
@@ -399,14 +407,14 @@ export default function SurveyGoogleMapPage() {
         </div>
 
         {/* Right Column: Selected Target Geolocation & Actions (4 cols on lg) */}
-        <div className="lg:col-span-4 light-saas-card p-6 flex flex-col justify-between h-full space-y-4 rounded-none">
+        <div className="lg:col-span-4 cyber-card p-6 flex flex-col justify-between h-full space-y-4">
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#B8C9CC]">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
-                <span className="text-xs font-black font-mono text-[#0E232B] block">
+                <span className="text-xs font-black font-mono text-teal-300 block">
                   {selectedTarget.id}
                 </span>
-                <span className="text-xs font-bold text-[#2A434D] block mt-0.5">
+                <span className="text-sm font-bold text-white block mt-0.5">
                   {selectedTarget.label}
                 </span>
               </div>
@@ -424,64 +432,64 @@ export default function SurveyGoogleMapPage() {
             </div>
 
             {/* Target Telemetry Grid */}
-            <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-3 text-xs">
-              <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3 text-xs font-mono">
+              <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider block font-mono border-b border-white/10 pb-1.5">
                 Target Geolocation Data
               </span>
-              <div className="grid grid-cols-2 gap-3 text-[#2A434D] font-mono">
+              <div className="grid grid-cols-2 gap-3 text-slate-300 font-mono">
                 <div>
-                  <span className="text-[10px] text-[#526E78] block font-sans">LATITUDE</span>
-                  <span className="font-bold text-[#0E232B] text-xs">{selectedTarget.lat.toFixed(6)}° N</span>
+                  <span className="text-[10px] text-slate-400 block font-mono">LATITUDE</span>
+                  <span className="font-bold text-white text-xs">{selectedTarget.lat.toFixed(6)}° N</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#526E78] block font-sans">LONGITUDE</span>
-                  <span className="font-bold text-[#0E232B] text-xs">{selectedTarget.lon.toFixed(6)}° E</span>
+                  <span className="text-[10px] text-slate-400 block font-mono">LONGITUDE</span>
+                  <span className="font-bold text-white text-xs">{selectedTarget.lon.toFixed(6)}° E</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#526E78] block font-sans">SEABED DEPTH</span>
-                  <span className="font-bold text-[#0E232B] text-xs">{selectedTarget.depth} m</span>
+                  <span className="text-[10px] text-slate-400 block font-mono">SEABED DEPTH</span>
+                  <span className="font-bold text-cyan-300 text-xs">{selectedTarget.depth} m</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#526E78] block font-sans">EST. FOOTPRINT</span>
-                  <span className="font-bold text-[#0E232B] text-xs">{selectedTarget.area_m2} m²</span>
+                  <span className="text-[10px] text-slate-400 block font-mono">EST. FOOTPRINT</span>
+                  <span className="font-bold text-cyan-300 text-xs">{selectedTarget.area_m2} m²</span>
                 </div>
               </div>
             </div>
 
             {/* Vessel & Mission Info */}
-            <div className="p-3.5 rounded-none bg-[#E5EDEE] border border-[#B8C9CC] space-y-2 text-xs">
-              <span className="text-[10px] font-bold text-[#075A73] uppercase tracking-wider block">
-                Survey & Recovery Info
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-2.5 text-xs font-mono">
+              <span className="text-[10px] font-bold text-teal-400 uppercase tracking-wider block font-mono border-b border-white/10 pb-1.5">
+                Survey &amp; Recovery Info
               </span>
               <div className="flex items-center justify-between">
-                <span className="text-[#526E78] font-medium">Logged By:</span>
-                <span className="font-bold text-[#0E232B] font-mono">{selectedTarget.vessel}</span>
+                <span className="text-slate-400 font-medium">Logged By:</span>
+                <span className="font-bold text-white font-mono">{selectedTarget.vessel}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[#526E78] font-medium">Confidence:</span>
-                <span className="font-bold text-emerald-700">{(selectedTarget.confidence * 100).toFixed(0)}%</span>
+                <span className="text-slate-400 font-medium">Confidence:</span>
+                <span className="font-bold text-emerald-400">{(selectedTarget.confidence * 100).toFixed(0)}%</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-[#526E78] font-medium">Mission Status:</span>
-                <span className="pill-badge-ocean text-[10px]">{selectedTarget.status}</span>
+                <span className="text-slate-400 font-medium">Mission Status:</span>
+                <span className="pill-badge-ocean text-[10px] font-mono">{selectedTarget.status}</span>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2.5 pt-2">
             <button
               onClick={() => openInGoogleMaps(selectedTarget.lat, selectedTarget.lon)}
-              className="w-full btn-pill-filter justify-center text-xs rounded-none"
+              className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 hover:text-white text-xs font-mono font-bold flex items-center justify-center gap-2 transition-colors"
               title="Open coordinate on Google Maps Web"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-[#075A73]" />
+              <ExternalLink className="w-3.5 h-3.5 text-teal-400" />
               <span>Open in Google Maps Web</span>
             </button>
 
             <button
               onClick={() => sendToWorkstation(selectedTarget)}
-              className="w-full btn-primary justify-center text-xs rounded-none"
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[#2DD4BF] to-[#0EA5E9] hover:from-[#0EA5E9] hover:to-[#2DD4BF] text-white text-xs font-mono font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#2DD4BF]/20 transition-all"
               title="Analyze target in AI Workstation"
             >
               <Sparkles className="w-3.5 h-3.5 text-white" />

@@ -150,37 +150,42 @@ export default function ReportsAuditPage() {
   }, [filteredReports, selectedIds]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 font-sans text-slate-100">
       {/* ── Top Header Toolbar Card ── */}
-      <div className="light-saas-card p-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="cyber-card p-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-xs">
-              <FileText className="w-4 h-4 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#2DD4BF] to-[#0EA5E9] flex items-center justify-center text-white shadow-lg shadow-[#2DD4BF]/20">
+              <FileText className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-base font-bold text-slate-900">
-              Audit Logs & Incident Reports
-            </h1>
+            <div>
+              <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                Audit Logs &amp; Incident Reports
+                <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono">
+                  MARITIME AUDIT TRAIL
+                </span>
+              </h1>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                {filteredReports.length} recorded incident{filteredReports.length !== 1 ? 's' : ''} retrieved from SQLite DB (GET /api/v1/reports)
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            {filteredReports.length} recorded incident{filteredReports.length !== 1 ? 's' : ''} retrieved from GET /api/v1/reports
-          </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={fetchReports}
-            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors"
-            title="Refresh"
+            className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 transition-colors"
+            title="Refresh Reports"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-teal-400' : ''}`} />
           </button>
 
           <button
             onClick={() => exportReportsCSV(reportsToExport)}
             disabled={filteredReports.length === 0}
-            className="btn-pill-filter disabled:opacity-40"
+            className="px-4 py-2.5 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 text-teal-300 text-xs font-mono font-bold flex items-center gap-2 transition-all disabled:opacity-40"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Export CSV ({selectedIds.size > 0 ? selectedIds.size : 'All'})</span>
@@ -189,25 +194,25 @@ export default function ReportsAuditPage() {
           <button
             onClick={() => downloadJSON(reportsToExport, 'ghostnet-audit-logs.json')}
             disabled={filteredReports.length === 0}
-            className="btn-primary text-xs disabled:opacity-40"
+            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 text-xs font-mono font-black flex items-center gap-2 transition-all shadow-[0_0_20px_rgba(45,212,191,0.3)] disabled:opacity-40"
           >
-            <Download className="w-3.5 h-3.5" />
+            <Download className="w-3.5 h-3.5 text-slate-950" />
             <span>Export JSON ({selectedIds.size > 0 ? selectedIds.size : 'All'})</span>
           </button>
         </div>
       </div>
 
       {/* ── Search & Filter Subheader Card ── */}
-      <div className="light-saas-card p-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="cyber-card p-4 flex flex-wrap items-center justify-between gap-3">
         {/* Search Bar */}
-        <div className="flex items-center gap-2 bg-slate-100 rounded-xl px-3.5 py-2 w-80 border border-slate-200/80">
+        <div className="flex items-center gap-2.5 bg-slate-950/80 rounded-xl px-3.5 py-2 w-80 border border-white/10 focus-within:border-teal-400/50 transition-colors">
           <Search className="w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Search report ID, frame, summary..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-xs text-slate-900 placeholder-slate-400 outline-none font-medium"
+            className="w-full bg-transparent text-xs text-white placeholder-slate-500 outline-none font-medium"
           />
         </div>
 
@@ -217,8 +222,10 @@ export default function ReportsAuditPage() {
             <button
               key={sev}
               onClick={() => setSeverityFilter(sev)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
-                severityFilter === sev ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/25' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold capitalize transition-all border ${
+                severityFilter === sev
+                  ? 'bg-teal-500/20 text-teal-300 border-teal-500/40 shadow-[0_0_15px_rgba(45,212,191,0.2)]'
+                  : 'bg-slate-900/60 text-slate-400 hover:text-white border-white/10 hover:border-white/20'
               }`}
             >
               {sev}
@@ -228,25 +235,25 @@ export default function ReportsAuditPage() {
       </div>
 
       {/* ── Table Card ── */}
-      <div className="light-saas-card overflow-hidden p-2">
+      <div className="cyber-card overflow-hidden p-2">
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-2 text-slate-500">
-            <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
-            <span className="text-xs font-semibold">Fetching reports...</span>
+          <div className="flex flex-col items-center justify-center h-48 gap-2 text-slate-400 font-mono">
+            <RefreshCw className="w-6 h-6 animate-spin text-teal-400" />
+            <span className="text-xs font-semibold">Fetching SQLite audit reports...</span>
           </div>
         ) : error ? (
           <div className="p-8 text-center max-w-md mx-auto space-y-2">
-            <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-            <h3 className="text-sm font-bold text-slate-900">API Connection Notice</h3>
-            <p className="text-xs text-slate-500">{error}</p>
-            <button onClick={fetchReports} className="btn-primary-dark text-xs mt-2">
+            <AlertTriangle className="w-8 h-8 text-amber-400 mx-auto" />
+            <h3 className="text-sm font-bold text-white">API Connection Notice</h3>
+            <p className="text-xs text-slate-400">{error}</p>
+            <button onClick={fetchReports} className="btn-primary text-xs mt-2">
               Retry Query
             </button>
           </div>
         ) : filteredReports.length === 0 ? (
           <div className="p-8 text-center max-w-md mx-auto space-y-2 text-slate-400">
-            <FileText className="w-8 h-8 mx-auto text-slate-300" />
-            <h3 className="text-sm font-bold text-slate-700">No Matching Incident Reports</h3>
+            <FileText className="w-8 h-8 mx-auto text-slate-500" />
+            <h3 className="text-sm font-bold text-white">No Matching Incident Reports</h3>
             <p className="text-xs">
               Try adjusting your search criteria or running a detection in the workstation.
             </p>
@@ -255,13 +262,13 @@ export default function ReportsAuditPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-wider">
+                <tr className="border-b border-white/10 text-teal-400/90 text-[10px] font-mono font-bold uppercase tracking-wider">
                   <th className="py-3 px-4 w-10 text-center">
                     <input
                       type="checkbox"
                       checked={selectedIds.size === filteredReports.length && filteredReports.length > 0}
                       onChange={toggleSelectAll}
-                      className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded bg-slate-900 border-white/20 text-teal-400 focus:ring-teal-400"
                     />
                   </th>
                   <th className="py-3 px-4">Report ID</th>
@@ -273,7 +280,7 @@ export default function ReportsAuditPage() {
                   <th className="py-3 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/[0.06]">
                 {filteredReports.map((report) => {
                   const isExpanded = expandedId === report.report_id;
                   const isSelected = selectedIds.has(report.report_id);
@@ -282,8 +289,8 @@ export default function ReportsAuditPage() {
                     <React.Fragment key={report.report_id}>
                       <tr
                         onClick={() => setExpandedId(isExpanded ? null : report.report_id)}
-                        className={`hover:bg-slate-50 cursor-pointer transition-colors ${
-                          isSelected ? 'bg-blue-50/40' : ''
+                        className={`hover:bg-teal-950/25 cursor-pointer transition-colors ${
+                          isSelected ? 'bg-teal-950/40' : ''
                         }`}
                       >
                         <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
@@ -291,14 +298,14 @@ export default function ReportsAuditPage() {
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => toggleSelect(report.report_id)}
-                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded bg-slate-900 border-white/20 text-teal-400 focus:ring-teal-400"
                           />
                         </td>
-                        <td className="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
-                          {isExpanded ? <ChevronDown className="w-4 h-4 text-blue-600" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
-                          <span className="font-mono">{report.report_id}</span>
+                        <td className="py-3 px-4 font-bold text-white flex items-center gap-2">
+                          {isExpanded ? <ChevronDown className="w-4 h-4 text-teal-400" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
+                          <span className="font-mono text-white">{report.report_id}</span>
                         </td>
-                        <td className="py-3 px-4 text-slate-600 font-mono">{report.frame_id}</td>
+                        <td className="py-3 px-4 text-teal-300 font-mono text-xs">{report.frame_id}</td>
                         <td className="py-3 px-4">
                           <span
                             className={
@@ -312,15 +319,15 @@ export default function ReportsAuditPage() {
                             {report.highest_severity.toUpperCase()}
                           </span>
                         </td>
-                        <td className="py-3 px-4 text-center font-bold text-slate-900 font-mono">
+                        <td className="py-3 px-4 text-center font-bold text-cyan-300 font-mono text-sm">
                           {report.detection_count}
                         </td>
-                        <td className="py-3 px-4 text-slate-500 font-mono">{formatTs(report.created_at)}</td>
-                        <td className="py-3 px-4 text-slate-600 max-w-xs truncate">{report.summary}</td>
+                        <td className="py-3 px-4 text-slate-400 font-mono text-xs">{formatTs(report.created_at)}</td>
+                        <td className="py-3 px-4 text-slate-300 max-w-xs truncate">{report.summary}</td>
                         <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => downloadJSON(report, `${report.report_id}.json`)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                            className="p-1.5 rounded-lg text-teal-400 hover:text-white hover:bg-teal-500/20 transition-colors"
                             title="Export JSON"
                           >
                             <Download className="w-4 h-4" />
@@ -330,37 +337,37 @@ export default function ReportsAuditPage() {
 
                       {/* Expandable Details Drawer */}
                       {isExpanded && (
-                        <tr className="bg-slate-50/70 border-y border-slate-200">
+                        <tr className="bg-slate-950/80 border-y border-white/10">
                           <td colSpan={8} className="p-4 space-y-3">
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              <div className="p-3.5 bg-slate-900/90 rounded-xl border border-white/10 space-y-1">
+                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400 block">
                                   Autonomous Summary
                                 </span>
-                                <p className="text-slate-800 text-xs leading-relaxed">{report.summary}</p>
+                                <p className="text-slate-200 text-xs leading-relaxed">{report.summary}</p>
                               </div>
 
-                              <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-1 text-xs font-mono">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              <div className="p-3.5 bg-slate-900/90 rounded-xl border border-white/10 space-y-1.5 text-xs font-mono">
+                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400 block">
                                   Survey Geotag Info
                                 </span>
-                                <div className="flex justify-between text-slate-600">
+                                <div className="flex justify-between text-slate-400">
                                   <span>Frame Source:</span>
-                                  <span className="text-slate-900 font-bold">{report.frame_id}</span>
+                                  <span className="text-white font-bold">{report.frame_id}</span>
                                 </div>
-                                <div className="flex justify-between text-slate-600">
+                                <div className="flex justify-between text-slate-400">
                                   <span>Severity Level:</span>
-                                  <span className="text-red-600 font-bold">{report.highest_severity}</span>
+                                  <span className="text-red-400 font-bold uppercase">{report.highest_severity}</span>
                                 </div>
                               </div>
 
-                              <div className="p-3 bg-white rounded-xl border border-slate-200/80 space-y-2 flex flex-col justify-between">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                              <div className="p-3.5 bg-slate-900/90 rounded-xl border border-white/10 space-y-2 flex flex-col justify-between">
+                                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-teal-400 block">
                                   Actions
                                 </span>
                                 <button
                                   onClick={() => downloadJSON(report, `${report.report_id}.json`)}
-                                  className="btn-pill-filter text-xs justify-center"
+                                  className="w-full py-2 rounded-xl bg-teal-500/15 hover:bg-teal-500/25 border border-teal-500/40 text-teal-300 text-xs font-mono font-bold flex items-center justify-center gap-2 transition-colors"
                                 >
                                   <Download className="w-3.5 h-3.5" />
                                   <span>Download Anomaly JSON</span>

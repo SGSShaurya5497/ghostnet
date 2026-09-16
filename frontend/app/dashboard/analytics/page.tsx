@@ -234,7 +234,7 @@ export default function SurveyAnalyticsPage() {
             <div className="space-y-3 pt-2">
               {data.channels.map((channel, i) => {
                 const share = totalChannelCount > 0 ? ((channel.count / totalChannelCount) * 100).toFixed(1) : '0';
-                const isPositive = channel.trend.startsWith('+');
+                const isPositive = Boolean(channel.trend && channel.trend.startsWith('+'));
                 return (
                   <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/10 hover:border-[#2DD4BF]/40 transition-all flex items-center justify-between text-xs">
                     <div className="space-y-0.5">
@@ -246,7 +246,7 @@ export default function SurveyAnalyticsPage() {
                         <span>{channel.count.toLocaleString()} targets</span>
                         <span>·</span>
                         <span className={isPositive ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'}>
-                          {channel.trend}
+                          {channel.trend || '+0.0%'}
                         </span>
                       </div>
                     </div>
