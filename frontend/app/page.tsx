@@ -7,7 +7,6 @@ import { motion, useScroll, useTransform } from 'motion/react';
 import { ghostnetApi } from '@/lib/api';
 import Waves from '@/components/ui/waves';
 import SplitText from '@/components/ui/split-text';
-import WarpText from '@/components/ui/warp-text';
 import CountUp from '@/components/ui/count-up';
 import GlassSurface from '@/components/ui/glass-surface';
 import SpotlightCard from '@/components/ui/spotlight-card';
@@ -441,29 +440,18 @@ export default function LandingPage() {
             </div>
           </FadeIn>
 
-          {/* Main heading — React Bits WebGL WarpText */}
+          {/* Main heading */}
           <FadeIn delay={0.05}>
-            <div className="w-full flex flex-col items-center justify-center mb-6">
-              <div className="text-sm sm:text-base font-bold tracking-[0.25em] text-teal-400/90 uppercase mb-1">
+            <div className="w-full flex flex-col items-center justify-center mb-6 text-center">
+              <div className="text-xs sm:text-sm font-mono font-bold tracking-[0.25em] text-teal-300 uppercase mb-3 px-3.5 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 shadow-[0_0_20px_rgba(45,212,191,0.15)]">
                 Autonomous Sonar Intelligence
               </div>
-              <div className="w-full max-w-4xl h-[120px] sm:h-[150px] md:h-[180px] relative flex items-center justify-center">
-                <WarpText
-                  text="Ghost Net Detection"
-                  color="#2DD4BF"
-                  warpStrength={0.08}
-                  warpScale={1.7}
-                  speed={0.55}
-                  pointerInfluence={0.42}
-                  pointerStrength={0.38}
-                  refraction={0.018}
-                  ripple
-                  fontSize="clamp(2.5rem, 6.5vw, 5.8rem)"
-                  fontWeight={800}
-                  className="w-full h-full"
-                />
-              </div>
-              <div className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white/95 mt-1 font-display">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight leading-[1.08] text-white my-2">
+                <span className="bg-gradient-to-r from-teal-200 via-teal-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(45,212,191,0.35)]">
+                  Ghost Net Detection
+                </span>
+              </h1>
+              <div className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white/90 mt-2 font-display">
                 for India&apos;s Oceans &amp; Coastlines
               </div>
             </div>
