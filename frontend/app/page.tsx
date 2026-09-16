@@ -209,7 +209,7 @@ function StatCard({ value, label, suffix = '', prefix = '', decimals = 0, note }
 
 /* ─────────────── FEATURE CARD ─────────────── */
 function FeatureCard({ icon: Icon, title, desc, tag }: {
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   title: string;
   desc: string;
   tag?: string;
@@ -224,7 +224,7 @@ function FeatureCard({ icon: Icon, title, desc, tag }: {
             border: '1px solid rgba(45,212,191,0.2)',
           }}
         >
-          <Icon className="w-4.5 h-4.5" style={{ color: '#2DD4BF' }} />
+          <Icon className="w-4.5 h-4.5 text-teal-400" />
         </div>
         {tag && (
           <span

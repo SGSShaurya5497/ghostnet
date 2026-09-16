@@ -15,7 +15,7 @@ interface SplitTextProps {
   className?: string;
   delay?: number;
   duration?: number;
-  ease?: string;
+  ease?: any;
   splitType?: 'chars' | 'words';
   color?: string;
   once?: boolean;
