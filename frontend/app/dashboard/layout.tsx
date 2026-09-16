@@ -45,10 +45,11 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'Core Workspace',
     items: [
       { name: 'AI Sonar Workstation', path: '/dashboard', icon: Scan },
-      { name: 'Survey Analytics', path: '/dashboard/analytics', icon: BarChart3 },
-      { name: 'Sonar Hydrography', path: '/dashboard/sonar', icon: Waves },
       { name: 'Live Detections', path: '/dashboard/detections', icon: Target },
-      { name: 'Depth & Bathymetry', path: '/dashboard/depth', icon: Layers },
+      { name: 'Survey Analytics', path: '/dashboard/analytics', icon: BarChart3 },
+      // Optional/Simulated modules commented out to keep demo focused & 100% defensible:
+      // { name: 'Sonar Hydrography', path: '/dashboard/sonar', icon: Waves },
+      // { name: 'Depth & Bathymetry', path: '/dashboard/depth', icon: Layers },
     ],
   },
   {
@@ -56,18 +57,18 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { name: 'Geospatial Survey Map', path: '/dashboard/map', icon: Map },
       { name: 'Cleanup Missions', path: '/dashboard/cleanup', icon: CheckCircle2 },
-      { name: 'Fleet Telemetry', path: '/dashboard/fleet', icon: Ship },
-      { name: 'Route Planning (TSP)', path: '/dashboard/route', icon: Route },
+      // { name: 'Fleet Telemetry', path: '/dashboard/fleet', icon: Ship },
+      // { name: 'Route Planning (TSP)', path: '/dashboard/route', icon: Route },
     ],
   },
   {
     title: 'Intelligence & Audit',
     items: [
       { name: 'Hotspot Clusters', path: '/dashboard/hotspots', icon: Crosshair },
-      { name: 'Temporal Comparison', path: '/dashboard/comparison', icon: GitCompare },
-      { name: 'Risk Engine', path: '/dashboard/risk', icon: Activity },
-      { name: 'Alert Center', path: '/dashboard/alerts', icon: AlertTriangle },
       { name: 'Audit Reports', path: '/dashboard/reports', icon: FileText },
+      // { name: 'Temporal Comparison', path: '/dashboard/comparison', icon: GitCompare },
+      // { name: 'Risk Engine', path: '/dashboard/risk', icon: Activity },
+      // { name: 'Alert Center', path: '/dashboard/alerts', icon: AlertTriangle },
     ],
   },
 ];
