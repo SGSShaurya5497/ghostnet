@@ -1,12 +1,12 @@
 import Link from 'next/link';
-import { Compass, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function NotFound() {
   return (
     <div className="w-screen h-screen bg-[#050810] text-slate-100 flex flex-col items-center justify-center font-sans p-6">
       <div className="cyber-card p-10 max-w-md w-full flex flex-col items-center text-center space-y-5">
-        <div className="w-14 h-14 rounded-2xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-300 shadow-lg shadow-teal-500/10">
-          <Compass className="w-7 h-7" />
+        <div className="w-14 h-14 rounded-2xl overflow-hidden border border-teal-500/30 shadow-lg shadow-teal-500/20">
+          <img src="/ghostnet-logo.png" alt="GhostNet Logo" className="w-full h-full object-cover" />
         </div>
         <div className="space-y-1.5">
           <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-teal-400 bg-teal-500/15 px-2.5 py-0.5 rounded-full border border-teal-500/30">
